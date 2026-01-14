@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="page/docs/assets/images/scarf-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="page/docs/assets/images/scarf-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="site/docs/assets/images/scarf-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="site/docs/assets/images/scarf-light.png">
   <img alt="Logo">
 </picture>
 
@@ -279,5 +279,6 @@ If you use this benchmark in your research, please cite our paper:
 ## License
 
 See [LICENSE](LICENSE) file for details.
+
 
 

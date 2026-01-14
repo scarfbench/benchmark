@@ -158,7 +158,7 @@
         <version.maven-checkstyle-plugin>3.1.2</version.maven-checkstyle-plugin>
         <version.maven-checkstyle-plugin.checkstyle>10.4</version.maven-checkstyle-plugin.checkstyle>
         <version.maven-pmd-plugin>3.17.0</version.maven-pmd-plugin>
-        <version.maven-pmd-plugin.pmd>6.49.0</version.maven-pmd-plugin.pmd>
+        <version.maven-pmd-plugin.pmd>7.10.0</version.maven-pmd-plugin.pmd>
         <version.maven-surefire-report-plugin>3.0.0-M7</version.maven-surefire-report-plugin>
         <version.spotbugs-maven-plugin>4.7.0.0</version.spotbugs-maven-plugin>
         <version.asciidoctor-maven-plugin>2.2.2</version.asciidoctor-maven-plugin>

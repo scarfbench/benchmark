@@ -1,6 +1,6 @@
 site_name: ScarfBench
 site_description: A Benchmark of Self-Contained Application Refactoring and Framework Migration Examples
-repo_url: https://github.com/ScarfBench
+repo_url: https://github.com/ibm/scarfbench
 repo_name: ScarfBench
 strict: false
 copyright: Copyright &copy; 2025 IBM

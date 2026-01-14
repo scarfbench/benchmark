@@ -1,6 +1,6 @@
 # Build output
 dist/
-site/
+site/site/
 *.pyc
 __pycache__/
 *.py[cod]

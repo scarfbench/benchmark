@@ -25,7 +25,7 @@ hide:
 The benchmark includes comprehensive examples ranging from focused layer-specific demonstrations to complete production-grade applications, each with verified implementations across all supported frameworks.
 
 !!! tip "Manual Conversions with Developer Verification"
-    All applications in this benchmark have been meticulously converted and verified by experienced developers. Each implementation has undergone rigorous testing to ensure functional correctness, adherence to framework-specific idioms, and preservation of architectural integrity across Jakarta EE, Quarkus, and Spring frameworks.
+    All applications in this benchmark have been manually converted and verified by experienced developers. Each implementation has undergone rigorous testing to ensure functional correctness, adherence to framework-specific idioms, and preservation of architectural integrity across Jakarta EE, Quarkus, and Spring frameworks.
 
 ---
 

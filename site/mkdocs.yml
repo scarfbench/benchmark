@@ -10,8 +10,7 @@ nav:
       - Home: index.md
       - Benchmark: benchmark.md
       - Quick Start: quickstart.md
-  - Leaderboard: 
-      - Whole Applications: leaderboard.md
+  - Leaderboard: leaderboard/index.html
 
 theme:
   name: material

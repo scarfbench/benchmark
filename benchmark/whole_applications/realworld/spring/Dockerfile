@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Spring Boot Gradle application
 
 # Build stage
-FROM openjdk:11-jdk-slim as builder
+FROM eclipse-temurin:11-jdk-jammy AS builder
 
 # Set working directory
 WORKDIR /app
@@ -24,10 +24,13 @@ COPY src src
 RUN ./gradlew build --exclude-task test --no-daemon
 
 # Runtime stage
-FROM openjdk:11-jre-slim
+FROM eclipse-temurin:11-jre-jammy
 
-# Install curl for health checks (optional)
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Install curl for health checks (optional) and python
+RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Create a non-root user for security
 RUN groupadd -r spring && useradd -r -g spring spring
@@ -38,8 +41,17 @@ WORKDIR /app
 # Copy the built jar from builder stage
 COPY --from=builder /app/build/libs/*.jar app.jar
 
+# Copy smoke test project (uv project with pyproject.toml)
+COPY --chown=spring:spring smoke ./smoke
+
 # Change ownership to spring user
 RUN chown spring:spring app.jar
+
+# Create home and cache directory
+RUN mkdir -p /home/spring/.cache \
+    && chown -R spring:spring /home/spring
+
+ENV HOME=/home/spring
 
 # Switch to non-root user
 USER spring

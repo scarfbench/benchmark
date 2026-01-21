@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Address Book on Open Liberty">
+
+    <featureManager>
+        <feature>jakartaee-10.0</feature>
+    </featureManager>
+
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="8080" httpsPort="8443" />
+
+    <!-- Map the app's persistence.xml jta-data-source (java:comp/DefaultDataSource) -->
+    <library id="derbyLib">
+        <fileset dir="${server.config.dir}/lib" includes="derby*.jar" />
+    </library>
+
+    <dataSource id="DefaultDataSource" jndiName="java:comp/DefaultDataSource">
+        <jdbcDriver libraryRef="derbyLib" />
+        <properties.derby.embedded
+            databaseName="addressbook"
+            createDatabase="create" />
+    </dataSource>
+
+</server>

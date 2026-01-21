@@ -1,9 +1,8 @@
 ---
-icon: cldk/server-16
 hide:
   - toc
 ---
-# :cldk-server-16: Infrastructure
+# Infrastructure
 
 Enterprise features including managed executors for concurrency, asynchronous EJB methods, interceptors for cross-cutting concerns, and timer services for scheduled task execution.
 

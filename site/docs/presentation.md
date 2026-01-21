@@ -1,9 +1,8 @@
 ---
-icon: cldk/browser-16
 hide:
   - toc
 ---
-# :cldk-browser-16: Presentation
+# Presentation
 
 Web tier implementations including servlets, JAX-RS REST APIs, WebSocket endpoints, server-sent events, file uploads, filters, listeners, and real-time communication patterns.
 

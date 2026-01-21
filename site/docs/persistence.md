@@ -1,9 +1,8 @@
 ---
-icon: cldk/database-16
 hide:
   - toc
 ---
-# :cldk-database-16: Persistence
+# Persistence
 
 Data persistence patterns using JPA entities with CRUD operations, complex entity relationships, composite keys, inheritance strategies, and JPQL queries for database interactions.
 

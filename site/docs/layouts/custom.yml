@@ -30,10 +30,6 @@ layers:
   #
 
   # Logo
-  - size: { width: 144, height: 144 }
-    offset: { x: 992, y: 64 }
-    icon: { value: cldk/logo-white, color: white }
-
   # Site name
   - size: { width: 832, height: 42 }
     offset: { x: 64, y: 64 }

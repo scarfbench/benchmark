@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: RealWorld
+# RealWorld
 
 Medium.com clone (Conduit) implementing the RealWorld specification with full CRUD operations, JWT authentication, article management, comments, favorites, tags, and user following.
 

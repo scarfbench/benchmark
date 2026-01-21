@@ -1,9 +1,8 @@
 ---
-icon: cldk/link-16
 hide:
   - toc
 ---
-# :cldk-link-16: Integration
+# Integration
 
 Integration technologies featuring Jakarta Batch processing, JMS messaging patterns, message-driven beans, JAX-WS web services, and Java Connector Architecture for enterprise system integration.
 

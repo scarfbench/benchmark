@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: Whole Applications
+# Whole Applications
 
 Complete, production-grade application examples demonstrating the coordination and integration of multiple Java EE layers and technologies.
 

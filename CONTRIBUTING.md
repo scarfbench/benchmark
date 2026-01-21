@@ -4,6 +4,8 @@ This guide explains how to contribute a new application to the SCARFBench benchm
 
 ## Table of Contents
 
+- [Getting Started](#getting-started)
+- [Contribution Workflow](#contribution-workflow)
 - [Overview](#overview)
 - [Required Files](#required-files)
 - [1. Dockerfile](#1-dockerfile)
@@ -11,6 +13,125 @@ This guide explains how to contribute a new application to the SCARFBench benchm
 - [3. Smoke Test (smoke.py)](#3-smoke-test-smokepy)
 - [Standard Patterns](#standard-patterns)
 - [Checklist](#checklist)
+
+## Getting Started
+
+### Prerequisites
+
+Before contributing, ensure you have:
+- **Git** installed
+- **Docker** installed and running
+- **just** command runner installed ([justfile.guide](https://just.systems/))
+- Basic familiarity with the three frameworks (Jakarta EE, Quarkus, Spring Boot)
+
+### Forking the Repository
+
+1. **Fork** the repository on GitHub by clicking the "Fork" button at the top right of the repository page
+2. **Clone** your fork locally:
+   ```bash
+   git clone https://github.com/<your-username>/scarfbench.git
+   cd scarfbench
+   ```
+3. **Add upstream** remote to keep your fork synchronized:
+   ```bash
+   git remote add upstream https://github.com/original-repo/scarfbench.git
+   ```
+4. **Create a branch** for your contribution:
+   ```bash
+   git checkout -b add-<application-name>
+   ```
+
+## Contribution Workflow
+
+Follow these steps to contribute a new benchmark application:
+
+### 1. Choose Application Category
+
+Determine which category your application belongs to:
+- `business_domain/` - Core business logic patterns
+- `dependency_injection/` - DI and configuration patterns
+- `infrastructure/` - Infrastructure services (concurrency, messaging, etc.)
+- `integration/` - External system integration (batch, messaging, web services)
+- `persistence/` - Database and persistence patterns
+- `presentation/` - Web UI and REST API patterns
+- `security/` - Authentication and authorization patterns
+- `whole_applications/` - Complete, production-like applications
+
+### 2. Create Directory Structure
+
+Create your application directory under the appropriate category:
+```bash
+mkdir -p benchmark/<category>/<your-app-name>/{jakarta,quarkus,spring}
+```
+
+### 3. Implement Framework Variants
+
+For each framework (Jakarta, Quarkus, Spring):
+1. Implement the application using framework-specific patterns
+2. Create `Dockerfile` (see [Dockerfile section](#1-dockerfile))
+3. Create `justfile` (see [Justfile section](#2-justfile))
+4. Create smoke tests - either `smoke.py` or `smoke/` folder (see [Smoke Test section](#3-smoke-test-smokepy))
+
+### 4. Verify All Implementations
+
+For each framework, run the complete test sequence:
+```bash
+cd benchmark/<category>/<your-app-name>/<framework>
+just build      # Build Docker image
+just up         # Start container
+just test       # Run smoke tests (should PASS)
+just logs       # Verify application logs
+just down       # Clean up
+```
+
+Repeat for all three frameworks: `jakarta`, `quarkus`, and `spring`.
+
+### 5. Document Your Application
+
+Create a `README.md` in your application directory:
+```bash
+benchmark/<category>/<your-app-name>/README.md
+```
+
+Include:
+- **Purpose**: What the application demonstrates
+- **Key Features**: Technologies and patterns showcased
+- **Framework Implementations**: Brief notes on each variant
+- **Testing**: What the smoke tests validate
+
+### 6. Submit Pull Request
+
+Once all implementations are working:
+
+1. **Commit your changes**:
+   ```bash
+   git add benchmark/<category>/<your-app-name>
+   git commit -m "Add <application-name> benchmark for <category>"
+   ```
+
+2. **Push to your fork**:
+   ```bash
+   git push origin add-<application-name>
+   ```
+
+3. **Create Pull Request** on GitHub:
+   - Go to your fork on GitHub
+   - Click "New Pull Request"
+   - Fill out the PR template (automatically populated)
+   - Ensure all checklist items are completed
+   - Submit for review
+
+4. **Respond to feedback**: Maintainers may request changes or improvements
+
+### 7. Keep Your Fork Updated
+
+Sync with upstream before starting new contributions:
+```bash
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
+```
 
 ## Overview
 
@@ -24,7 +145,13 @@ In addition to the source application files, each framework implementation requi
 2. `justfile` - Build and run automation
 3. `smoke.py` - Automated smoke tests
 
-This guide uses the [`benchmark/infrastructure/concurrency-jobs`](benchmark/infrastructure/concurrency-jobs) application as the reference standard.
+**Note on Technology Choices**: This guide demonstrates examples using **Python**, **uv**, and **Playwright** for smoke tests. However, these are not strict requirements. You are free to implement smoke tests in any language (Shell, JavaScript, Go, Java, etc.) as long as your Dockerfile and justfile's `test` target work correctly. See [Alternative Smoke Test Implementations](#alternative-smoke-test-implementations) for examples in other languages.
+
+This guide uses the following applications as reference standards: 
+
+1. [`benchmark/infrastructure/concurrency-jobs`](benchmark/infrastructure/concurrency-jobs) for basic REST/HTTP applications
+2. [`benchmark/infrastructure/ejb-async`](benchmark/infrastructure/ejb-async) for applications requiring browser automation and UI testing
+3. [`benchmark/whole_applications/daytrader`](benchmark/whole_applications/daytrader) for complex, multi-framework applications with extensive smoke tests
 
 ## Required Files
 
@@ -37,26 +164,26 @@ The Dockerfile creates a containerized environment for building and running your
 For applications with simple REST/HTTP API testing:
 
 ```dockerfile
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9-eclipse-temurin-21
 
 USER root
 RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1001 <framework-user>
 
-USER <framework-user>
 WORKDIR /app
 
 # Copy all project files
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 .mvn .mvn
-COPY --chown=1001:1001 mvnw .
-COPY --chown=1001:1001 src src
-COPY --chown=1001:1001 smoke.py .
-
-RUN chmod +x mvnw
+COPY pom.xml .
+COPY src src
+COPY smoke.py .
 
 # Default command matches your local workflow
-CMD ["./mvnw", "clean", "package", "<framework-specific-goal>"]
+# Framework-specific goal to be replaced accordingly
+# | Framework             | Maven Goal                    |
+# |-----------------------|-------------------------------|
+# | Jakarta/OpenLiberty   | liberty:run                 |
+# | Quarkus               | quarkus:dev                 |
+# | Spring                | spring-boot:run             |
+CMD ["mvn", "clean", "package", "<framework-specific-goal>"]
 ```
 
 #### Playwright Pattern (For UI/Browser Testing)
@@ -110,9 +237,13 @@ COPY smoke.py .
 RUN chmod +x smoke.py
 
 # For Playwright tests, CMD can run smoke.py directly or the Maven goal
-CMD ["./mvnw", "clean", "package", "<framework-specific-goal>"]
-# Or for smoke-test-only images:
-# CMD ["python3", "smoke.py"]
+# Framework-specific goal to be replaced accordingly
+# | Framework             | Maven Goal                    |
+# |-----------------------|-------------------------------|
+# | Jakarta/OpenLiberty   | liberty:run                 |
+# | Quarkus               | quarkus:dev                 |
+# | Spring                | spring-boot:run             |
+CMD ["mvn", "clean", "package", "<framework-specific-goal>"]
 ```
 
 #### Important Notes
@@ -202,9 +333,22 @@ All justfiles must include these standard targets:
 - `test`: Run smoke tests
 - `local`: Run locally without Docker
 
-### 3. Smoke Test (smoke.py)
+### 3. Smoke Test (smoke.py or custom smoke tests)
 
-The smoke test is a Python script that validates your application's core functionality.
+The smoke test validates your application's core functionality. While examples below use Python, **you are free to write smoke tests in any language** - the only requirements are:
+
+1. **Dockerfile** must exist and be able to run the tests
+2. **justfile** must have a `test` target that executes the tests
+3. Tests must exit with code `0` on success, non-zero on failure
+
+This allows flexibility to use:
+- Python with pytest/Playwright (recommended for complex UI testing)
+- Shell scripts with curl (lightweight HTTP testing)
+- JavaScript with Node.js (if you prefer JavaScript)
+- Go, Java, or any other language
+- Combinations of multiple test frameworks
+
+The key requirement is that `just test` must work inside the container.
 
 #### Standard Structure
 
@@ -483,10 +627,257 @@ def test_endpoint(base: str, description: str, path: str,
     print(f"[PASS] {description}")
 ```
 
+#### Smoke Test Folder Structure (For Complex Applications)
+
+For large, multi-framework applications (reference: [`benchmark/whole_applications/daytrader`](benchmark/whole_applications/daytrader)), organize smoke tests in a dedicated folder with multiple test files and a dependency manifest:
+
+**Folder Structure:**
+```
+<application>/<framework>/smoke/
+├── smoke.py              # Main entry point with pytest fixtures
+├── test_*.py             # Individual test modules
+├── playwright-test-cases.md  # Documentation of test scenarios
+├── pyproject.toml        # Python dependencies (pytest, pytest-playwright, etc.)
+├── pytest.ini            # Pytest configuration
+├── conftest.py           # Pytest fixtures and configuration
+└── README.md             # Test documentation
+```
+
+**pyproject.toml** (using `uv` for modern dependency management - recommended):
+```toml
+[project]
+name = "smoke"
+version = "0.1.0"
+description = "Smoke tests for <Application>"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.47.0",
+    "pytest>=8.0.0,<9.0.0",
+    "pytest-playwright>=0.7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py", "smoke.py"]
+
+# Optional: specify script entry point
+[project.scripts]
+smoke = "smoke:main"
+```
+
+**conftest.py** (pytest fixtures):
+```python
+import os
+import pytest
+from playwright.sync_api import sync_playwright
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:9080/app")
+
+@pytest.fixture
+def page():
+    """Provide a Playwright page fixture for all tests"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+        yield page
+        browser.close()
+
+@pytest.fixture
+def base_url():
+    """Provide base URL to all tests"""
+    return BASE_URL
+```
+
+**smoke.py** (example with pytest markers):
+```python
+import pytest
+from playwright.sync_api import Page, expect
+
+BASE_URL = "http://localhost:9080/app"
+
+@pytest.mark.smoke
+def test_home_page_loads(page: Page) -> None:
+    """Test that home page loads successfully"""
+    page.goto(BASE_URL, wait_until="domcontentloaded")
+    expect(page).to_have_title("Application Title")
+
+@pytest.mark.smoke
+def test_navigation_links(page: Page) -> None:
+    """Test that main navigation links are present"""
+    page.goto(BASE_URL, wait_until="domcontentloaded")
+    links = page.get_by_role("link")
+    assert links.count() > 0
+
+@pytest.mark.smoke
+def test_login_form(page: Page) -> None:
+    """Test login functionality"""
+    page.goto(f"{BASE_URL}/login", wait_until="domcontentloaded")
+    page.fill('input[name="username"]', "testuser")
+    page.fill('input[name="password"]', "password")
+    page.click('button[type="submit"]')
+    # Assert successful login
+    assert page.url != f"{BASE_URL}/login"
+```
+
+**Dockerfile Integration** (using `uv` for fast, reproducible test environments - recommended):
+```dockerfile
+FROM maven:3.9-eclipse-temurin-21
+
+USER root
+RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
+
+# Install uv for fast Python dependency management
+RUN curl -sSL https://astral.sh/uv/install.sh | sh
+ENV PATH="$HOME/.cargo/bin:$PATH"
+
+WORKDIR /app
+
+# Copy application files
+COPY pom.xml .
+COPY src src
+COPY .mvn .mvn
+COPY mvnw .
+RUN chmod +x mvnw
+
+# Copy entire smoke test folder (includes pyproject.toml, uv.lock, test files)
+COPY smoke smoke
+
+CMD ["./mvnw", "clean", "package", "<framework-specific-goal>"]
+```
+
+**justfile Integration** (using `uv` with Playwright - recommended for complex apps):
+```just
+### <Application Name> (<Framework>) Justfile
+APP_NAME        := "<app-name>-<framework>"
+IMAGE_NAME      := "<app-name>-<framework>:latest"
+APP_PORT        := "9080"
+
+build:
+	docker build -f Dockerfile -t {{IMAGE_NAME}} .
+	@echo "[INFO] Built image: {{IMAGE_NAME}}"
+
+rebuild:
+	docker build --no-cache -f Dockerfile -t {{IMAGE_NAME}} .
+	@echo "[INFO] Rebuilt image (no cache): {{IMAGE_NAME}}"
+
+up: build
+	- docker rm -f {{APP_NAME}} 2>/dev/null || true
+	docker run -d --name {{APP_NAME}} {{IMAGE_NAME}}
+	@echo "[INFO] Started {{APP_NAME}} (internal port {{APP_PORT}})..."
+	@echo "[INFO] Waiting for application to start..."
+	@until docker logs {{APP_NAME}} 2>&1 | grep -q "<startup-pattern>"; do sleep 1; done
+	@echo "[INFO] Application started, port {{APP_PORT}} is ready."
+
+logs:
+	docker logs -f {{APP_NAME}}
+
+down:
+	- docker rm -f {{APP_NAME}}
+	@echo "[INFO] Container {{APP_NAME}} removed (if it existed)."
+
+# Run Playwright-based smoke tests inside the running container with uv
+smoke: up
+	@echo "[INFO] Running smoke tests inside container {{APP_NAME}}..."
+	docker exec {{APP_NAME}} bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run pytest -v --tb=short"
+
+test: smoke
+
+local:
+	./mvnw clean package <framework-specific-goal>
+```
+
+**Key Benefits of Folder Structure:**
+
+1. **Scalability**: Organize tests into multiple files as test suite grows
+2. **Modularity**: Separate concerns (auth tests, API tests, UI tests, etc.)
+3. **pytest Features**: Use markers, fixtures, and parameterization
+4. **Dependencies**: Centralized management in `pyproject.toml` with `uv.lock` for reproducibility
+5. **Documentation**: Each test file and test case is self-documenting
+6. **CI/CD Friendly**: pytest integrates with most CI/CD systems
+7. **Fast Dependency Sync**: `uv sync` is significantly faster than `pip install`
+
+**Running Tests Locally (with `uv` - recommended):**
+```bash
+cd smoke
+uv sync                       # Install dependencies from pyproject.toml
+uv run pytest -v              # Run all tests
+uv run pytest -m smoke       # Run only smoke tests
+uv run pytest test_login.py  # Run specific test file
+uv run pytest -v --tb=short  # Run with short traceback
+VERBOSE=1 uv run pytest -v   # Run with verbose output
+```
+
+**Running Tests Locally (with pip - legacy approach):**
+```bash
+cd smoke
+pip install -e .              # Install from pyproject.toml
+pytest -v                     # Run all tests
+pytest -m smoke              # Run only smoke tests
+```
+
+#### Alternative Smoke Test Implementations
+
+While Python with pytest is recommended for complex applications, here are other valid approaches:
+
+**Shell Script Example** (simple HTTP testing):
+```bash
+#!/bin/bash
+# smoke.sh - Lightweight smoke test using curl
+
+set -e
+BASE_URL="http://localhost:9080/app"
+
+echo "[INFO] Testing home page..."
+curl -sf "$BASE_URL/" > /dev/null || exit 1
+
+echo "[INFO] Testing API endpoint..."
+curl -sf "$BASE_URL/api/status" | grep -q "ok" || exit 1
+
+echo "[PASS] Smoke tests complete"
+exit 0
+```
+
+**JavaScript/Node.js Example** (with Jest):
+```javascript
+// smoke.test.js
+const axios = require('axios');
+
+const BASE_URL = 'http://localhost:9080/app';
+
+describe('Smoke Tests', () => {
+  test('home page loads', async () => {
+    const response = await axios.get(BASE_URL);
+    expect(response.status).toBe(200);
+    expect(response.data).toContain('app');
+  });
+
+  test('API endpoint responds', async () => {
+    const response = await axios.get(`${BASE_URL}/api/status`);
+    expect(response.data.status).toBe('ok');
+  });
+});
+```
+
+**justfile Integration** (shell script example):
+```just
+smoke: up
+	@echo "[INFO] Running smoke tests..."
+	docker exec {{APP_NAME}} bash -c "cd /app && bash smoke.sh"
+
+test: smoke
+```
+
+**Key Point**: The implementation language doesn't matter, as long as:
+- The Dockerfile includes necessary runtime and dependencies
+- The `test` target in justfile successfully runs the tests within the container
+- Tests exit with appropriate exit codes (0 = success)
+
 ## Standard Patterns
 
 ### Directory Structure
 
+For **simple applications** (single smoke.py):
 ```
 benchmark/<category>/<application-name>/
 ├── jakarta/
@@ -516,6 +907,37 @@ benchmark/<category>/<application-name>/
     ├── mvnw.cmd
     ├── .mvn/
     └── src/
+```
+
+For **complex applications** (smoke folder with pytest):
+```
+benchmark/<category>/<application-name>/
+├── jakarta/
+│   ├── Dockerfile
+│   ├── justfile
+│   ├── pom.xml
+│   ├── mvnw
+│   ├── mvnw.cmd
+│   ├── .mvn/
+│   ├── src/
+│   └── smoke/                      # Folder instead of single file
+│       ├── smoke.py
+│       ├── test_home.py
+│       ├── test_auth.py
+│       ├── test_api.py
+│       ├── conftest.py
+│       ├── pytest.ini
+│       ├── pyproject.toml
+│       ├── playwright-test-cases.md
+│       └── README.md
+├── quarkus/
+│   ├── ... (same structure)
+│   └── smoke/
+│       └── ... (same structure)
+└── spring/
+    ├── ... (same structure)
+    └── smoke/
+        └── ... (same structure)
 ```
 
 ### Naming Conventions

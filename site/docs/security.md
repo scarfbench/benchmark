@@ -1,9 +1,8 @@
 ---
-icon: cldk/shield-lock-16
 hide:
   - toc
 ---
-# :cldk-shield-lock-16: Security
+# Security
 
 Authentication and authorization patterns featuring Jakarta Security identity stores, form-based and basic authentication, EJB security, role-based access control, and password hashing.
 

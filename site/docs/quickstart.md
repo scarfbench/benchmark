@@ -1,9 +1,8 @@
 ---
-icon: cldk/flame-20
 hide:
   - toc
 ---
-# :cldk-flame-20: Quickstart Guide
+# Quickstart Guide
 
 This benchmark suite comes with most things needed to run the benchmark applications. Everything is already set up!
 

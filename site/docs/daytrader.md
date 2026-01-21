@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: DayTrader
+# DayTrader
 
 Online stock trading benchmark application demonstrating real-world Java EE workload patterns.
 

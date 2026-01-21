@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: Coffee Shop
+# Coffee Shop
 
 Microservices architecture with Orders, Barista, and Kitchen services communicating via Apache Kafka.
 

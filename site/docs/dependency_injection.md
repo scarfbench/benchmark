@@ -1,9 +1,8 @@
 ---
-icon: cldk/plug-16
 hide:
   - toc
 ---
-# :cldk-plug-16: Dependency Injection
+# Dependency Injection
 
 CDI and dependency injection patterns including custom qualifiers, interceptors, decorators, producer methods, event observers, and alternative implementations for conditional bean selection.
 

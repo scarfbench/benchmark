@@ -1,9 +1,8 @@
 ---
-icon: cldk/briefcase-16
 hide:
   - toc
 ---
-# :cldk-briefcase-16: Business Domain
+# Business Domain
 
 Core business logic implementations using Enterprise JavaBeans (EJBs). These examples demonstrate different EJB types—stateful, stateless, and singleton session beans—for common enterprise patterns like shopping carts, currency conversion, hit counters, web services, and standalone EJB usage.
 

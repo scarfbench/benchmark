@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: PetClinic
+# PetClinic
 
 Full-featured veterinary clinic management system using Jakarta Faces (PrimeFaces) for the UI layer.
 

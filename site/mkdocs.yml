@@ -7,11 +7,11 @@ strict: false
 copyright: Copyright &copy; 2025 IBM
 
 nav:
+  - Leaderboard: leaderboard/index.html
   - Scarf:
       - Home: index.md
       - Benchmark: benchmark.md
       - Quick Start: quickstart.md
-  - Leaderboard: leaderboard/index.html
 
 theme:
   name: material
@@ -82,9 +82,6 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-      options:
-        custom_icons:
-          - docs/overrides/.icons
   - pymdownx.arithmatex:
       generic: true
 
@@ -112,14 +109,9 @@ extra:
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/company/IBM
       name: IBM on LinkedIn
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/cldk
     - icon: fontawesome/brands/github
-      link: https://github.com/IBM/codellm-devkit
-      name: CLDK on GitHub
-    - icon: cldk/logo-white
-      link: https://ibm.github.io/codellm-devkit
-      name: The CLDK Library
+      link: https://github.com/ibm/scarfbench
+      name: ScarfBench on GitHub
   dd_rum:
     client_token: !ENV [DD_RUM_CLIENT_TOKEN, blank]
     application_id: !ENV [DD_RUM_APPLICATION_ID, blank]

@@ -1,9 +1,8 @@
 ---
-icon: cldk/workflow-16
 hide:
   - toc
 ---
-# :cldk-workflow-16: CargoTracker
+# CargoTracker
 
 Domain-Driven Design (DDD) cargo shipping tracker demonstrating Jakarta Faces, CDI, Enterprise Beans, JPA, REST, Batch, JSON Binding, Bean Validation, and JMS.
 

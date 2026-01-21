@@ -36,7 +36,6 @@ Exit codes:
 
 import os
 import sys
-import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -172,13 +171,11 @@ def find_element_flexible(page, field_id, element_type="input"):
         f"{element_type}",
     ]
 
-    found_selector = None
     for selector in selectors_to_try:
         try:
             page.wait_for_selector(selector, timeout=2000)
             element = page.locator(selector).first
             if element.is_visible():
-                found_selector = selector
                 if VERBOSE:
                     print(f"[DEBUG] Found element using selector: {selector}")
                 return element

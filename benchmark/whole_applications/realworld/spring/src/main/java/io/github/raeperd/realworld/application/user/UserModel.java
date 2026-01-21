@@ -25,7 +25,7 @@ class UserModel {
                 valueOf(user.getEmail()),
                 valueOf(user.getName()),
                 token,
-                "",
+                user.getProfile().getBio(),
                 "");
     }
 

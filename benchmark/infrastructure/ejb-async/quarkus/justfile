@@ -26,7 +26,12 @@ down:
 	- docker rm -f async-quarkus
 	@echo "[INFO] Container removed (if it existed)"
 
+# Clean up
+clean: down
+    docker rmi {{APP_NAME}}
+    @echo "[INFO] Image removed (if it existed)"
+
 test: up
 
 local:
-	./mvnw clean package liberty:run
+	./mvnw clean package quarkus:run

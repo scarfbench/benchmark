@@ -13,13 +13,14 @@ package quarkus.tutorial.interceptor;
 
 import java.util.logging.Logger;
 
+import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
 
-/**
- *
- * @author ian
- */
+@Lowercase
+@Interceptor
+@Priority(Interceptor.Priority.APPLICATION)
 public class HelloInterceptor {
     protected String greeting;
     private static final Logger logger = Logger.getLogger("interceptor.ejb.HelloInterceptor");

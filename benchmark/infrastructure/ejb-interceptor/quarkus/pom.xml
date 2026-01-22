@@ -14,7 +14,7 @@
     <!-- Use the PLATFORM BOM -->
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-    <quarkus.platform.version>3.28.0</quarkus.platform.version>
+    <quarkus.platform.version>3.30.5</quarkus.platform.version>
   </properties>
 
   <dependencyManagement>
@@ -36,10 +36,15 @@
       <artifactId>quarkus-arc</artifactId>
     </dependency>
 
-    <!-- REST (Reactive) -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive</artifactId>
+      <artifactId>quarkus-rest</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.myfaces.core.extensions.quarkus</groupId>
+      <artifactId>myfaces-quarkus</artifactId>
+      <version>4.1.2</version>
     </dependency>
 
     <!-- Tests -->

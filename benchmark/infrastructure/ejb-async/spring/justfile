@@ -1,6 +1,6 @@
 ### TaskCreator (Liberty-only) Justfile
-APP_NAME       := "async-quarkus"
-LIBERTY_IMAGE   := "async-quarkus:latest"
+APP_NAME       := "async-spring"
+LIBERTY_IMAGE   := "async-spring:latest"
 LIBERTY_PORT    := "9080"               # Liberty internal HTTP
 HOST_PORT      := "10011"               # Host port to map to Liberty internal HTTP
 
@@ -13,20 +13,25 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): {{LIBERTY_IMAGE}}"
 
 up: build
-	@if docker ps --all --quiet --filter name=^/async-quarkus | grep -q .; then \
+	@if docker ps --all --quiet --filter name=^/async-spring | grep -q .; then \
 		echo "[INFO] Removing existing container"; \
-		docker rm -f async-quarkus >/dev/null; \
+		docker rm -f async-spring >/dev/null; \
 	fi
-	docker run --name async-quarkus -p {{HOST_PORT}}:{{LIBERTY_PORT}} {{LIBERTY_IMAGE}}
+	docker run --name async-spring -p {{HOST_PORT}}:{{LIBERTY_PORT}} {{LIBERTY_IMAGE}}
 
 logs:
-	docker logs -f async-quarkus
+	docker logs -f async-spring
 
 down:
-	- docker rm -f async-quarkus
+	- docker rm -f async-spring
 	@echo "[INFO] Container removed (if it existed)"
+
+# Clean up
+clean: down
+    docker rmi {{APP_NAME}}
+    @echo "[INFO] Image removed (if it existed)"
 
 test: up
 
 local:
-	./mvnw clean package liberty:run
+	./mvnw -pl async-service clean package spring-boot:run

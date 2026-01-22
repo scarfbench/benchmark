@@ -136,7 +136,7 @@ def main():
     rc = 0
     try:
         if start_smtp:
-            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "exec:java"])
+            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "compile", "exec:java"])
             smtp_proc.start()
             wait_for(lambda: smtp_proc.grep(re.escape(SMTP_LISTEN_MARKER)), START_TIMEOUT, desc="SMTP listen")
         if start_app:

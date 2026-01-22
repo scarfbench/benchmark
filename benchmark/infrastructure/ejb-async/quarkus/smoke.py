@@ -236,14 +236,14 @@ def main():
     try:
         # Start SMTP
         if start_smtp:
-            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "exec:java"])
+            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "compile", "exec:java"])
             smtp_proc.start()
             wait_for(lambda: smtp_proc.grep(re.escape(SMTP_LISTEN_MARKER)),
                      START_TIMEOUT, desc="SMTP listen")
 
         # Start app
         if start_app:
-            app_proc = ProcWrapper("async-service", [MVNW, "-q", "-pl", "async-service", "quarkus:run"])
+            app_proc = ProcWrapper("async-service", [MVNW, "-q", "-pl", "async-service", "clean", "package", "quarkus:run"])
             app_proc.start()
             wait_for_http("localhost", 9080, START_TIMEOUT)
 

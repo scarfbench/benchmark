@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interceptor example response</title>
+</head>
+
+<body>
+
+    <p th:inline="text">Hello, [[${name}]].</p>
+
+    <form th:action="@{/}" method="get">
+        <button type="submit">Back</button>
+    </form>
+
+</body>
+
+</html>

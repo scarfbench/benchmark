@@ -26,6 +26,11 @@ down:
 	- docker rm -f ejb-async-liberty
 	@echo "[INFO] Container removed (if it existed)"
 
+# Clean up
+clean: down
+    docker rmi {{APP_NAME}}
+    @echo "[INFO] Image removed (if it existed)"
+
 test: up
 
 local:

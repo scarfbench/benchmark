@@ -1,94 +1,41 @@
-# Jakarta EE EJB Timer Session Project Justfile
-# Run `just` to see available recipes
+### TaskCreator (Liberty-only) Justfile
+APP_NAME       := "timersession-liberty"
+LIBERTY_IMAGE   := "timersession-liberty:latest"
+LIBERTY_PORT    := "9080"               # Liberty internal HTTP
+HOST_PORT      := "10051"               # Host port to map to Liberty internal HTTP
 
-# Set shell
-set shell := ["bash", "-c"]
-
-# Default recipe - shows available commands
-default:
-    @just --list
-
-# Build the WAR file using Maven
 build:
-    @echo "Building the ejb-timersession WAR file..."
-    ./mvnw clean package
+	docker build -f Dockerfile -t {{LIBERTY_IMAGE}} .
+	@echo "[INFO] Built image: {{LIBERTY_IMAGE}}"
 
-# Clean build artifacts
-clean:
-    @echo "Cleaning build artifacts..."
-    ./mvnw clean
+rebuild:
+	docker build --no-cache -f Dockerfile -t {{LIBERTY_IMAGE}} .
+	@echo "[INFO] Rebuilt image (no cache): {{LIBERTY_IMAGE}}"
 
-# Compile without packaging
-compile:
-    @echo "Compiling Java sources..."
-    ./mvnw compile
+up: build
+	@if docker ps --all --quiet --filter name=^/timersession-liberty$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f timersession-liberty >/dev/null; \
+	fi
+	docker run -d --name timersession-liberty -p {{HOST_PORT}}:{{LIBERTY_PORT}} {{LIBERTY_IMAGE}}
+	@echo "[INFO] Started timersession-liberty, waiting for app to start..."
+	@until docker logs timersession-liberty 2>&1 | grep -q "CWWKF0011I"; do sleep 1; done
+	@echo "[INFO] Liberty app started, port {{HOST_PORT}} is ready."
 
-# Run tests
-test:
-    @echo "Running tests..."
-    ./mvnw test
-
-# Build Docker image
-docker-build:
-    @echo "Building Docker image..."
-    just build
-    docker build -t ejb-timersession-glassfish7:latest .
-
-# Start application with Docker-Compose
-up:
-    @echo "Starting application with Docker-Compose..."
-    docker-compose up -d
-
-# Stop Docker-Compose services
-down:
-    @echo "Stopping Docker-Compose services..."
-    docker-compose down
-
-# View Docker-Compose logs
 logs:
-    @echo "Viewing application logs..."
-    docker-compose logs -f
+	docker logs -f timersession-liberty
 
-# Restart services
-restart:
-    @echo "Restarting services..."
-    just down
-    just up
+down:
+	- docker rm -f timersession-liberty
+	@echo "[INFO] Container removed (if it existed)"
 
-# Show service status
-status:
-    @echo "Showing service status..."
-    docker-compose ps
+# Clean up
+clean: down
+    docker rmi {{APP_NAME}}
+    @echo "[INFO] Image removed (if it existed)"
 
-# Deploy application locally (without Docker)
-deploy-local: build
-    @echo "Deploying to local GlassFish..."
-    @echo "Please ensure GlassFish is running and deploy target/timersession.war manually"
+test: up
+    @docker exec {{APP_NAME}} sh -c 'python3 /app/smoke.py'
 
-# Development mode - rebuild and restart
-dev: build docker-build restart
-    @echo "Development deployment complete"
-    @echo "Application should be available at http://localhost:10085/timersession/"
-
-# Build and deploy (docker-build + up)
-deploy: docker-build up
-    @echo "Application deployed successfully!"
-    @echo ""
-    @echo "Access the application at: http://localhost:10085/timersession/"
-    @echo "Access GlassFish admin console at: http://localhost:10152/"
-
-# Show project and deployment information
-info:
-    @echo "=== EJB Timer Session Project Info ==="
-    @echo "Project: jakarta.examples.tutorial.ejb.timersession"
-    @echo "Artifact: timersession"
-    @echo "Version: 10-SNAPSHOT"
-    @echo "Packaging: war"
-    @echo ""
-    @echo "=== Docker Deployment ==="
-    @echo "Application URL: http://localhost:10085/timersession/"
-    @echo "Admin Console: http://localhost:10152/"
-    @echo "HTTPS URL: https://localhost:10184/timersession/"
-    @echo ""
-    @echo "=== Available Commands ==="
-    @just --list
+local:
+	./mvnw clean package liberty:run

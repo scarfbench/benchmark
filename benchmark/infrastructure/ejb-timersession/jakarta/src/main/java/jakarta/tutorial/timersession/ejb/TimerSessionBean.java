@@ -3,8 +3,8 @@
  *
  * All rights reserved.
  *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Distribution License v1.0, which is available at
+ * This program and the accompanying materials are made available under the terms of the Eclipse
+ * Distribution License v1.0, which is available at
  * https://www.eclipse.org/org/documents/edl-v10.php
  *
  * SPDX-License-Identifier: BSD-3-Clause
@@ -21,11 +21,12 @@ import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.ejb.Timeout;
 import jakarta.ejb.Timer;
+import jakarta.ejb.TimerConfig;
 import jakarta.ejb.TimerService;
 
 /**
- * TimerBean is a singleton session bean that creates a timer and prints out a
- * message when a timeout occurs.
+ * TimerBean is a singleton session bean that creates a timer and prints out a message when a
+ * timeout occurs.
  */
 @Singleton
 @Startup
@@ -44,8 +45,11 @@ public class TimerSessionBean {
         logger.log(Level.INFO,
                 "Setting a programmatic timeout for {0} milliseconds from now.",
                 intervalDuration);
-        Timer timer = timerService.createTimer(intervalDuration,
-                "Created new programmatic timer");
+        TimerConfig config = new TimerConfig();
+        config.setInfo("Created new programmatic timer");
+        config.setPersistent(false); // needs a DB with Liberty
+
+        timerService.createSingleActionTimer(intervalDuration, config);
     }
 
     @Timeout

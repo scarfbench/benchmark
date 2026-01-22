@@ -34,6 +34,11 @@ down:
 	- docker rm -f {{APP_NAME}}
 	@echo "[INFO] Container removed (if it existed)"
 
+# Clean up
+clean: down
+    docker rmi {{APP_NAME}}
+    @echo "[INFO] Image removed (if it existed)"
+
 # Run smoke test inside the container (expects /app/smoke.py to be present in the image)
 test: up
 	@docker exec {{APP_NAME}} sh -c 'python3 /app/smoke.py'

@@ -1,0 +1,27 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:replace="~{timer :: layout(~{::title}, ~{::body})}">
+
+    <!-- Title fragment -->
+    <th:block th:fragment="title">
+        Timer page
+    </th:block>
+
+    <!-- Body fragment -->
+    <th:block th:fragment="body">
+
+        <p th:inline="text">The last programmatic timeout was: [[${lastProgrammaticTimeout}]].</p>
+
+        <p th:inline="text">The last automatic timeout was: [[${lastAutomaticTimeout}]].</p>
+
+        <p>Set a programmatic timer here.</p>
+
+        <form th:action="@{/set}" method="post">
+            <button type="submit">Set Timer</button>
+        </form>
+
+        <form th:action="@{/}" method="get">
+            <button type="submit">Refresh</button>
+        </form>
+
+    </th:block>
+
+</th:block>

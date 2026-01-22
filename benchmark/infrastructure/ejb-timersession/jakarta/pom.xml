@@ -28,7 +28,7 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jakarta.jakartaee-api.version>9.0.0</jakarta.jakartaee-api.version>
+    <jakarta.jakartaee-api.version>10.0.0</jakarta.jakartaee-api.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
     <failOnMissingWebXml>false</failOnMissingWebXml>
@@ -46,6 +46,20 @@
   <build>
     <finalName>timersession</finalName>
     <plugins>
+      <plugin>
+        <groupId>io.openliberty.tools</groupId>
+        <artifactId>liberty-maven-plugin</artifactId>
+        <version>3.10.3</version>
+        <configuration>
+          <serverName>defaultServer</serverName>
+          <configFile>${project.basedir}/src/main/liberty/config/server.xml</configFile>
+          <appsDirectory>apps</appsDirectory>
+          <stripVersion>true</stripVersion>
+          <installAppPackages>project</installAppPackages>
+          <looseApplication>false</looseApplication>
+          <include>${project.build.finalName}.war</include>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

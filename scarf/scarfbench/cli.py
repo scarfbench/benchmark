@@ -86,6 +86,8 @@ def compile_command(args):
         sys.argv.extend(['--result-file', args.result_file])
         if args.results_md:
             sys.argv.extend(['--results-md', args.results_md])
+        if args.only_failures:
+            sys.argv.extend(['--only-failures', args.only_failures])
         if args.max_workers != 4:
             sys.argv.extend(['--max-workers', str(args.max_workers)])
         if args.timeout != 600:
@@ -221,6 +223,8 @@ Examples:
                                 help='Path to output CSV file (e.g., results_compile.csv)')
     compile_parser.add_argument('--results-md',
                                 help='Path to results markdown file to update (e.g., whole_app_conversions.md)')
+    compile_parser.add_argument('--only-failures',
+                                help='Path to markdown file to read failures from. Only rerun projects that show ❌ in the compiled column.')
     compile_parser.add_argument('--max-workers', type=int, default=4,
                                 help='Number of parallel compilation jobs (default: 4)')
     compile_parser.add_argument('--timeout', type=int, default=600,

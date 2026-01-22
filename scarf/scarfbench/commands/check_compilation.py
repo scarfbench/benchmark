@@ -141,7 +141,7 @@ def update_results_md(
 
 
 def run_command(cmd, cwd=None):
-    """Run a shell command and return exit code and stderr."""
+    """Run a shell command and return exit code and error message (from stderr or stdout)."""
     try:
         result = subprocess.run(
             cmd, 
@@ -151,26 +151,87 @@ def run_command(cmd, cwd=None):
             timeout=600,
             cwd=cwd
         )
-        return result.returncode, result.stderr.strip()
+        error_msg = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
+        if result.returncode != 0:
+            return result.returncode, error_msg
+        return result.returncode, ""
     except subprocess.TimeoutExpired:
         return 1, f"Command timed out after 600 seconds"
     except Exception as e:
         return 1, str(e)
 
 
-def find_projects(root):
-    """Recursively find all directories containing pom.xml or build.gradle."""
+def parse_failed_entries_from_md(md_file: str) -> set:
+    """Parse markdown file to find entries with failures in the compiled column.
+    Returns a set of tuples: (cli_tool, model, layer, conversion, app, run_num)"""
+    failed_entries = set()
+    
+    try:
+        with open(md_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"⚠️  Markdown file not found: {md_file}")
+        return failed_entries
+    
+    for line in lines:
+        if not line.strip().startswith('|') or line.strip().startswith('|---'):
+            continue
+        
+        parts = [p.strip() for p in line.split('|')]
+        if len(parts) < 9:
+            continue
+        
+        cli_tool = parts[1]
+        model = parts[2]
+        layer = parts[3]
+        conversion = parts[4]
+        app = parts[5]
+        compiled_str = parts[8] if len(parts) > 8 else ""
+        
+        if '❌' in compiled_str:
+            for i, char in enumerate(compiled_str):
+                if char == '❌':
+                    run_num = i + 1
+                    failed_entries.add((cli_tool, model, layer, conversion, app, run_num))
+    
+    return failed_entries
+
+
+def find_projects(root, failed_entries=None):
+    """Recursively find all directories containing pom.xml or build.gradle.
+    Only includes projects at the run_X level, not in subdirectories.
+    If failed_entries is provided, only includes projects matching those entries."""
     projects = []
     root_path = Path(root)
     if not root_path.exists():
         print(f"Warning: Root directory does not exist: {root}")
         return projects
     
+    include_paths = None
+    if failed_entries:
+        include_paths = set()
+        for cli_tool, model, layer, conversion, app, run_num in failed_entries:
+            app_conv = f"{app}-{conversion}"
+            path = root_path / cli_tool / layer / app_conv / f"run_{run_num}"
+            abs_path = str(path.resolve())
+            rel_path = str(path)
+            include_paths.add(abs_path)
+            include_paths.add(rel_path)
+    
     for dirpath, _, filenames in os.walk(root):
-        if "pom.xml" in filenames:
-            projects.append((dirpath, "Maven"))
-        elif "build.gradle" in filenames or "build.gradle.kts" in filenames:
-            projects.append((dirpath, "Gradle"))
+        dir_path = Path(dirpath)
+        last_component = dir_path.name
+        if re.match(r'^run_\d+$', last_component):
+            if include_paths:
+                dir_abs = str(dir_path.resolve())
+                dir_rel = str(dir_path)
+                if dir_abs not in include_paths and dir_rel not in include_paths:
+                    continue
+            
+            if "pom.xml" in filenames:
+                projects.append((dirpath, "Maven"))
+            elif "build.gradle" in filenames or "build.gradle.kts" in filenames:
+                projects.append((dirpath, "Gradle"))
     return projects
 
 
@@ -235,6 +296,10 @@ def main():
         help="Path to results markdown file to update (e.g., whole_app_conversions.md)"
     )
     parser.add_argument(
+        "--only-failures",
+        help="Path to markdown file to read failures from. Only rerun projects that show ❌ in the compiled column."
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be done without making changes"
@@ -244,8 +309,17 @@ def main():
     conversions_dir = Path(args.conversions_dir).resolve()
     result_file = Path(args.result_file)
     
+    failed_entries = None
+    if args.only_failures:
+        print(f"Reading failures from: {args.only_failures}")
+        failed_entries = parse_failed_entries_from_md(args.only_failures)
+        print(f"Found {len(failed_entries)} failed run(s) to rerun")
+        if not failed_entries:
+            print("⚠️  No failures found in markdown file. Exiting.")
+            return
+    
     print(f"🔍 Searching for projects in: {conversions_dir}")
-    projects = find_projects(str(conversions_dir))
+    projects = find_projects(str(conversions_dir), failed_entries=failed_entries)
     print(f"📦 Found {len(projects)} project(s) to build.")
     
     if not projects:
@@ -260,6 +334,24 @@ def main():
             results.append(future.result())
     
     results.sort(key=lambda x: x[0])
+    
+    if args.only_failures and result_file.exists():
+        print(f"Reading existing results from: {result_file}")
+        existing_results = {}
+        with open(result_file, mode="r", newline="") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                existing_results[row['Path']] = [row['Path'], row['Build System'], row['Status'], row['Error']]
+        
+        updated_count = 0
+        new_paths = {result[0] for result in results}
+        for result in results:
+            if result[0] in existing_results:
+                updated_count += 1
+            existing_results[result[0]] = result
+        
+        results = sorted(existing_results.values(), key=lambda x: x[0])
+        print(f"📝 Merged results: {len(results)} total entries (updated {updated_count} entries)")
     
     result_file.parent.mkdir(parents=True, exist_ok=True)
     with open(result_file, mode="w", newline="") as file:
@@ -281,6 +373,9 @@ def main():
         for result in results:
             build_dir, build_sys, status, error = result
             success = (status == "Success")
+            
+            if re.search(r'/run_\d+/.+', build_dir):
+                continue
             
             components = parse_path_to_components(build_dir)
             if not components:

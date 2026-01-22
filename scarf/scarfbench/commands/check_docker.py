@@ -360,6 +360,9 @@ def process_run(
 ) -> Tuple[bool, str]:
     if not run_dir.exists():
         return False, f"run directory does not exist: {run_dir}"
+    
+    if not re.match(r'^run_\d+$', run_dir.name):
+        return False, f"path is not at run_X level: {run_dir}"
 
     ensure_safe_dockerignore(run_dir)
 
@@ -528,6 +531,9 @@ def main() -> None:
                 continue
 
             run_dir = app_dir / f"run_{run_num}"
+            if not re.match(r'^run_\d+$', run_dir.name):
+                print(f"⚠️  Skipping non-run_X level directory: {run_dir}")
+                continue
             compiled_successfully = compiled_ok
             tasks.append((key, run_num, run_dir, conversion, dockerfile_source, compiled_successfully))
 

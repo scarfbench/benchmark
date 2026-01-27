@@ -31,6 +31,7 @@
     <module>roster-common</module>
     <module>roster-ejb</module>
     <module>roster-appclient</module>
+    <module>roster-web</module>
     <module>roster-ear</module>
   </modules>
 

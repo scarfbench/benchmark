@@ -26,4 +26,6 @@ COPY . .
 
 RUN chmod +x smoke.py
 
-CMD [ "mvn", "clean", "package", "-pl", "roster-ear", "-am", "liberty:run" ]
+RUN mvn clean install -pl roster-ear -am
+
+CMD [ "sh", "-c", "mvn liberty:run -pl roster-ear" ]

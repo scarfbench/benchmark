@@ -45,7 +45,8 @@ down:
     @echo "[INFO] Container removed (if it existed)"
 
 test: up
-    @docker exec {{APP_NAME}} sh -c 'python3 /app/smoke.py'
+    @docker exec {{APP_NAME}} sh -c 'ROSTER_BASE=http://localhost:9080/roster python3 /app/smoke.py'
 
 local:
-    mvn clean package liberty:run -pl roster-ear -am
+    - mvn clean install -pl roster-ear -am 
+    - mvn liberty:run -pl roster-ear

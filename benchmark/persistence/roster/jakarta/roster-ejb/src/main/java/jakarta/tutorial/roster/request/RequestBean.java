@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJBException;
+import jakarta.ejb.LocalBean;
 import jakarta.ejb.Stateful;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -49,10 +50,10 @@ import jakartaee.tutorial.roster.entity.WinterLeague;
  * @author ian
  */
 @Stateful
+@LocalBean
 public class RequestBean implements Request, Serializable {
 
-    private static final Logger logger = 
-            Logger.getLogger("roster.request.RequestBean");
+    private static final Logger logger = Logger.getLogger("roster.request.RequestBean");
     @PersistenceContext
     private EntityManager em;
     private CriteriaBuilder cb;
@@ -60,6 +61,26 @@ public class RequestBean implements Request, Serializable {
     @PostConstruct
     private void init() {
         cb = em.getCriteriaBuilder();
+        seedCanonicalLeagues();
+    }
+
+    private void seedCanonicalLeagues() {
+        try {
+            if (em.find(League.class, "L1") == null) {
+                em.persist(new SummerLeague("L1", "Mountain", "Soccer"));
+            }
+            if (em.find(League.class, "L2") == null) {
+                em.persist(new SummerLeague("L2", "Valley", "Basketball"));
+            }
+            if (em.find(League.class, "L3") == null) {
+                em.persist(new SummerLeague("L3", "Foothills", "Soccer"));
+            }
+            if (em.find(League.class, "L4") == null) {
+                em.persist(new WinterLeague("L4", "Alpine", "Snowboarding"));
+            }
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Failed to seed canonical leagues", ex);
+        }
     }
 
     @Override
@@ -152,6 +173,26 @@ public class RequestBean implements Request, Serializable {
     }
 
     @Override
+    public List<LeagueDetails> getAllLeagues() {
+        logger.info("getAllLeagues");
+        try {
+            CriteriaQuery<League> cq = cb.createQuery(League.class);
+            Root<League> league = cq.from(League.class);
+            cq.select(league);
+            cq.orderBy(cb.asc(league.get(League_.id)));
+            List<League> leagues = em.createQuery(cq).getResultList();
+
+            List<LeagueDetails> details = new ArrayList<>();
+            for (League l : leagues) {
+                details.add(new LeagueDetails(l.getId(), l.getName(), l.getSport()));
+            }
+            return details;
+        } catch (Exception ex) {
+            throw new EJBException(ex);
+        }
+    }
+
+    @Override
     public List<TeamDetails> getTeamsOfLeague(String leagueId) {
         logger.info("getTeamsOfLeague");
         List<TeamDetails> detailsList = new ArrayList<>();
@@ -186,7 +227,7 @@ public class RequestBean implements Request, Serializable {
                 Root<Player> player = cq.from(Player.class);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(player.get(Player_.position), position));
@@ -212,7 +253,7 @@ public class RequestBean implements Request, Serializable {
                 Root<Player> player2 = cq.from(Player.class);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player1.getModel();
+                // EntityType<Player> Player_ = player1.getModel();
 
                 // create a Predicate object that finds players with a salary
                 // greater than player1
@@ -248,7 +289,7 @@ public class RequestBean implements Request, Serializable {
                 Root<Player> player = cq.from(Player.class);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.between(player.get(
@@ -279,7 +320,7 @@ public class RequestBean implements Request, Serializable {
                 Join<Team, League> league = team.join(Team_.league);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(league.get(League_.id), leagueId));
@@ -306,7 +347,7 @@ public class RequestBean implements Request, Serializable {
                 Join<Team, League> league = team.join(Team_.league);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(league.get(League_.sport), sport));
@@ -332,7 +373,7 @@ public class RequestBean implements Request, Serializable {
                 Join<Player, Team> team = player.join(Player_.teams);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(team.get(Team_.city), city));
@@ -377,7 +418,7 @@ public class RequestBean implements Request, Serializable {
                 Root<Player> player = cq.from(Player.class);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.isEmpty(player.get(Player_.teams)));
@@ -402,7 +443,7 @@ public class RequestBean implements Request, Serializable {
                 Root<Player> player = cq.from(Player.class);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(player.get(Player_.position), position),
@@ -427,9 +468,9 @@ public class RequestBean implements Request, Serializable {
             CriteriaQuery<League> cq = cb.createQuery(League.class);
             if (cq != null) {
                 Root<League> league = cq.from(League.class);
-                //EntityType<League> League_ = league.getModel();
+                // EntityType<League> League_ = league.getModel();
                 Join<League, Team> team = league.join(League_.teams);
-                //EntityType<Team> Team_ = team.getModel();
+                // EntityType<Team> Team_ = team.getModel();
                 Join<Team, Player> player = team.join(Team_.players);
 
                 cq.where(cb.equal(player.get(Player_.id), playerId));
@@ -471,7 +512,7 @@ public class RequestBean implements Request, Serializable {
                 Join<Team, League> league = team.join(Team_.league);
 
                 // Get MetaModel from Root
-                //EntityType<Player> Player_ = player.getModel();
+                // EntityType<Player> Player_ = player.getModel();
 
                 // set the where clause
                 cq.where(cb.equal(player.get(Player_.id), playerId));
@@ -480,13 +521,13 @@ public class RequestBean implements Request, Serializable {
                 sports = q.getResultList();
             }
 
-//        Player player = em.find(Player.class, playerId);
-//        Iterator<Team> i = player.getTeams().iterator();
-//        while (i.hasNext()) {
-//            Team team = i.next();
-//            League league = team.getLeague();
-//            sports.add(league.getSport());
-//        }
+            // Player player = em.find(Player.class, playerId);
+            // Iterator<Team> i = player.getTeams().iterator();
+            // while (i.hasNext()) {
+            // Team team = i.next();
+            // League league = team.getLeague();
+            // sports.add(league.getSport());
+            // }
         } catch (Exception ex) {
             throw new EJBException(ex);
         }
@@ -498,6 +539,9 @@ public class RequestBean implements Request, Serializable {
         logger.info("createTeamInLeague");
         try {
             League league = em.find(League.class, leagueId);
+            if (league == null) {
+                throw new IllegalArgumentException("League not found: " + leagueId);
+            }
             Team team = new Team(teamDetails.getId(),
                     teamDetails.getName(),
                     teamDetails.getCity());
@@ -587,6 +631,9 @@ public class RequestBean implements Request, Serializable {
 
         try {
             League league = em.find(League.class, leagueId);
+            if (league == null) {
+                return null;
+            }
             leagueDetails = new LeagueDetails(league.getId(),
                     league.getName(),
                     league.getSport());

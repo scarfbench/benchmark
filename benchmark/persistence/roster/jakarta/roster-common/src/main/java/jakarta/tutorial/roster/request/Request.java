@@ -18,7 +18,6 @@ import jakarta.tutorial.roster.util.LeagueDetails;
 import jakarta.tutorial.roster.util.PlayerDetails;
 import jakarta.tutorial.roster.util.TeamDetails;
 
-
 @Remote
 public interface Request {
     void addPlayer(String playerId, String teamId);
@@ -32,6 +31,8 @@ public interface Request {
     void dropPlayer(String playerId, String teamId);
 
     List<PlayerDetails> getAllPlayers();
+
+    List<LeagueDetails> getAllLeagues();
 
     LeagueDetails getLeague(String leagueId);
 
@@ -68,5 +69,5 @@ public interface Request {
     void removePlayer(String playerId);
 
     void removeTeam(String teamId);
-    
+
 }

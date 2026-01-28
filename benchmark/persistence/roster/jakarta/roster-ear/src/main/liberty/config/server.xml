@@ -21,6 +21,8 @@
         <properties url="jdbc:h2:mem:roster" />
     </dataSource>
 
+    <logging logDirectory="${server.output.dir}/logs" />
+
     <!-- Application configuration -->
     <enterpriseApplication id="roster-ear" location="roster-ear-1.0.0.ear" name="roster-ear">
         <application-bnd>

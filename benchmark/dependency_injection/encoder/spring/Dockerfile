@@ -14,7 +14,7 @@ ENV PATH="/venv/bin:$PATH"
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 # Install Playwright and Chromium dependencies
-RUN uv pip install --no-cache-dir playwright==1.47.0 && playwright install --with-deps chromium
+RUN uv pip install --no-cache-dir playwright==1.47.0 pytest && playwright install --with-deps chromium
 RUN useradd -m -u 1001 spring
 
 # set smoke test env variables

@@ -1,6 +1,6 @@
 import os
 import sys
-import time
+from random import randint
 
 import pytest
 from playwright.sync_api import expect, sync_playwright
@@ -45,7 +45,7 @@ def test_create_league(page):
     ).to_be_visible()
     print("[INFO] Verified league creation page contents")
 
-    league_id = "L1"
+    league_id = f"L{randint(0, 1000)}"
     league_name = "English Premier League"
     league_sport = "soccer"  # valid: soccer, swimming, basketball, baseball, hockey, skiing, snowboarding
     print("[INFO] Creating league for", league_name)
@@ -93,16 +93,59 @@ def test_create_a_team(page):
     page.locator("#createTeamForm\\:city").fill(city)
     league_selector = page.locator("#createTeamForm\\:league")
     options = league_selector.locator("option")
-    # There should be at least placeholder + 1 league
-    expect(options).to_have_count_greater_than(1)
-
     # Select first real option (skip placeholder)
     first_real_value = options.nth(1).get_attribute("value")
     assert first_real_value and first_real_value != ""
     league_selector.select_option(value=first_real_value)
-
-    page.get_by_role("button", name="Add Team").click()
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Add Team").click()
     print("[INFO] Submitted team creation form")
+
+    # Wait until teams information is visible
+    table = page.locator("table.data-table")
+    expect(table).to_be_visible()
+    print("[INFO] Verified teams information is visible")
+
+    # Lastly, verify that a row exists with all the data we just populated.
+    row = table.locator("tr", has_text=team_id).filter(has_text=team_name).filter(has_text=city)
+    expect(row).to_have_count(1)
+    print("[INFO] Verified team information is visible")
+
+
+def test_create_a_player(page):
+    "Create a player to put in the team"
+    page.goto("http://localhost:9080/roster/player.xhtml", wait_until="domcontentloaded")
+    page.get_by_role("heading", name="Roster Application - Player Management")
+    print("[INFO] Verified player creation page contents")
+
+    # Create a new player
+    player_id: str = "1"
+    player_name: str = "Martin Odegaard"
+    position: str = "CAM"
+    salary: str = "1000000"
+
+    page.locator("#createPlayerForm\\:playerIdInputText").fill(player_id)
+    page.locator("#createPlayerForm\\:nameInputText").fill(player_name)
+    page.locator("#createPlayerForm\\:positionInputText").fill(position)
+    page.locator("#createPlayerForm\\:salaryInputText").fill(salary)
+    team_selector = page.locator("#createPlayerForm\\:team")
+    options = team_selector.locator("option")
+    first_real_value = options.nth(1).get_attribute("value")
+    assert first_real_value and first_real_value != ""
+    team_selector.select_option(value=first_real_value)
+    with page.expect_navigation(wait_until="domcontentloaded"):
+        page.get_by_role("button", name="Submit").click()
+    print("[INFO] Submitted player creation form")
+
+    # Wait until players information is visible
+    table = page.locator("table.data-table")
+    expect(table).to_be_visible()
+    print("[INFO] Verified players information is visible")
+
+    # Lastly, verify that a row exists with all the data we just populated.
+    row = table.locator("tr", has_text=player_id).filter(has_text=player_name).filter(has_text=position)
+    expect(row).to_have_count(1)
+    print("[INFO] Verified player information is visible")
 
 
 def main() -> int:

@@ -1,7 +1,7 @@
 ### OpenLiberty (Jakarta) Justfile
 APP_NAME       := "address-book-jakarta"
 IMAGE_NAME     := "address-book-jakarta:latest"
-SUCCESS_PATTERN := "CWWKF0011I"
+SUCCESS_PATTERN := CWWKF0011I
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -16,26 +16,26 @@ up: build
 	echo "[INFO] Removing existing container"; \
 	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	
+
 	### Run the container in detached mode
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
 
 	### Check for build failure
-	@until docker logs $(APP_NAME) 2>&1 | grep -q "BUILD FAILURE"; do \
-	if docker logs $(APP_NAME) 2>&1 | grep -q "$(SUCCESS_PATTERN)"; then \
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
 	break; \
 	fi; \
 	sleep 1; \
 	done
-	@if docker logs $(APP_NAME) 2>&1 | grep -q "BUILD FAILURE"; then \
+	@if docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; then \
 	echo "[ERROR] Build failed in container:"; \
 	docker logs $(APP_NAME) 2>&1; \
 	exit 1; \
 	fi
 
 	### Wait for success pattern
-	@until docker logs $(APP_NAME) 2>&1 | grep -q "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
 	@echo "[INFO] OpenLiberty application started and ready."
 
 logs:

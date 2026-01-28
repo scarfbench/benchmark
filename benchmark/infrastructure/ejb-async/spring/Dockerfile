@@ -15,7 +15,7 @@ RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
 # Install Playwright and Chromium dependencies inside venv
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
- && pip install --no-cache-dir playwright==1.47.0 \
+ && pip install --no-cache-dir playwright==1.47.0 pytest \
  && playwright install --with-deps chromium
 
 WORKDIR /app

@@ -1,7 +1,9 @@
 ### OpenLiberty (Jakarta) Justfile
 APP_NAME       := "roster-jakarta"
 IMAGE_NAME     := "roster-jakarta:latest"
-SUCCESS_PATTERN := "CWWKF0011I"
+SUCCESS_PATTERN := CWWKF0011I
+
+.ONESHELL:
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -21,20 +23,20 @@ up: build
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 
 	@echo "[INFO] Assessing build failure"
-	@until docker logs $(APP_NAME) 2>&1 | grep -q "BUILD FAILURE"; do \
-	if docker logs $(APP_NAME) 2>&1 | grep -q "$(SUCCESS_PATTERN)"; then \
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
 	break; \
 	fi; \
 	sleep 1; \
 	done
-	@if docker logs $(APP_NAME) 2>&1 | grep -q "BUILD FAILURE"; then \
+	@if docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; then \
 	echo "[ERROR] Build failed in container:"; \
 	docker logs $(APP_NAME) 2>&1; \
 	exit 1; \
 	fi
 
 	@echo "[INFO] Waiting to start OpenLiberty application..."
-	@until docker logs $(APP_NAME) 2>&1 | grep -q "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
 	@echo "[INFO] OpenLiberty application started and ready."
 
 logs:
@@ -45,8 +47,8 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 test: up
-	@docker exec $(APP_NAME) sh -c 'ROSTER_BASE=http://localhost:9080/roster python3 /app/smoke.py'
+	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
 
 local:
-	- mvn clean install -pl roster-ear -am 
-	- mvn liberty:run -pl roster-ear
+	- ./mvnw clean install -pl roster-ear -am
+	- ./mvnw liberty:run -pl roster-ear

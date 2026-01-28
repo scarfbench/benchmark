@@ -35,7 +35,6 @@ Exit codes:
 """
 import os
 import sys
-import time
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -48,7 +47,7 @@ except ImportError:
 
 BASE = os.getenv("ORDER_BASE", "http://localhost:8081/").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
-HEADLESS = os.getenv("HEADLESS") == "1"
+HEADLESS = True
 BROWSER = os.getenv("BROWSER", "chromium").lower()
 HTTP_TIMEOUT = 12
 PLAYWRIGHT_TIMEOUT = 10000
@@ -105,11 +104,11 @@ def soft_get_ok(path: str):
 def check_orders_table(body: str):
     """Check if the orders table is present and contains data"""
     import re
-    
+
     # Look for table structure
     if "<table" in body.lower() and "order" in body.lower():
         print("[PASS] Orders table found")
-        
+
         # Look for existing orders (check for order IDs in the table)
         order_id_pattern = r'<td[^>]*>(\d+)</td>'
         order_ids = re.findall(order_id_pattern, body)
@@ -127,17 +126,17 @@ def check_form_elements(body: str):
     """Check if the form elements for creating orders are present"""
     form_elements = [
         'orderIdInputText',
-        'shipmentInfoInputText', 
+        'shipmentInfoInputText',
         'statusMenu',
         'discountMenu',
         'submit'
     ]
-    
+
     found_elements = []
     for element in form_elements:
         if element in body:
             found_elements.append(element)
-    
+
     if len(found_elements) == len(form_elements):
         print("[PASS] All form elements for order creation found")
         return True
@@ -156,7 +155,7 @@ def find_element_flexible(page, field_id, element_type="input"):
         f"{element_type}[type='text']",
         f"{element_type}"
     ]
-    
+
     found_selector = None
     for selector in selectors_to_try:
         try:
@@ -173,7 +172,7 @@ def find_element_flexible(page, field_id, element_type="input"):
             continue
         except PlaywrightError:
             continue
-    
+
     if VERBOSE:
         print(f"[DEBUG] Could not find element for field: {field_id}")
         print(f"[DEBUG] Tried selectors: {selectors_to_try}")
@@ -198,7 +197,7 @@ def find_button_flexible(page, button_text):
         f"a[href*='{button_text.lower()}']",
         f"button[id*='{button_text.lower()}']"
     ]
-    
+
     for selector in selectors_to_try:
         try:
             page.wait_for_selector(selector, timeout=2000)
@@ -213,7 +212,7 @@ def find_button_flexible(page, button_text):
             continue
         except PlaywrightError:
             continue
-    
+
     if VERBOSE:
         print(f"[DEBUG] Could not find button: {button_text}")
         try:
@@ -231,7 +230,7 @@ def is_page_type(page, page_type):
     current_url = page.url.lower()
     page_title = page.title().lower()
     page_source = page.content().lower()
-    
+
     if page_type == "edit":
         return (
             "edit.xhtml" in current_url or
@@ -260,26 +259,26 @@ def is_page_type(page, page_type):
             "order list" in page_source or
             "show all" in page_source
         )
-    
+
     return False
 
 def create_playwright_context():
     if not PLAYWRIGHT_AVAILABLE:
         print("[FAIL] Playwright not available", file=sys.stderr)
         return None, None, None
-    
+
     try:
         playwright = sync_playwright().start()
-        
+
         browser_map = {
             "chrome": "chromium",
-            "chromium": "chromium", 
+            "chromium": "chromium",
             "firefox": "firefox",
             "edge": "chromium"
         }
-        
+
         browser_name = browser_map.get(BROWSER, "chromium")
-        
+
         if browser_name == "chromium":
             browser = playwright.chromium.launch(
                 headless=HEADLESS,
@@ -290,11 +289,11 @@ def create_playwright_context():
         else:
             print(f"[FAIL] Unsupported browser: {BROWSER}", file=sys.stderr)
             return None, None, None
-        
+
         context = browser.new_context(viewport={"width": 1920, "height": 1080})
         page = context.new_page()
         page.set_default_timeout(PLAYWRIGHT_TIMEOUT)
-        
+
         return playwright, browser, page
     except PlaywrightError as e:
         print(f"[FAIL] Failed to create Playwright context: {e}", file=sys.stderr)
@@ -302,10 +301,10 @@ def create_playwright_context():
 
 def test_order_form_ui(page):
     print("\n[INFO] Testing order form UI...")
-    
+
     try:
         page.goto(join(BASE, "/order.xhtml"))
-        
+
         if VERBOSE:
             print(f"[DEBUG] Page title: {page.title()}")
             print(f"[DEBUG] Page URL: {page.url}")
@@ -314,24 +313,24 @@ def test_order_form_ui(page):
                 print("[DEBUG] Screenshot saved as debug_order_form_screenshot.png")
             except Exception as e:
                 print(f"[DEBUG] Could not save screenshot: {e}")
-            
+
             content = page.content()
             print(f"[DEBUG] Page content length: {len(content)}")
             if len(content) < 1000:
                 print(f"[DEBUG] Full page content: {content}")
             else:
                 print(f"[DEBUG] Page content preview: {content[:500]}...")
-        
+
         page.wait_for_selector("form", timeout=PLAYWRIGHT_TIMEOUT)
         print("[PASS] Order form loaded")
-        
+
         form_fields = [
             ("orderIdInputText", "Order ID"),
             ("shipmentInfoInputText", "Shipment Info"),
             ("statusMenu", "Status"),
             ("discountMenu", "Discount")
         ]
-        
+
         missing_fields = []
         for field_id, field_name in form_fields:
             element = find_element_flexible(page, field_id)
@@ -340,7 +339,7 @@ def test_order_form_ui(page):
             else:
                 print(f"[WARN] {field_name} field not found or not visible")
                 missing_fields.append(field_name)
-        
+
         if missing_fields:
             print(f"[WARN] Missing fields: {missing_fields}")
             try:
@@ -358,14 +357,14 @@ def test_order_form_ui(page):
             except Exception as e:
                 print(f"[FAIL] Could not find any form elements: {e}")
                 return False
-        
+
         test_data = {
             "orderIdInputText": "12345",
             "shipmentInfoInputText": "Express Shipping",
             "statusMenu": "PENDING",
             "discountMenu": "10"
         }
-        
+
         filled_fields = 0
         for field_id, value in test_data.items():
             element = find_element_flexible(page, field_id)
@@ -384,7 +383,7 @@ def test_order_form_ui(page):
                     print(f"[WARN] Could not fill {field_id}: {e}")
             else:
                 print(f"[WARN] Could not find {field_id} field to fill")
-        
+
         if filled_fields < 2:
             print("[WARN] Too few fields filled, trying alternative approach")
             try:
@@ -400,18 +399,18 @@ def test_order_form_ui(page):
                             print(f"[WARN] Could not fill input {i+1}: {e}")
             except Exception as e:
                 print(f"[WARN] Alternative filling approach failed: {e}")
-        
+
         if filled_fields < 2:
             print("[FAIL] Insufficient fields filled for form submission")
             return False
-        
+
         submit_button = find_button_flexible(page, "Submit")
         if not submit_button:
             submit_button = find_button_flexible(page, "Save")
         if not submit_button:
             print("[FAIL] Could not find Submit/Save button")
             return False
-        
+
         try:
             import re
             with page.expect_navigation(url=re.compile(r".*order.*"), timeout=10000):
@@ -421,15 +420,15 @@ def test_order_form_ui(page):
             submit_button.click()
             print("[PASS] Submitted order form")
             page.wait_for_timeout(2000)
-        
+
         current_url = page.url
         if "order" in current_url.lower():
             print("[PASS] Form submission processed")
         else:
             print(f"[INFO] Redirected to: {current_url}")
-        
+
         return True
-        
+
     except PlaywrightTimeoutError:
         print("[FAIL] Timeout waiting for form elements", file=sys.stderr)
         return False
@@ -439,10 +438,10 @@ def test_order_form_ui(page):
 
 def test_orders_table_ui(page):
     print("\n[INFO] Testing orders table UI...")
-    
+
     try:
         page.goto(join(BASE, "/order.xhtml"))
-        
+
         if VERBOSE:
             print(f"[DEBUG] Page title: {page.title()}")
             print(f"[DEBUG] Page URL: {page.url}")
@@ -451,7 +450,7 @@ def test_orders_table_ui(page):
                 print("[DEBUG] Screenshot saved as debug_orders_table_screenshot.png")
             except Exception as e:
                 print(f"[DEBUG] Could not save screenshot: {e}")
-        
+
         try:
             page.wait_for_selector("table", timeout=PLAYWRIGHT_TIMEOUT)
             print("[PASS] Orders table loaded")
@@ -469,7 +468,7 @@ def test_orders_table_ui(page):
             else:
                 print("[FAIL] Not on order page and no table found")
                 return False
-        
+
         try:
             headers = page.locator("th").all()
             expected_headers = ["Order ID", "Shipment Info", "Status", "Discount"]
@@ -480,7 +479,7 @@ def test_orders_table_ui(page):
                     print(f"[WARN] Expected header '{expected}' not found")
         except Exception as e:
             print(f"[WARN] Could not verify headers: {e}")
-        
+
         try:
             rows = page.locator("table tr").all()
             if len(rows) > 1:
@@ -489,9 +488,9 @@ def test_orders_table_ui(page):
                 print("[INFO] No orders found in table")
         except Exception as e:
             print(f"[WARN] Could not count rows: {e}")
-        
+
         return True
-        
+
     except PlaywrightTimeoutError:
         print("[FAIL] Timeout waiting for orders table", file=sys.stderr)
         return False
@@ -501,18 +500,18 @@ def test_orders_table_ui(page):
 
 def test_line_item_ui(page):
     print("\n[INFO] Testing line item UI...")
-    
+
     try:
         page.goto(join(BASE, "/order.xhtml"))
         page.wait_for_selector("table", timeout=PLAYWRIGHT_TIMEOUT)
         print("[PASS] Orders page loaded for line item context")
-        
+
         try:
             order_links = page.locator("a[id*='order_id_link'], a:has-text('Order ID')").all()
             if order_links:
                 print(f"[PASS] Found {len(order_links)} order ID link(s)")
                 order_links[0].click()
-                page.wait_for_timeout(2000)  
+                page.wait_for_timeout(2000)
                 print("[PASS] Clicked order ID link to set context")
             else:
                 order_links = page.locator("a[href*='lineItem'], a:contains('Order')").all()
@@ -527,7 +526,7 @@ def test_line_item_ui(page):
         except Exception as e:
             print(f"[WARN] Could not click order link: {e}")
             page.goto(join(BASE, "/lineItem.xhtml"))
-        
+
         if VERBOSE:
             print(f"[DEBUG] Page title: {page.title()}")
             print(f"[DEBUG] Page URL: {page.url}")
@@ -536,7 +535,7 @@ def test_line_item_ui(page):
                 print("[DEBUG] Screenshot saved as debug_line_item_screenshot.png")
             except Exception as e:
                 print(f"[DEBUG] Could not save screenshot: {e}")
-        
+
         try:
             page.wait_for_selector("form, table", timeout=PLAYWRIGHT_TIMEOUT)
             print("[PASS] Line item page loaded")
@@ -549,7 +548,7 @@ def test_line_item_ui(page):
             else:
                 print("[WARN] Line item page may not be accessible or may not have expected elements")
                 return True
-        
+
         try:
             headers = page.locator("th").all()
             if headers:
@@ -558,9 +557,9 @@ def test_line_item_ui(page):
                 print("[INFO] No table headers found on line item page")
         except Exception as e:
             print(f"[WARN] Could not verify line item headers: {e}")
-        
+
         return True
-        
+
     except PlaywrightTimeoutError:
         print("[FAIL] Timeout waiting for line item page", file=sys.stderr)
         return False
@@ -570,20 +569,20 @@ def test_line_item_ui(page):
 
 def test_form_validation(page):
     print("\n[INFO] Testing form validation...")
-    
+
     try:
         page.goto(join(BASE, "/order.xhtml"))
-        
+
         page.wait_for_selector("form", timeout=PLAYWRIGHT_TIMEOUT)
-        
+
         submit_button = find_button_flexible(page, "Submit")
         if not submit_button:
             submit_button = find_button_flexible(page, "Save")
-        
+
         if submit_button:
             submit_button.click()
             print("[PASS] Attempted to submit empty form")
-            
+
             page.wait_for_timeout(1000)
             try:
                 messages = page.locator(".ui-message, .ui-messages, .messagecolor").all()
@@ -595,9 +594,9 @@ def test_form_validation(page):
                 print(f"[INFO] Could not check validation messages: {e}")
         else:
             print("[WARN] Could not find submit button for validation test")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"[FAIL] Form validation test failed: {e}", file=sys.stderr)
         return False
@@ -606,29 +605,29 @@ def run_playwright_tests():
     if not PLAYWRIGHT_AVAILABLE:
         print("[SKIP] Playwright tests skipped - Playwright not available")
         return True
-    
+
     playwright, browser, page = create_playwright_context()
     if not page:
         return False
-    
+
     try:
         print(f"[INFO] Running Playwright tests with {BROWSER} browser (headless={HEADLESS})")
-        
+
         if not test_orders_table_ui(page):
             return False
-        
+
         if not test_order_form_ui(page):
             return False
-        
+
         if not test_line_item_ui(page):
             return False
-        
+
         if not test_form_validation(page):
             return False
-        
+
         print("[PASS] All Playwright tests completed successfully")
         return True
-        
+
     finally:
         if browser:
             browser.close()
@@ -637,26 +636,26 @@ def run_playwright_tests():
 
 def main():
     body = must_get_ok("/order.xhtml", 2)
-    
+
     if "Order" in body and "Java Persistence" in body:
         print("[PASS] HTML content valid")
     else:
         print("[WARN] HTML content invalid")
-    
+
     soft_get_ok("/resources/css/default.css")
-    
+
     check_orders_table(body)
-    
+
     check_form_elements(body)
-    
+
     print("[INFO] Skipping line item page test in HTTP mode - requires proper navigation flow")
     print("[INFO] Line item page will be tested in Playwright UI tests with proper context")
-    
+
     print("\n[INFO] Running Playwright UI tests...")
     if not run_playwright_tests():
         print("[FAIL] Playwright tests failed", file=sys.stderr)
         sys.exit(5)
-    
+
     print("\n[PASS] Enhanced smoke sequence complete")
     print("[INFO] Note: This test verifies the application loads and displays correctly.")
     print("[INFO] UI interactions have been tested with Playwright.")

@@ -18,6 +18,8 @@
     <properties>
       <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
       <property name="eclipselink.ddl-generation.output-mode" value="both"/>
+      <property name="eclipselink.logging.level.sql" value="FINE"/>
+      <property name="eclipselink.logging.level" value="INFO"/>
     </properties>
   </persistence-unit>
 </persistence>

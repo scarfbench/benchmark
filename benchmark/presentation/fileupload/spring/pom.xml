@@ -5,13 +5,13 @@
   <artifactId>fileupload</artifactId>
   <version>1.0.0</version>
   <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
   <name>fileupload</name>
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.9</version>
-    <relativePath/>
-  </parent>
   <dependencyManagement>
     <dependencies>
       <dependency>

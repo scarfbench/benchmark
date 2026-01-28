@@ -1,0 +1,41 @@
+### TaskCreator (Liberty-only) Justfile
+APP_NAME       := "taskcreator-quarkus"
+LIBERTY_IMAGE   := "taskcreator-quarkus:latest"
+LIBERTY_PORT    := "9080"               # Liberty internal HTTP
+HOST_PORT      := "10021"               # Host port to map to Liberty internal HTTP
+
+build:
+	docker build -f Dockerfile -t $(LIBERTY_IMAGE) .
+	@echo "[INFO] Built image: $(LIBERTY_IMAGE)"
+
+rebuild:
+	docker build --no-cache -f Dockerfile -t $(LIBERTY_IMAGE) .
+	@echo "[INFO] Rebuilt image (no cache): $(LIBERTY_IMAGE)"
+
+up: build
+	@if docker ps --all --quiet --filter name=^/taskcreator-quarkus$ | grep -q .; then \
+	echo "[INFO] Removing existing container"; \
+	docker rm -f taskcreator-quarkus >/dev/null; \
+	fi
+	docker run -d --name taskcreator-quarkus -p $(HOST_PORT):$(LIBERTY_PORT) $(LIBERTY_IMAGE)
+	@echo "[INFO] Started taskcreator-quarkus, waiting for app to start..."
+	@until docker logs $(APP_NAME) 2>&1 | grep -q '[io.quarkus].*started in .*Listening on:'; do sleep 1; done
+	@echo "[INFO] Quarkus app started, port $(HOST_PORT) is ready."
+
+logs:
+	docker logs -f taskcreator-quarkus
+
+down:
+	- docker rm -f taskcreator-quarkus
+	@echo "[INFO] Container removed (if it existed)"
+
+# Clean up
+clean: down
+	docker rmi $(APP_NAME)
+	@echo "[INFO] Image removed (if it existed)"
+
+test: up
+	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
+
+local:
+	./mvnw clean package quarkus:run

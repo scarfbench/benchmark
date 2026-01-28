@@ -269,6 +269,7 @@ The justfile provides standard commands for building, running, testing, and mana
 ### <Application Name> (<Framework>) Justfile
 APP_NAME       := "<app-name>-<framework>"
 IMAGE_NAME     := "<app-name>-<framework>:latest"
+SUCCESS_PATTERN := "<framework-specific-pattern>"
 
 build:
 	docker build -f Dockerfile -t {{IMAGE_NAME}} .
@@ -289,8 +290,21 @@ up: build
 	docker run -d --name {{APP_NAME}} {{IMAGE_NAME}}
 	@echo "[INFO] Started {{APP_NAME}}, waiting for app to start..."
 
-    ### Look for framework-specific startup pattern in logs and wait until found (see below for patterns)
-	@until docker logs {{APP_NAME}} 2>&1 | grep -q "<startup-pattern>"; do sleep 1; done
+	### Check for build failure
+	@until docker logs {{APP_NAME}} 2>&1 | grep -q "BUILD FAILURE"; do \
+		if docker logs {{APP_NAME}} 2>&1 | grep -q "{{SUCCESS_PATTERN}}"; then \
+			break; \
+		fi; \
+		sleep 1; \
+	done
+	@if docker logs {{APP_NAME}} 2>&1 | grep -q "BUILD FAILURE"; then \
+		echo "[ERROR] Build failed in container:"; \
+		docker logs {{APP_NAME}} 2>&1; \
+		exit 1; \
+	fi
+
+	### Wait for success pattern
+	@until docker logs {{APP_NAME}} 2>&1 | grep -q "{{SUCCESS_PATTERN}}"; do sleep 1; done
 	@echo "[INFO] App started and ready."
 
 logs:
@@ -309,13 +323,29 @@ local:
 
 #### Framework-Specific Startup Patterns
 
-The `up` target waits for the application to start by monitoring container logs for specific patterns:
+The `SUCCESS_PATTERN` variable should be set based on the framework:
 
-| Framework | Startup Pattern |
-|-----------|-----------------|
-| Jakarta | `CWWKF0011I` |
-| Quarkus | `"loggerName":"io.quarkus".*started in .*Listening on:` |
-| Spring Boot | `Tomcat started on port <PORT>\|Started .* in .* seconds` |
+| Framework | Success Pattern | Example |
+|-----------|-----------------|---------|
+| Jakarta | `CWWKF0011I` | `SUCCESS_PATTERN := "CWWKF0011I"` |
+| Quarkus | `started in.*Listening on:` | `SUCCESS_PATTERN := "started in.*Listening on:"` |
+| Spring Boot | `Tomcat started on port\|Started .* in .* seconds` | `SUCCESS_PATTERN := "Tomcat started on port"` |
+
+**Note**: These patterns are used in extended grep (`grep -E`), so use regex syntax where needed.
+
+#### Startup Wait Loop Explained
+
+The `up` target uses two separate checks:
+
+1. **Build Failure Check**: Polls logs looking for `BUILD FAILURE` (a standard Maven failure message)
+   - While checking, also looks for the success pattern
+   - If success pattern found first, breaks out of the failure check
+   - If `BUILD FAILURE` found: displays full logs and exits with error
+
+2. **Success Pattern Wait**: If no build failure, continues waiting for the success pattern
+   - Loops until the framework-specific success pattern appears in logs
+   - Pattern indicates the application is fully started and ready
+
 
 #### Port Notes
 
@@ -1016,26 +1046,15 @@ Before submitting your contribution, verify:
 
 ## Tips and Troubleshooting
 
-### Dockerfile Tips
-- Use multi-stage builds if you need to reduce image size
-- Clear apt cache with `rm -rf /var/lib/apt/lists/*` to reduce layer size
-- Pin Java versions if your app requires specific version
-- **Playwright**: Always use Python venv to comply with PEP 668
-- **Playwright**: Set `PLAYWRIGHT_BROWSERS_PATH` to cache browsers efficiently
-- **Playwright**: Copy pom.xml files first for better layer caching
+### Debugging
 
-### Justfile Tips
-- Test startup patterns with: `docker logs <container> 2>&1 | grep -q "<pattern>"`
-- Use `-d` flag for `docker run` to run in background
-- The `-` prefix in `down` target suppresses errors if container doesn't exist
+**Test startup pattern**: `docker logs <container> 2>&1 | grep -q "<pattern>"`
 
-### Smoke Test Tips
-- Run with `VERBOSE=1 python3 smoke.py` for debugging
-- Test from inside container: `docker exec <container> python3 /app/smoke.py`
-- Use `curl` within container to manually test endpoints before automating
-- **Playwright**: Use `headless=False` locally for visual debugging
-- **Playwright**: Capture screenshots on failure: `page.screenshot(path="error.png")`
-- **Playwright**: Use `page.pause()` to debug interactively during development
+**Run smoke test manually**: `docker exec <container> python3 /app/smoke.py`
+
+**Verbose output**: `VERBOSE=1 python3 smoke.py`
+
+**Playwright debugging**: Set `headless=False` and use `page.pause()`
 
 ### Common Issues
 
@@ -1055,28 +1074,25 @@ Before submitting your contribution, verify:
 
 **Chromium not found**: Verify `playwright install chromium` ran successfully and `PLAYWRIGHT_BROWSERS_PATH` is set
 
-## Example Workflow
+## Quick Start
 
-1. Create framework directories (jakarta, quarkus, spring)
-2. Implement application in each framework
-3. **Decide on testing approach**: Basic (REST/HTTP) or Playwright (UI/Browser)
-4. Write Dockerfile for first framework (use appropriate pattern)
-5. Write justfile with unique port
-6. Test with `just build && just up`
-7. Write smoke.py to validate functionality
-8. Test with `just test`
-9. Copy and adapt Dockerfile/justfile/smoke.py to other frameworks
-10. Adjust framework-specific settings (base image, startup pattern, goals, ports)
-11. Verify all frameworks work: `just test` in each directory
-12. Document in README.md
+```bash
+# 1. Create structure
+mkdir -p benchmark/<category>/<app>/{jakarta,quarkus,spring}
 
-## Getting Help
+# 2. Implement first framework
+cd benchmark/<category>/<app>/jakarta
+# ... create Dockerfile, justfile, smoke.py
 
-- Check existing benchmarks in `benchmark/` for examples
-- **Basic pattern reference**: [`benchmark/infrastructure/concurrency-jobs`](benchmark/infrastructure/concurrency-jobs)
-- **Playwright pattern reference**: [`benchmark/infrastructure/ejb-async`](benchmark/infrastructure/ejb-async)
-- Open an issue if you have questions
+# 3. Test
+just build && just up && just test
 
----
+# 4. Adapt to other frameworks
+# 5. Submit PR
+```
 
-Thank you for contributing to SCARFBench!
+## Reference Implementations
+
+- **Basic pattern**: [`benchmark/infrastructure/concurrency-jobs`](benchmark/infrastructure/concurrency-jobs)
+- **Playwright pattern**: [`benchmark/infrastructure/ejb-async`](benchmark/infrastructure/ejb-async)
+- **Complex multi-test**: [`benchmark/whole_applications/daytrader`](benchmark/whole_applications/daytrader)

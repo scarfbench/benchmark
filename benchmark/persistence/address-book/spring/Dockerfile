@@ -1,21 +1,27 @@
-FROM eclipse-temurin:17-jdk
+FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends python3 curl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1001 spring
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full ca-certificates \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-USER spring
+ENV PATH="/root/.local/bin:$PATH"
+
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+
+# create venv and install
+RUN uv venv /opt/venv \
+    && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
 WORKDIR /app
 
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 .mvn .mvn
-COPY --chown=1001:1001 mvnw .
-COPY --chown=1001:1001 src src
-COPY --chown=1001:1001 smoke.py .
+COPY --chown=1001:1001 . .
 
-RUN chmod +x mvnw
+RUN chmod +x smoke.py
 
-EXPOSE 8080
-
-CMD ["./mvnw", "spring-boot:run"]
+CMD ["mvn", "clean", "package", "spring-boot:run"]

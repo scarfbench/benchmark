@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+    <title>Roster - League Management</title>
+    <h:outputStylesheet library="css"
+                        name="styles.css" />
+</h:head>
+<h:body>
+    <div class="container">
+        <h1>Roster Application - League Management</h1>
+
+        <div class="nav">
+            <h:link outcome="player"
+                    value="Players"
+                    styleClass="nav-link" />
+            <h:link outcome="team"
+                    value="Teams"
+                    styleClass="nav-link" />
+            <h:link outcome="league"
+                    value="Leagues"
+                    styleClass="nav-link" />
+        </div>
+
+        <h:messages globalOnly="true"
+                showSummary="true"
+                showDetail="true"
+                styleClass="messages" />
+
+        <div class="section">
+            <h2>Create League</h2>
+            <h:form id="createLeagueForm"
+                    styleClass="form">
+                <div class="form-group">
+                    <h:outputLabel for="leagueId"
+                                   value="League ID:" />
+                    <h:inputText id="leagueId"
+                                 value="#{leagueBean.newLeagueId}"
+                                 required="true"
+                                 requiredMessage="League ID is required"
+                                 styleClass="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="leagueName"
+                                   value="League Name:" />
+                    <h:inputText id="leagueName"
+                                 value="#{leagueBean.newLeagueName}"
+                                 required="true"
+                                 requiredMessage="League name is required"
+                                 styleClass="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="leagueSport"
+                                   value="Sport:" />
+                    <h:inputText id="leagueSport"
+                                 value="#{leagueBean.newLeagueSport}"
+                                 required="true"
+                                 requiredMessage="Sport is required"
+                                 styleClass="form-control" />
+                    <div class="help-text">
+                        Valid sports: soccer, swimming, basketball, baseball, hockey, skiing, snowboarding
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <h:commandButton value="Create League"
+                                     action="#{leagueBean.createLeague}"
+                                     styleClass="btn btn-primary" />
+                    <h:commandButton value="Refresh"
+                                     action="#{leagueBean.clearCache}"
+                                     styleClass="btn btn-secondary"
+                                     immediate="true" />
+                </div>
+            </h:form>
+        </div>
+
+        <div class="section">
+            <h2>All Leagues</h2>
+            <h:dataTable value="#{leagueBean.leagues}"
+                         var="league"
+                         styleClass="data-table"
+                         headerClass="table-header"
+                         rowClasses="table-row-odd,table-row-even"
+                         rendered="#{not empty leagueBean.leagues}">
+                <h:column>
+                    <f:facet name="header">ID</f:facet>
+                    #{league.id}
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Name</f:facet>
+                    #{league.name}
+                </h:column>
+                <h:column>
+                    <f:facet name="header">Sport</f:facet>
+                    #{league.sport}
+                </h:column>
+            </h:dataTable>
+
+            <p class="no-data"
+               rendered="#{empty leagueBean.leagues}">
+                No leagues found.
+            </p>
+        </div>
+    </div>
+</h:body>
+
+</html>

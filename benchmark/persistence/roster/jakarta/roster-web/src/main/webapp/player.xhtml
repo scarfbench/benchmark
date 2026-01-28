@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets">
+<h:head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+    <title>Roster - Player Management</title>
+    <h:outputStylesheet library="css"
+                        name="styles.css" />
+</h:head>
+<h:body>
+    <div class="container">
+        <h1>Roster Application - Player Management</h1>
+
+        <div class="nav">
+            <h:link outcome="player"
+                    value="Players"
+                    styleClass="nav-link" />
+            <h:link outcome="team"
+                    value="Teams"
+                    styleClass="nav-link" />
+            <h:link outcome="league"
+                    value="Leagues"
+                    styleClass="nav-link" />
+        </div>
+
+        <h:messages globalOnly="true"
+                    styleClass="messages" />
+
+        <div class="section">
+            <h2>Add New Player</h2>
+            <h:form id="createPlayerForm"
+                    styleClass="form">
+                <div class="form-group">
+                    <h:outputLabel for="playerIdInputText"
+                                   value="Player ID:" />
+                    <h:inputText id="playerIdInputText"
+                                 value="#{playerBean.newPlayerId}"
+                                 styleClass="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="nameInputText"
+                                   value="Player Name:" />
+                    <h:inputText id="nameInputText"
+                                 value="#{playerBean.newPlayerName}"
+                                 required="true"
+                                 requiredMessage="Player name is required"
+                                 styleClass="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="positionInputText"
+                                   value="Position:" />
+                    <h:inputText id="positionInputText"
+                                 value="#{playerBean.newPlayerPosition}"
+                                 required="true"
+                                 requiredMessage="Position is required"
+                                 styleClass="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="salaryInputText"
+                                   value="Salary:" />
+                    <h:inputText id="salaryInputText"
+                                 value="#{playerBean.newPlayerSalary}"
+                                 required="true"
+                                 requiredMessage="Salary is required"
+                                 styleClass="form-control">
+                        <f:convertNumber type="number"
+                                         minFractionDigits="2"
+                                         maxFractionDigits="2" />
+                    </h:inputText>
+                </div>
+
+                <div class="form-group">
+                    <h:outputLabel for="team"
+                                   value="Team:" />
+                    <h:selectOneMenu id="team"
+                                     value="#{playerBean.selectedTeamId}"
+                                     required="true"
+                                     requiredMessage="Team is required"
+                                     styleClass="form-control">
+                        <f:selectItem itemLabel="-- Select Team --"
+                                      itemValue=""
+                                      noSelectionOption="true" />
+                        <f:selectItems value="#{leagueBean.teams}"
+                                       var="team"
+                                       itemValue="#{team.id}"
+                                       itemLabel="#{team.name} (#{team.city})" />
+                    </h:selectOneMenu>
+                </div>
+
+                <div class="form-actions">
+                    <h:commandButton id="submit"
+                                     value="Submit"
+                                     action="#{playerBean.createPlayer}"
+                                     styleClass="btn btn-primary" />
+                </div>
+            </h:form>
+        </div>
+
+        <div class="section">
+            <h2>All Players</h2>
+            <h:form id="playersTable">
+                <h:dataTable value="#{playerBean.players}"
+                             var="player"
+                             styleClass="data-table"
+                             headerClass="table-header"
+                             rowClasses="table-row-odd,table-row-even"
+                             rendered="#{not empty playerBean.players}">
+                    <h:column>
+                        <f:facet name="header">ID</f:facet>
+                        #{player.id}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Name</f:facet>
+                        #{player.name}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Position</f:facet>
+                        #{player.position}
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Salary</f:facet>
+                        <h:outputText value="#{player.salary}">
+                            <f:convertNumber type="currency"
+                                             currencySymbol="$" />
+                        </h:outputText>
+                    </h:column>
+                    <h:column>
+                        <f:facet name="header">Actions</f:facet>
+                        <h:commandButton value="Delete"
+                                         action="#{playerBean.deletePlayer(player.id)}"
+                                         styleClass="btn btn-danger btn-sm"
+                                         onclick="return confirm('Are you sure you want to delete this player?');">
+                            <f:ajax execute="@this"
+                                    render="@form :createPlayerForm:team" />
+                        </h:commandButton>
+                    </h:column>
+                </h:dataTable>
+
+                <p class="no-data"
+                   rendered="#{empty playerBean.players}">
+                    No players found. Add one using the form above.
+                </p>
+            </h:form>
+        </div>
+    </div>
+</h:body>
+
+</html>

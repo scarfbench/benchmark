@@ -1,0 +1,37 @@
+### TaskCreator (Liberty-only) Justfile
+APP_NAME       := "ejb-async-liberty"
+LIBERTY_IMAGE   := "ejb-async-liberty:latest"
+LIBERTY_PORT    := "9080"               # Liberty internal HTTP
+HOST_PORT      := "10011"               # Host port to map to Liberty internal HTTP
+
+build:
+	docker build -f Dockerfile -t $(LIBERTY_IMAGE) .
+	@echo "[INFO] Built image: $(LIBERTY_IMAGE)"
+
+rebuild:
+	docker build --no-cache -f Dockerfile -t $(LIBERTY_IMAGE) .
+	@echo "[INFO] Rebuilt image (no cache): $(LIBERTY_IMAGE)"
+
+up: build
+	@if docker ps --all --quiet --filter name=^/ejb-async-liberty$ | grep -q .; then \
+	echo "[INFO] Removing existing container"; \
+	docker rm -f ejb-async-liberty >/dev/null; \
+	fi
+	docker run --name ejb-async-liberty -p $(HOST_PORT):$(LIBERTY_PORT) $(LIBERTY_IMAGE)
+
+logs:
+	docker logs -f ejb-async-liberty
+
+down:
+	- docker rm -f ejb-async-liberty
+	@echo "[INFO] Container removed (if it existed)"
+
+# Clean up
+clean: down
+	docker rmi $(APP_NAME)
+	@echo "[INFO] Image removed (if it existed)"
+
+test: up
+
+local:
+	./mvnw clean package liberty:run

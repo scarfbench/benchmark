@@ -26,6 +26,7 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <h2.version>2.2.224</h2.version>
   </properties>
 
   <dependencies>
@@ -34,6 +35,11 @@
       <artifactId>jakarta.jakartaee-web-api</artifactId>
       <version>10.0.0</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
     </dependency>
   </dependencies>
 
@@ -44,6 +50,23 @@
         <version>3.4.0</version>
         <configuration>
           <failOnMissingWebXml>false</failOnMissingWebXml>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.openliberty.tools</groupId>
+        <artifactId>liberty-maven-plugin</artifactId>
+        <version>3.10</version>
+        <configuration>
+          <copyDependencies>
+            <dependencyGroup>
+              <location>${project.build.directory}/liberty/wlp/usr/shared/resources</location>
+              <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+              </dependency>
+            </dependencyGroup>
+          </copyDependencies>
         </configuration>
       </plugin>
     </plugins>

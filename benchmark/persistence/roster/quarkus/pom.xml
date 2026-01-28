@@ -80,12 +80,6 @@
              <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-jpamodelgen</artifactId>
-            <version>6.6.1.Final</version> <!-- Use the latest version compatible with Quarkus -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId> <!-- Use the latest stable version compatible with hibernate-jpamodelgen -->
             <scope>provided</scope> <!-- Scope aligns with hibernate-jpamodelgen -->

@@ -72,18 +72,16 @@ make test
 ---
 
 ### New Application / New Layer
-
+Select if applicable:
 - [ ] Folder structure follows repo conventions
-- [ ] README added
-- [ ] Dockerfile included (if applicable)
-- [ ] Startup success pattern defined
-- [ ] Smoke tests included
-- [ ] CLI workflow tested (`scarf run ...`)
+- [ ] A README was added
+- [ ] A Dockerfile was included (in accordance with the CONTRIBUTING.md guidelines)
+- [ ] Smoke tests included (also in accordance with the CONTRIBUTING.md guidelines)
 
 ---
 
 ## Test Enhancement
-
+Select if applies to this PR
 - [ ] Added new test cases
 - [ ] Improved existing test coverage
 - [ ] Enhanced smoke tests
@@ -93,8 +91,7 @@ make test
 ---
 
 ## Benchmark Integrity
-
-Check one:
+Always check one:
 - [ ] No functional behavior change was introduced to unaffected applications
 - [ ] Expected behavior change have been documented
 - [ ] Infrastructure-only change

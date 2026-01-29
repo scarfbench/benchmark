@@ -201,27 +201,42 @@ The script:
 This command attempts to compile all converted applications, records results in a CSV file, and optionally updates the markdown results file.
 
 ```bash
+# Compile all projects
 python -m scarfbench compile \
   --conversions-dir agentic \
   --result-file results_compile.csv \
   --results-md conversions-example.md \
   --max-workers 4 \
   --timeout 600
+
+# Rerun only failed compilations
+python -m scarfbench compile \
+  --conversions-dir agentic \
+  --result-file results_compile.csv \
+  --results-md conversions-example.md \
+  --only-failures conversions-example.md \
+  --max-workers 4
 ```
 
 **Options**:
 - `--conversions-dir`: Directory containing all conversion outputs (required, e.g., `agentic`)
 - `--result-file`: Path to output CSV file (required)
 - `--results-md`: Path to results markdown file to update (optional, e.g., `conversions-example.md`)
+- `--only-failures`: Path to markdown file to read failures from. Only rerun projects that show ❌ in the compiled column. When used, merges new results with existing CSV instead of overwriting.
 - `--max-workers`: Number of parallel compilation jobs (default: 4)
 - `--timeout`: Timeout per compilation in seconds (default: 600)
 - `--dry-run`: Show what would be done without making changes
 
 The script:
-- Recursively finds all `pom.xml` and `build.gradle` files
+- **Only processes `run_X` level directories**: Finds projects directly in `run_1`, `run_2`, etc. folders, not in subdirectories (e.g., `run_1/cart-appclient` is ignored)
+- Recursively finds all `pom.xml` and `build.gradle` files at the run level
 - Attempts to build each project (Maven: `mvn clean package`, Gradle: `gradle build`)
-- Records success/failure status in CSV format
+- Records success/failure status in CSV format with improved error capture (checks both stdout and stderr)
 - If `--results-md` is provided, updates the `compiled automatic` column in the markdown file with ✅/❌ symbols for each run
+- If `--only-failures` is used:
+  - Reads the markdown file to find entries with ❌ in the compiled column
+  - Only rebuilds those specific failed run directories
+  - Merges new results with existing CSV (updating only the rerun entries, preserving all other results)
 
 ### Stage 5: Check Execution (Docker)
 
@@ -255,6 +270,7 @@ python -m scarfbench docker \
 **Note**: This script expects Dockerfile templates (`jakarta_Dockerfile`, `spring_Dockerfile`, `quarkus_Dockerfile`) to be in the `--base-dir` directory.
 
 The script:
+- **Only processes `run_X` level directories**: Validates that paths are at the run level (e.g., `run_1`, `run_2`), not in subdirectories
 - Reads `conversions-example.md` to find successfully compiled runs
 - Creates appropriate Dockerfiles based on conversion type (jakarta/spring/quarkus)
 - Builds Docker images for each run
@@ -342,6 +358,14 @@ python -m scarfbench compile \
   --results-md conversions-example.md \
   --max-workers 4 \
   --timeout 600
+
+# 3a. Rerun only failed compilations (optional, after initial run)
+python -m scarfbench compile \
+  --conversions-dir agentic \
+  --result-file results_compile.csv \
+  --results-md conversions-example.md \
+  --only-failures conversions-example.md \
+  --max-workers 4
 
 # 4. Check execution (updates markdown automatically)
 python -m scarfbench docker \

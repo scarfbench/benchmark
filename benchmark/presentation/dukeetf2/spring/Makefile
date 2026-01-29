@@ -1,0 +1,46 @@
+# DukeETF2 (Spring) Makefile
+APP_NAME       = dukeetf2-spring
+IMAGE_NAME     = dukeetf2-spring:latest
+
+build:
+	docker build -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Built image: $(IMAGE_NAME)"
+
+rebuild:
+	docker build --no-cache -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
+
+up: build
+	# The below section will look for existing containers and if so, remove them.
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
+
+	# Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	# Look for framework-specific startup pattern in logs and wait until found
+	@until docker logs $(APP_NAME) 2>&1 | grep -qE "Tomcat started on port 8080"; do sleep 1; done
+	@echo "[INFO] App started and ready."
+	# Wait until HTTP is actually accepting (log can appear before server is ready)
+	@echo "[INFO] Giving server a moment to accept connections..."
+	@for _ in $(seq 1 30); do \
+		if docker exec $(APP_NAME) curl -sf --connect-timeout 2 http://127.0.0.1:8080/index.html >/dev/null 2>&1; then break; fi; \
+		sleep 2; \
+	done
+	@docker exec $(APP_NAME) curl -sf --connect-timeout 5 http://127.0.0.1:8080/index.html >/dev/null || (echo "[FAIL] Server did not become ready in time." && exit 1)
+
+logs:
+	docker logs -f $(APP_NAME)
+
+down:
+	- docker rm -f $(APP_NAME)
+	@echo "[INFO] Container removed (if it existed)"
+
+test: up
+	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
+
+local:
+	./mvnw clean package spring-boot:run

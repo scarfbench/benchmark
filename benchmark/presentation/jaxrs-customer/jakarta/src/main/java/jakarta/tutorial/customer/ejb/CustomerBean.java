@@ -42,6 +42,9 @@ public class CustomerBean {
     private static final Logger logger
             = Logger.getLogger(CustomerBean.class.getName());
 
+    private static final String API_BASE = System.getProperty("customer.api.base",
+            System.getenv().getOrDefault("CUSTOMER_API_BASE", "http://localhost:9080/jaxrs-customer-10-SNAPSHOT"));
+
     @PostConstruct
     private void init() {
         client = ClientBuilder.newClient();
@@ -59,7 +62,7 @@ public class CustomerBean {
         }
         String navigation;
         Response response = 
-                client.target("http://localhost:8080/jaxrs-customer-10-SNAPSHOT/webapi/Customer")
+                client.target(API_BASE + "/webapi/Customer")
                 .request(MediaType.APPLICATION_XML)
                 .post(Entity.entity(customer, MediaType.APPLICATION_XML),
                         Response.class);
@@ -80,7 +83,7 @@ public class CustomerBean {
     public String retrieveCustomer(String id) {
         String navigation;
         Customer customer = 
-                client.target("http://localhost:8080/jaxrs-customer-10-SNAPSHOT/webapi/Customer")
+                client.target(API_BASE + "/webapi/Customer")
                 .path(id)
                 .request(MediaType.APPLICATION_XML)
                 .get(Customer.class);
@@ -94,7 +97,7 @@ public class CustomerBean {
 
     public List<Customer> retrieveAllCustomers() {
         List<Customer> customers = 
-                client.target("http://localhost:8080/jaxrs-customer-10-SNAPSHOT/webapi/Customer")
+                client.target(API_BASE + "/webapi/Customer")
                 .path("all")
                 .request(MediaType.APPLICATION_XML)
                 .get(new GenericType<List<Customer>>() {

@@ -18,11 +18,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.tutorial.customer.data.Address;
 import jakarta.tutorial.customer.data.Customer;
 import jakarta.ws.rs.Consumes;
@@ -50,29 +48,20 @@ public class CustomerService {
             Logger.getLogger(CustomerService.class.getCanonicalName());
     @PersistenceContext
     private EntityManager em;
-    private CriteriaBuilder cb;
 
-    @PostConstruct
-    private void init() {
-        cb = em.getCriteriaBuilder();
-    }
-    
     @GET
     @Path("all")
     @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
     public List<Customer> getAllCustomers() {
-        List<Customer> customers = null;
         try {
-            customers = this.findAllCustomers();
-            if (customers == null) {
-                throw new WebApplicationException(Response.Status.NOT_FOUND);
-            }
-        } catch (Exception ex) {
+            List<Customer> customers = this.findAllCustomers();
+            return customers != null ? customers : new ArrayList<>();
+        } catch (Throwable ex) {
             logger.log(Level.SEVERE,
                     "Error calling findAllCustomers()",
                     new Object[]{ex.getMessage()});
+            return new ArrayList<>();
         }
-        return customers;
     }
     /**
      * Get customer XML

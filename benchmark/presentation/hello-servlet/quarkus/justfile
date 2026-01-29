@@ -1,0 +1,39 @@
+### Hello Servlet (Quarkus) Justfile
+APP_NAME       := "hello-servlet-quarkus"
+IMAGE_NAME     := "hello-servlet-quarkus:latest"
+
+build:
+	docker build -f Dockerfile -t {{IMAGE_NAME}} .
+	@echo "[INFO] Built image: {{IMAGE_NAME}}"
+
+rebuild:
+	docker build --no-cache -f Dockerfile -t {{IMAGE_NAME}} .
+	@echo "[INFO] Rebuilt image (no cache): {{IMAGE_NAME}}"
+
+up: build
+	### The below section will look for existing containers and if so, remove them.
+	@if docker ps --all --quiet --filter name=^/{{APP_NAME}}$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f {{APP_NAME}} >/dev/null; \
+	fi
+
+	### Run the container in detached mode
+	docker run -d --name {{APP_NAME}} {{IMAGE_NAME}}
+	@echo "[INFO] Started {{APP_NAME}}, waiting for app to start..."
+
+	### Look for framework-specific startup pattern in logs and wait until found
+	@until docker logs {{APP_NAME}} 2>&1 | grep -qE 'started in .*Listening on:'; do sleep 1; done
+	@echo "[INFO] App started and ready."
+
+logs:
+	docker logs -f {{APP_NAME}}
+
+down:
+	- docker rm -f {{APP_NAME}}
+	@echo "[INFO] Container removed (if it existed)"
+
+test: up
+	@docker exec {{APP_NAME}} sh -c 'python3 /app/smoke.py'
+
+local:
+	./mvnw clean package quarkus:run

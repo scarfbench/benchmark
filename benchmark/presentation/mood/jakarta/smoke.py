@@ -8,7 +8,7 @@ Checks:
   3) Test different times of day to verify filter behavior
 
 Environment:
-  MOOD_BASE   Base app URL (default: http://localhost:8080/mood-10-SNAPSHOT)
+  MOOD_BASE   Base app URL (default: http://localhost:9080/mood-10-SNAPSHOT)
   VERBOSE=1   Verbose logging
 
 Exit codes:
@@ -22,7 +22,7 @@ import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-BASE = os.getenv("MOOD_BASE", "http://localhost:8080/mood-10-SNAPSHOT").rstrip("/")
+BASE = os.getenv("MOOD_BASE", "http://localhost:9080/mood-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
 HTTP_TIMEOUT = 12
 

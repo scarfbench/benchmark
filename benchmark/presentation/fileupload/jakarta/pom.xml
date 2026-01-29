@@ -58,6 +58,7 @@
       <version>${maven.war.plugin.version}</version>
       <configuration>
         <failOnMissingWebXml>false</failOnMissingWebXml>
+        <finalName>fileupload</finalName>
       </configuration>
     </plugin>
 
@@ -65,10 +66,14 @@
       <groupId>io.openliberty.tools</groupId>
       <artifactId>liberty-maven-plugin</artifactId>
       <version>${liberty.maven.plugin.version}</version>
-       <configuration>
-          <serverName>defaultServer</serverName>
-          <configDirectory>${project.basedir}/src/main/liberty/config</configDirectory>
-        </configuration>
+      <configuration>
+        <serverName>defaultServer</serverName>
+        <configDirectory>${project.basedir}/src/main/liberty/config</configDirectory>
+        <appsDirectory>apps</appsDirectory>
+        <stripVersion>true</stripVersion>
+        <installAppPackages>project</installAppPackages>
+        <include>${project.build.finalName}.war</include>
+      </configuration>
     </plugin>
   </plugins>
 </build>

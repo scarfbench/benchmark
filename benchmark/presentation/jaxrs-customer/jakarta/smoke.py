@@ -13,7 +13,7 @@ Checks:
      - DELETE customer
 
 Environment:
-  CUSTOMER_BASE   Base app URL (default: http://localhost:8080/jaxrs-customer-10-SNAPSHOT)
+  CUSTOMER_BASE   Base app URL (default: http://localhost:9080/jaxrs-customer-10-SNAPSHOT)
   VERBOSE=1       Verbose logging
 
 Exit codes:
@@ -30,7 +30,7 @@ import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-BASE = os.getenv("CUSTOMER_BASE", "http://localhost:8080/jaxrs-customer-10-SNAPSHOT").rstrip("/")
+BASE = os.getenv("CUSTOMER_BASE", "http://localhost:9080/jaxrs-customer-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
 HTTP_TIMEOUT = 12
 

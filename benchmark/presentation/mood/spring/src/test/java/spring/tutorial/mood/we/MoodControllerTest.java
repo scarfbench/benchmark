@@ -19,7 +19,7 @@ class MoodControllerTest {
     void reportLoads() throws Exception {
         mvc.perform(get("/report").param("name", "Duke"))
            .andExpect(status().isOk())
-           .andExpect(content().string(org.hamcrest.Matchers.containsString("current mood")))
+           .andExpect(content().string(org.hamcrest.Matchers.containsString("Duke's mood is")))
            .andExpect(content().string(org.hamcrest.Matchers.containsString("/images/duke.waving.gif")));
     }
 }

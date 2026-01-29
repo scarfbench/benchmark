@@ -46,9 +46,19 @@ Before running the benchmark, ensure you have:
   ```bash
   pip install -r requirements.txt
   ```
-- **Docker** installed and running (for execution and smoke testing)
+- **Docker** (or a compatible runtime such as **OrbStack**) installed and running for execution and smoke testing
 - **Maven or Gradle** (for compilation testing)
-- Your **agent/solution CLI tool** configured and accessible
+- **Access to a CLI and model** for running conversions—for example Gemini or Claude, or your own CLI/model. Your agent/solution CLI tool must be configured and accessible.
+
+  **Example — Gemini CLI** (you can use your own CLI and model instead):
+
+  1. Install the Gemini CLI (or your preferred CLI).
+  2. Export environment variables, for example:
+     ```bash
+     export GOOGLE_GEMINI_BASE_URL=your-host-url
+     export GEMINI_API_KEY=your-litellm-api-key
+     ```
+  3. Use that CLI in your YAML `command` (see [Step 1: Configure Your Solution](#step-1-configure-your-solution)).
 
 ## Running the Benchmark
 
@@ -94,6 +104,10 @@ conversions:
 ```
 
 In this example, `yoursolution` will appear as the `cli-tool` in the results table, and if it's not in the known model map, it will also be used as the `model` name.
+Note: using the Gemini CLI as an example would look like:
+``` 
+command: cd {working_dir}; gemini --model gemini-2.5-flash --prompt {prompt}
+```
 
 ### Step 2: Setup Run Directories
 

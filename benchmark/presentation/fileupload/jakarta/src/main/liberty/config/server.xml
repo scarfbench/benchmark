@@ -13,6 +13,6 @@
     <managedExecutorService id="MES_High" jndiName="MES_High" coreThreads="5" maxThreads="10" keepAliveSeconds="60"/>
     <managedExecutorService id="MES_Low" jndiName="MES_Low" coreThreads="2" maxThreads="4" keepAliveSeconds="60"/>
 
-    <application location="fileupload.war" type="war"/>
+    <application context-root="fileupload" location="fileupload.war" type="war"/>
 
 </server>

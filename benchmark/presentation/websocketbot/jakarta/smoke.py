@@ -9,7 +9,7 @@ Checks:
   5) Test bot response
 
 Environment:
-  WEBSOCKETBOT_BASE   Base app URL (default: http://localhost:8080/websocketbot-10-SNAPSHOT)
+  WEBSOCKETBOT_BASE   Base app URL (default: http://localhost:9080/websocketbot-10-SNAPSHOT)
   VERBOSE=1           Verbose logging
 
 Exit codes:
@@ -30,7 +30,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-BASE = os.getenv("WEBSOCKETBOT_BASE", "http://localhost:8080/websocketbot-10-SNAPSHOT").rstrip("/")
+BASE = os.getenv("WEBSOCKETBOT_BASE", "http://localhost:9080/websocketbot-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
 HTTP_TIMEOUT = 12
 WS_TIMEOUT = 10
@@ -117,18 +117,22 @@ def _ws_connect(url: str, timeout: int = WS_TIMEOUT):
     return raw, leftover  
 
 def _ws_send_text(sock, message: str):
-    """Send a text frame."""
+    """Send a text frame (client frames must be masked)."""
     payload = message.encode('utf-8')
     length = len(payload)
     
-    if length < 126:
-        header = bytes([0x81, length])  
-    elif length < 65536:
-        header = bytes([0x81, 126]) + length.to_bytes(2, 'big')
-    else:
-        header = bytes([0x81, 127]) + length.to_bytes(8, 'big')
+    mask = os.urandom(4)
     
-    sock.sendall(header + payload)
+    masked_payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+    
+    if length < 126:
+        header = bytes([0x81, 0x80 | length]) + mask
+    elif length < 65536:
+        header = bytes([0x81, 0x80 | 126]) + length.to_bytes(2, 'big') + mask
+    else:
+        header = bytes([0x81, 0x80 | 127]) + length.to_bytes(8, 'big') + mask
+    
+    sock.sendall(header + masked_payload)
 
 def _ws_recv_text(sock, leftover=b"", timeout: int = WS_TIMEOUT) -> str:
     """Read a single unfragmented text frame."""
@@ -186,7 +190,6 @@ def test_websocket_bot():
         sys.exit(3)
     
     try:
-        # Test 1: Join functionality
         join_msg = json.dumps({"type": "join", "name": "TestUser"})
         vprint("WS send join:", join_msg)
         _ws_send_text(sock, join_msg)
@@ -229,7 +232,6 @@ def test_websocket_bot():
             print("[WARN] Duke greeting timeout")
             return False
         
-        # Test 2: How are you question
         test_questions = [
             ("How are you?", "great"),
             ("How old are you?", "years old"),
@@ -281,13 +283,11 @@ def test_websocket_bot():
                 print(f"[FAIL] No response received for: '{question}'")
                 all_tests_passed = False
         
-        # Test 3: Non-targeted message (should not get response)
         print(f"\n--- Testing non-targeted message ---")
         chat_msg = json.dumps({"type": "chat", "name": "TestUser", "target": "", "message": "This should not get a response"})
         vprint("WS send chat:", chat_msg)
         _ws_send_text(sock, chat_msg)
         
-        # Wait a bit to ensure no response
         time.sleep(2)
         print("[PASS] No response to non-targeted message (as expected)")
         

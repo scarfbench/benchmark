@@ -12,20 +12,18 @@ public class MoodController {
     public String getReport(HttpServletRequest request,
                             @RequestParam(required = false, defaultValue = "") String name) {
         String mood = (String) request.getAttribute("mood");
-        String person = name.isBlank() ? "friend" : name;
 
-        // Produce the same HTML your servlet printed, including images now under /images/...
         return """
                <!doctype html>
                <html lang="en">
-                 <head><meta charset="utf-8"><title>Mood Report</title></head>
+                 <head><meta charset="utf-8"><title>Servlet MoodServlet</title></head>
                  <body>
                    <h1>Mood report</h1>
-                   <p>Hello %s — current mood: <b>%s</b></p>
+                   <p>Duke's mood is: %s</p>
                    <img src="/images/duke.waving.gif" alt="duke waving">
                  </body>
                </html>
-               """.formatted(person, mood);
+               """.formatted(mood);
     }
 
     @PostMapping(value = "/report", produces = MediaType.TEXT_HTML_VALUE)

@@ -60,10 +60,16 @@ public class FileUploadServlet extends HttpServlet {
         final String path = request.getParameter("destination");
         final Part filePart = request.getPart("file");
         final String fileName = getFileName(filePart);
+        final PrintWriter writer = response.getWriter();
+
+        if (path == null || path.isBlank()) {
+            writer.println("Please specify a destination directory or location for the upload.");
+            writer.close();
+            return;
+        }
 
         OutputStream out = null;
         InputStream filecontent = null;
-        final PrintWriter writer = response.getWriter();
 
         try {
             out = new FileOutputStream(new File(path + File.separator

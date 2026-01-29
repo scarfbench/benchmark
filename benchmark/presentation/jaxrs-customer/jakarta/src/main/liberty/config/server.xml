@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Open Liberty server">
+    <featureManager>
+        <feature>jakartaee-10.0</feature>
+    </featureManager>
+
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+
+    <managedExecutorService id="MES_High" jndiName="MES_High" coreThreads="5" maxThreads="10" keepAliveSeconds="60"/>
+    <managedExecutorService id="MES_Low" jndiName="MES_Low" coreThreads="2" maxThreads="4" keepAliveSeconds="60"/>
+
+    <!-- Data source for JPA (persistence.xml uses jta-data-source jdbc/__default) -->
+    <library id="derbyLib">
+        <fileset dir="${server.config.dir}/lib" includes="derby*.jar"/>
+    </library>
+    <dataSource id="CustomerDataSource" jndiName="jdbc/__default">
+        <jdbcDriver libraryRef="derbyLib"/>
+        <properties.derby.embedded databaseName="customer" createDatabase="create"/>
+    </dataSource>
+
+    <application context-root="jaxrs-customer-10-SNAPSHOT" location="jaxrs-customer-10-SNAPSHOT.war" type="war"/>
+
+</server>

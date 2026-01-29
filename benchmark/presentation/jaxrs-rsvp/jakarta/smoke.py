@@ -11,7 +11,7 @@ Checks:
        GET <BASE>/webapi/status/{eventId}/ -> 200 (fatal if 404 when id was parsed)
 
 Environment:
-  RSVP_BASE   Base app URL (default: http://localhost:8080/jaxrs-rsvp-10-SNAPSHOT/rsvp)
+  RSVP_BASE   Base app URL (default: http://localhost:9080/jaxrs-rsvp-10-SNAPSHOT/rsvp)
   VERBOSE=1   Verbose logging
 
 Exit codes:
@@ -28,7 +28,7 @@ import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-BASE = os.getenv("RSVP_BASE", "http://localhost:8080/jaxrs-rsvp-10-SNAPSHOT").rstrip("/")
+BASE = os.getenv("RSVP_BASE", "http://localhost:9080/jaxrs-rsvp-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
 HTTP_TIMEOUT = 12
 

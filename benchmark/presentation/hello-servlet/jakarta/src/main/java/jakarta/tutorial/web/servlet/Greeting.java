@@ -19,7 +19,9 @@ public class Greeting extends HttpServlet {
         var name = request.getParameter("name");
 
         if (name == null || name.isBlank()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType("text/plain");
+            response.getWriter().write("Missing required parameter: name");
             return;
         }
 

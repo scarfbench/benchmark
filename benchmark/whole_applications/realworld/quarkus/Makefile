@@ -1,11 +1,13 @@
 # Run `make` to see available recipes
 
-APP_NAME       := "realworld-quarkus"
+APP_NAME       := realworld-quarkus
 IMAGE_NAME   := $(APP_NAME):latest
-SERVER_PORT    := "8080"               # Application server internal HTTP
-HOST_PORT      := "10013"               # Host port to map to Application server's internal HTTP
-POSTGRES_CONTAINER_NAME  := "postgres-quarkus"
-NETWORK_NAME   := "realworld-quarkus-net"
+# Application server internal HTTP
+SERVER_PORT    := 8080
+# Host port to map to Application server's internal HTTP
+HOST_PORT      := 10013
+POSTGRES_CONTAINER_NAME  := postgres-quarkus
+NETWORK_NAME   := realworld-quarkus-net
 
 # Set shell
 SHELL := /bin/bash

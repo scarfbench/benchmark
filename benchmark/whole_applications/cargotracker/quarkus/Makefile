@@ -11,17 +11,14 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
-	@echo "[INFO] Started $(APP_NAME) container..."
-	@echo "[INFO] Waiting for application to start..."
-	@while true; do \
-	if docker logs $(APP_NAME) 2>&1 | grep -q "started in"; then \
-	echo "[INFO] Application is ready!"; \
-	break; \
-	fi; \
-	sleep 1; \
-	done
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+	@until docker logs $(APP_NAME) 2>&1 | grep -q '[io.quarkus].*started in .*Listening on:'; do sleep 1; done
+	@echo "[INFO] Application server started."
 
 logs:
 	docker logs -f $(APP_NAME)
@@ -42,6 +39,11 @@ smoke: up
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium --only-shell && uv run playwright install-deps chromium && uv run smoke.py"
 
 test: smoke
+
+# Clean up
+clean: down
+	docker rmi $(APP_NAME)
+	@echo "[INFO] Image removed (if it existed)"
 
 # Optional: run app locally without Docker, if you still want that path.
 local:

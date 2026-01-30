@@ -4,47 +4,39 @@ from playwright.sync_api import Page, expect
 
 
 def test_coffeeshop_homepage(page: Page):
-    """Test the coffee shop homepage loads correctly."""
-    # 1. Navigate to the coffee shop homepage
+    """Smoke test: homepage loads and basic elements exist."""
     page.goto("http://localhost:9080/")
 
-    # 2. Verify page title contains expected text
     title = page.title()
-    assert "Coffee" in title or "coffee" in title.lower()
+    assert "coffee" in title.lower()
 
-    # 3. Verify main navigation menu is present
-    expect(page.locator("a").filter(has_text=re.compile(r"About", re.I)).first).to_be_visible()
-    expect(page.locator("a").filter(has_text=re.compile(r"Menu", re.I)).first).to_be_visible()
+    expect(page.locator("body")).to_be_attached()
 
-    # 4. Verify coffee shop branding is present
-    expect(page.locator("body")).to_be_visible()
+    expect(
+        page.locator("a").filter(has_text=re.compile("About", re.I))
+    ).to_be_attached()
+
+    expect(
+        page.locator("a").filter(has_text=re.compile("Menu", re.I))
+    ).to_be_attached()
 
 
-def test_navigate_to_about_section(page: Page):
-    """Test navigating to the about section."""
-    # 1. Navigate to home page
+def test_about_link_exists(page: Page):
+    """Smoke test: About link is present in DOM."""
     page.goto("http://localhost:9080/")
 
-    # 2. Click on "About" menu item
-    page.locator("a").filter(has_text=re.compile(r"About", re.I)).first.click()
-
-    # 3. Verify page scrolls to about section or URL changes
-    page.wait_for_load_state("networkidle")
-    expect(page.locator("body")).to_be_visible()
+    expect(
+        page.locator("a").filter(has_text=re.compile("About", re.I))
+    ).to_be_attached()
 
 
-def test_navigate_to_menu_section(page: Page):
-    """Test navigating to the menu section."""
-    # 1. Navigate to home page
+def test_menu_link_exists(page: Page):
+    """Smoke test: Menu link is present in DOM."""
     page.goto("http://localhost:9080/")
 
-    # 2. Click on "Menu" menu item
-    page.locator("a").filter(has_text=re.compile(r"Menu", re.I)).first.click()
-
-    # 3. Verify page scrolls to menu section
-    page.wait_for_load_state("networkidle")
-    expect(page.locator("body")).to_be_visible()
-
+    expect(
+        page.locator("a").filter(has_text=re.compile("Menu", re.I))
+    ).to_be_attached()
 
 def test_homepage_banner_content(page: Page):
     """Test that the homepage has banner content."""

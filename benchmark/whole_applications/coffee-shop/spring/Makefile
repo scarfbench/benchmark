@@ -16,28 +16,27 @@ up: build
 	docker run -d --name $(APP_NAME) -p $(APP_PORT):$(APP_PORT) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME) container..."
 	@echo "[INFO] Waiting for application to start (this may take several minutes for first build)..."
-	@bash -c 'TIMEOUT=600; ELAPSED=0; while [ $ELAPSED -lt $TIMEOUT ]; do \
-	FULL_LOGS=$(docker logs $(APP_NAME) 2>&1); \
-	RECENT_LOGS=$(echo "$FULL_LOGS" | tail -10); \
-	if echo "$FULL_LOGS" | grep -qE "started in|Started.*Application"; then \
+	@bash -c 'TIMEOUT=600; ELAPSED=0; while [ $$ELAPSED -lt $$TIMEOUT ]; do \
+	LOGS=$$(docker logs $(APP_NAME) 2>&1 | tail -5); \
+	if echo "$$LOGS" | grep -q "started in\|Started PetClinicApplication"; then \
 	echo "[INFO] Application is ready!"; \
 	exit 0; \
 	fi; \
-	if echo "$FULL_LOGS" | grep -qiE "(BUILD FAILURE|Failed to execute|MojoExecutionException|Could not transfer artifact|Premature end|ERROR \[.*Exception|startup failed)" && ! echo "$FULL_LOGS" | grep -qi "SLF4J\|StaticLoggerBinder"; then \
+	if echo "$$LOGS" | grep -qiE "(Build failure|BuildException|ConfigurationException|ERROR \[|Exception:|Failed to|startup failed)"; then \
 	echo "[ERROR] Application startup error detected:"; \
 	docker logs $(APP_NAME) 2>&1 | tail -30; \
 	echo "[ERROR] Check full logs with \"just logs\""; \
 	exit 1; \
 	fi; \
 	sleep 3; \
-	ELAPSED=$((ELAPSED + 3)); \
-	if [ $((ELAPSED % 30)) -eq 0 ]; then \
-	echo "[INFO] Still waiting... ($ELAPSED seconds elapsed)"; \
+	ELAPSED=$$((ELAPSED + 3)); \
+	if [ $$((ELAPSED % 30)) -eq 0 ]; then \
+	echo "[INFO] Still waiting... ($$ELAPSED seconds elapsed)"; \
 	echo "[DEBUG] Recent logs:"; \
 	docker logs $(APP_NAME) 2>&1 | tail -3; \
 	fi; \
 	done; \
-	echo "[ERROR] Timeout waiting for application to start after $TIMEOUT seconds."; \
+	echo "[ERROR] Timeout waiting for application to start after $$TIMEOUT seconds."; \
 	echo "[ERROR] Check logs with \"just logs\""; \
 	exit 1;'
 

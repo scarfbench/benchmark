@@ -1,7 +1,8 @@
 ### DayTrader Justfile
-APP_NAME        := "daytrader"
-IMAGE_NAME      := "daytrader:latest"
-APP_PORT        := "9080"   # Internal HTTP port
+APP_NAME        := daytrader
+IMAGE_NAME      := daytrader:latest
+# Internal HTTP port
+APP_PORT        := 9080
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -37,6 +38,11 @@ smoke: up
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
 test: smoke
+
+clean: down
+	docker rmi $(APP_NAME)
+	@echo "[INFO] Image removed (if it existed)"
+
 # Optional: run app locally without Docker, if you still want that path.
 local:
-	./mvnw clean package cargo:run
+	./mvnw clean package liberty:run

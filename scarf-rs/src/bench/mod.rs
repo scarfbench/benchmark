@@ -1,8 +1,8 @@
 pub mod list;
 pub mod test;
 
-use anyhow::Result;
 use crate::cli::BenchCmd;
+use anyhow::Result;
 
 pub fn run(cmd: BenchCmd) -> Result<i32> {
     match cmd {

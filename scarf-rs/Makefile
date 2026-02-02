@@ -22,7 +22,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  setup      Check/install rustup, cargo, components, nextest, llvm-cov"
-	@echo "  fmt        Run cargo fmt --check"
+	@echo "  fmt        Run cargo fmt --all"
 	@echo "  clippy     Run cargo clippy with warnings denied"
 	@echo "  build      Run cargo build"
 	@echo "  test       Run tests using cargo nextest"
@@ -94,8 +94,8 @@ ensure-llvm-cov: check-cargo
 	fi
 
 fmt: check-cargo ensure-components
-	@echo "[INFO] cargo fmt --check"
-	@$(CARGO) fmt --check
+	@echo "[INFO] cargo fmt --all"
+	@$(CARGO) fmt --all
 
 clippy: check-cargo ensure-components
 	@echo "[INFO] cargo clippy (deny warnings)"

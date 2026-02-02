@@ -2,49 +2,123 @@
 
 This is a companion CLI tool for the [SCARF Benchmark](../benchmark). It provides a commandline interface to list and test benchmarks, run agents, submit solutions, view and explore leaderboard among other useful tasks.
 
-## Prerequisites
-- Rustup ([Instructions](https://rustup.rs)): We'll use this to manage Rust toolchains including `cargo` and other rust testing tools like `llvm-tools`.
-- Docker ([Instructions](https://docs.docker.com/get-docker/)) to run benchmarks in isolated environments.
-- `Make`: to build and run the projects as specified in the makefiles.
-- Git to clone repositories.
+## Table of Contents
 
-## Installation 
+- [Features](#features)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Build from Source](#build-from-source)
+- [Usage](#usage)
+- [Development](#development)
+  - [Development Dependencies](#development-dependencies)
+  - [Testing](#testing)
+  - [Building and Testing](#building-and-testing)
 
-To install the SCARF CLI tool, clone the repository and build the project using Cargo:
+## Features
 
-1. Clone the scarfbench repository
-  ```bash
-        git clone https://github.com/ibm/scarfbench.git
-  ```
+- List available benchmarks
+- Test and validate benchmarks
+- Run agents on benchmark problems
+- Submit solutions
+- View and explore leaderboards
+- Isolated benchmark execution using Docker
 
-2. Navigate into the `scarf-rs` directory and build the project
-  ```bash
-        cd scarf-rs
-        cargo build --release 
-        # If you want to specify a different output directory, you can use:
-        # cargo build --release --targe-dir $PWD
-  ```
+## Installation
 
-The compiled binary will be located in the `target/release` directory.
+### Prerequisites
 
-You may now use the SCARF CLI tool by running the binary directly or adding it to your system's PATH.
+Before installing the SCARF CLI, ensure you have the following tools installed:
 
-### Ex
+- **Rustup** ([Installation Guide](https://rustup.rs)) - Manages Rust toolchains including `cargo` and `llvm-tools`
+- **Docker** ([Installation Guide](https://docs.docker.com/get-docker/)) - Runs benchmarks in isolated environments
+- **Make** - Builds and runs projects as specified in makefiles
+- **Git** - Clones repositories
 
-## Development Instructions
+### Build from Source
 
-If you are looking at adding features to the scarf cli, here are some guidelines to follow:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/ibm/scarfbench.git
+   cd scarfbench/scarf-rs
+   ```
+
+2. **Build the project:**
+   ```bash
+   cargo build --release
+   ```
+   
+   The compiled binary will be located in `target/release/scarf`.
+
+3. **Run the CLI:**
+   ```bash
+   ./target/release/scarf --help
+   ```
+   
+   Optionally, add the binary to your system's PATH for easier access.
+
+## Usage
+
+(Add usage examples and commands here as they become available)
+
+## Development
+
+### Development Dependencies
+
+If you're contributing to the SCARF CLI, install these additional tools:
+
+1. **Clippy** - Linting and code quality checks
+   ```bash
+   rustup component add clippy
+   ```
+
+2. **Rustfmt** - Code formatting
+   ```bash
+   rustup component add rustfmt
+   ```
+
+3. **LLVM Coverage Tools** - Coverage analysis
+   ```bash
+   rustup component add llvm-tools-preview
+   cargo install cargo-llvm-cov
+   ```
+
+4. **Nextest** - Advanced test runner
+   ```bash
+   cargo install cargo-nextest --locked
+   ```
 
 ### Testing
 
-We use idomatic rust testing practices in that we have two places to put tests:
-  
-  1. Unit tests lie within the module that is being tested under the `#[cfg(test)]` attribute.
-  2. Integration tests (e.g., to test the cli commands) lie in the `tests` directory at the root of the project.
+The project follows idiomatic Rust testing practices:
 
-### Development/Test dependencies
+- **Unit tests**: Located within each module under the `#[cfg(test)]` attribute
+- **Integration tests**: Located in the `tests/` directory at the project root for testing CLI commands
 
-1. `cargo clippy`: for linting and code quality checks. Install with `rustup component add clippy`.
-2. `cargo fmt`: for code formatting. Install both with `rustup component add rustfmt`.
-3. `llvm-tools`: for coverage analysis. Install with `rustup component add llvm-tools-preview && cargo install cargo-llvm-cov`.
-4. `nextest`: for running tests. Install with `cargo install cargo-nextest --locked`.
+### Building and Testing
+
+A [Makefile](Makefile) is provided to streamline development tasks. Run `make help` to see available commands:
+
+```bash
+make help
+```
+
+**Available targets:**
+
+| Target     | Description                                                      |
+|------------|------------------------------------------------------------------|
+| `all`      | Run full pipeline (setup → fmt → clippy → build → test → coverage) |
+| `setup`    | Check/install rustup, cargo, components, nextest, llvm-cov       |
+| `fmt`      | Run `cargo fmt --all`                                            |
+| `clippy`   | Run `cargo clippy` with warnings denied                          |
+| `build`    | Run `cargo build`                                                |
+| `test`     | Run tests using `cargo nextest`                                  |
+| `coverage` | Run coverage using `cargo llvm-cov` + nextest                    |
+| `clean`    | Run `cargo clean`                                                |
+| `help`     | Show help message                                                |
+
+
+Just run `make` to execute the full development pipeline:
+```bash
+# Run the full development pipeline
+make
+```

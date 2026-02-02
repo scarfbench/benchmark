@@ -49,7 +49,7 @@ setup: check-rustup check-cargo ensure-components ensure-nextest ensure-llvm-cov
 	@echo "[OK] Toolchain and tools are ready."
 
 check-rustup:
-	@if command -v $(RUSTUP) >/dev/null 2>&1; then
+	@if command -v $(RUSTUP) >/dev/null 2>&1; then \
 	  echo "[OK] rustup found: $$(rustup --version | head -n1)"; \
 	else \
 	  echo "[ERROR] rustup not found."; \
@@ -80,7 +80,7 @@ ensure-nextest: check-cargo
 	  echo "[OK] nextest found: $$(cargo nextest --version | head -n1)"; \
 	else \
 	  echo "[INFO] Installing nextest (cargo-nextest) ..."; \
-	  $(CARGO) install cargo-nextest; \
+	  $(CARGO) install cargo-nextest --locked; \
 	  echo "[OK] nextest installed."; \
 	fi
 

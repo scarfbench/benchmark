@@ -1,15 +1,3 @@
-# Makefile
-# Usage:
-#   make setup
-#   make ci
-#   make test
-#   make coverage
-#   make build
-#
-# Notes:
-# - Installs cargo subcommands into ~/.cargo/bin
-# - Uses nextest for tests and llvm-cov for coverage
-
 SHELL := /bin/bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
@@ -19,13 +7,41 @@ RUSTUP ?= rustup
 
 WORKSPACE ?= --workspace
 
-# Convenience: pass extra args like:
-#   make test NEXTTEST_ARGS="--nocapture"
 NEXTTEST_ARGS ?=
 LLVM_COV_ARGS ?=
 
-.PHONY: all setup check-rustup check-cargo ensure-components ensure-nextest ensure-llvm-cov \
+.PHONY: help all setup check-rustup check-cargo ensure-components ensure-nextest ensure-llvm-cov \
         fmt clippy build test coverage clean
+
+help:
+	@echo "Usage:"
+	@echo "  make [target] [VAR=value]"
+	@echo ""
+	@echo "Default target:"
+	@echo "  all        Run full pipeline (setup → fmt → clippy → build → test → coverage)"
+	@echo ""
+	@echo "Targets:"
+	@echo "  setup      Check/install rustup, cargo, components, nextest, llvm-cov"
+	@echo "  fmt        Run cargo fmt --check"
+	@echo "  clippy     Run cargo clippy with warnings denied"
+	@echo "  build      Run cargo build"
+	@echo "  test       Run tests using cargo nextest"
+	@echo "  coverage   Run coverage using cargo llvm-cov + nextest"
+	@echo "  clean      Run cargo clean"
+	@echo "  help       Show this help message"
+	@echo ""
+	@echo "Variables:"
+	@echo "  WORKSPACE=--workspace        Target whole workspace (set empty for single crate)"
+	@echo "  NEXTTEST_ARGS=...            Extra args passed to cargo nextest run"
+	@echo "  LLVM_COV_ARGS=...            Extra args passed to cargo llvm-cov"
+	@echo "  CARGO=...                    Override cargo binary (default: cargo)"
+	@echo "  RUSTUP=...                   Override rustup binary (default: rustup)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make"
+	@echo "  make test NEXTTEST_ARGS=\"--nocapture\""
+	@echo "  make coverage LLVM_COV_ARGS=\"--fail-under-lines 80\""
+
 
 default: all
 

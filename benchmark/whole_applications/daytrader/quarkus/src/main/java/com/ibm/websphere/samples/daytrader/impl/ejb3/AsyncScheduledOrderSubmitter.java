@@ -15,20 +15,24 @@
  */
 package com.ibm.websphere.samples.daytrader.impl.ejb3;
 
-import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import io.smallrye.mutiny.Uni;
+// MIGRATION: javax.* -> jakarta.*
+// MIGRATION: ManagedScheduledExecutorService -> Quarkus ExecutorService
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+
+import io.quarkus.virtual.threads.VirtualThreads;
+import java.util.concurrent.ExecutorService;
 
 @RequestScoped
 public class AsyncScheduledOrderSubmitter {
   
-  
-  // @Resource
-  // private ManagedScheduledExecutorService mes;
-  
+  @Inject
+  @VirtualThreads
+  ExecutorService executorService;
 
   @Inject
   private AsyncScheduledOrder asyncOrder;
@@ -36,10 +40,14 @@ public class AsyncScheduledOrderSubmitter {
   
   public Future<?> submitOrder(Integer orderID, boolean twoPhase) {
     asyncOrder.setProperties(orderID,twoPhase);
-    // return scheduler.schedule(asyncOrder,500,TimeUnit.MILLISECONDS);
-    return Uni.createFrom().item(asyncOrder)
-                   .onItem().delayIt().by(Duration.ofMillis(500))
-                   .onItem().invoke(Runnable::run)
-                   .subscribeAsCompletionStage(); // converts to CompletableFuture<?>
+    // MIGRATION: Use CompletableFuture with delay instead of scheduled executor
+    return CompletableFuture.runAsync(() -> {
+      try {
+        TimeUnit.MILLISECONDS.sleep(500);
+        asyncOrder.run();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }, executorService);
   }
 }

@@ -17,16 +17,8 @@ package com.ibm.websphere.samples.daytrader.util;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import jakarta.annotation.Resource;
-// import javax.enterprise.concurrent.ManagedExecutorService;
-import org.eclipse.microprofile.context.ManagedExecutor;
-import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.NotificationOptions;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -48,9 +40,6 @@ public class RecentQuotePriceChangeList  {
   private int maxSize = 5;
 
   @Inject
-  private ManagedExecutor mes;
-
-  @Inject
   @QuotePriceChange
   Event<String> quotePriceChangeEvent;
 
@@ -65,7 +54,8 @@ public class RecentQuotePriceChangeList  {
       if(list.size() > maxSize) {
         list.remove(maxSize);
       }      
-      quotePriceChangeEvent.fireAsync("quotePriceChange for symbol: " + quoteData.getSymbol(), NotificationOptions.builder().setExecutor(mes).build());
+      // Fire async event without ManagedExecutorService (Quarkus handles async events differently)
+      quotePriceChangeEvent.fireAsync("quotePriceChange for symbol: " + quoteData.getSymbol());
     }
     return true;
   }

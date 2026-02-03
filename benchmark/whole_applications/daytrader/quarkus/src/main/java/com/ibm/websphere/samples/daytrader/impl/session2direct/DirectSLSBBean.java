@@ -19,16 +19,13 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.concurrent.Future;
 
-// import javax.ejb.Stateless;
-// import javax.ejb.TransactionAttribute;
-// import javax.ejb.TransactionAttributeType;
-// import javax.ejb.TransactionManagement;
-// import javax.ejb.TransactionManagementType;
+// MIGRATION: javax.* -> jakarta.*
+// MIGRATION: @Stateless EJB -> @ApplicationScoped CDI
+// MIGRATION: @TransactionAttribute -> @Transactional
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
-
-import jakarta.enterprise.context.ApplicationScoped;
 
 import com.ibm.websphere.samples.daytrader.interfaces.RuntimeMode;
 import com.ibm.websphere.samples.daytrader.interfaces.Trace;
@@ -44,14 +41,15 @@ import com.ibm.websphere.samples.daytrader.entities.QuoteDataBean;
 import com.ibm.websphere.samples.daytrader.impl.ejb3.AsyncScheduledOrderSubmitter;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
-// @Stateless
+// MIGRATION: @Stateless -> @ApplicationScoped
+// MIGRATION: @TransactionAttribute(REQUIRED) -> @Transactional
+// DirectSLSBBean delegates to TradeDirect for the "Session to Direct" mode
+// The @TradeSession2Direct qualifier ensures it's only injected when explicitly requested
+@ApplicationScoped
 @TradeSession2Direct
 @RuntimeMode("Session to Direct")
 @Trace
 @Transactional
-// @TransactionAttribute(TransactionAttributeType.REQUIRED)
-// @TransactionManagement(TransactionManagementType.CONTAINER)
-@ApplicationScoped
 public class DirectSLSBBean implements TradeServices {
 
   @Inject

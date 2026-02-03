@@ -15,50 +15,44 @@
  */
 package com.ibm.websphere.samples.daytrader.mdb;
 
-import jakarta.annotation.Resource;
-import jakarta.jms.JMSContext;
-// import javax.ejb.ActivationConfigProperty;
-// import javax.ejb.MessageDriven;
-// import javax.ejb.MessageDrivenContext;
-// import javax.ejb.TransactionAttribute;
-// import javax.ejb.TransactionAttributeType;
-// import javax.ejb.TransactionManagement;
-// import javax.ejb.TransactionManagementType;
-import jakarta.jms.Message;
-import jakarta.jms.MessageListener;
-import jakarta.jms.TextMessage;
+import jakarta.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import com.ibm.websphere.samples.daytrader.interfaces.Trace;
+import com.ibm.websphere.samples.daytrader.messaging.QuoteUpdateMessage;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.MDBStats;
 import com.ibm.websphere.samples.daytrader.util.TimerStat;
 
-import io.quarkus.runtime.Startup;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-//For Glassfish/Payara - take jms/ off of the destination name
-
-// @TransactionAttribute(TransactionAttributeType.REQUIRED)
-// @TransactionManagement(TransactionManagementType.CONTAINER)
-// @MessageDriven(activationConfig = { @ActivationConfigProperty(propertyName = "acknowledgeMode", propertyValue = "Auto-acknowledge"),
-//     @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Topic"),
-//     @ActivationConfigProperty(propertyName = "destination", propertyValue = "jms/TradeStreamerTopic"),
-//     //@ActivationConfigProperty(propertyName = "destination", propertyValue = "TradeStreamerTopic"),
-//     @ActivationConfigProperty(propertyName = "subscriptionDurability", propertyValue = "NonDurable") })
-@Trace
+/**
+ * Message-Driven Bean for processing quote update streams.
+ * 
+ * MIGRATION NOTES - Original Jakarta EE annotations:
+ * --------------------------------------------------
+ * @TransactionAttribute(TransactionAttributeType.REQUIRED)
+ * @TransactionManagement(TransactionManagementType.CONTAINER)
+ * @MessageDriven(activationConfig = { 
+ *     @ActivationConfigProperty(propertyName = "acknowledgeMode", propertyValue = "Auto-acknowledge"),
+ *     @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Topic"),
+ *     @ActivationConfigProperty(propertyName = "destination", propertyValue = "jms/TradeStreamerTopic"),
+ *     @ActivationConfigProperty(propertyName = "subscriptionDurability", propertyValue = "NonDurable") 
+ * })
+ * public class DTStreamer3MDB implements MessageListener { ... }
+ * 
+ * Quarkus Migration:
+ * ------------------
+ * @ApplicationScoped replaces @MessageDriven
+ * @Incoming("trade-streamer-topic") replaces JMS destination config
+ * QuoteUpdateMessage POJO replaces JMS TextMessage
+ */
 @ApplicationScoped
-public class DTStreamer3MDB implements MessageListener {
+public class DTStreamer3MDB {
 
   private final MDBStats mdbStats;
   private int statInterval = 10000;
 
-  // @Resource
-  // public MessageDrivenContext mdc;
- 
-  @Inject
-  JMSContext jmsContext;
+  // MIGRATION: @Resource MessageDrivenContext mdc -> Exception propagation for rollback
+  // In Quarkus, throwing an exception triggers rollback instead of mdc.setRollbackOnly()
 
   /** Creates a new instance of TradeSteamerMDB */
   public DTStreamer3MDB() {
@@ -70,27 +64,38 @@ public class DTStreamer3MDB implements MessageListener {
     mdbStats = MDBStats.getInstance();
   }
 
-  @Override
-  public void onMessage(Message message) {
+  /**
+   * Process incoming quote update messages.
+   * 
+   * MIGRATION: This replaces the JMS MessageListener.onMessage(Message) method.
+   * - JMS TextMessage -> QuoteUpdateMessage POJO
+   * - message.getStringProperty("command") -> message.getCommand()
+   * - message.getStringProperty("symbol") -> message.getSymbol()
+   * - message.getStringProperty("price") -> message.getNewPrice()
+   * - message.getStringProperty("oldPrice") -> message.getOldPrice()
+   * - message.getLongProperty("publishTime") -> message.getPublishTime()
+   */
+  @Incoming("trade-streamer-topic")
+  public void onMessage(QuoteUpdateMessage message) {
 
     try {
-      Log.trace("DTStreamer3MDB:onMessage -- received message -->" + ((TextMessage) message).getText() + "command-->"
-          + message.getStringProperty("command") + "<--");
+      Log.trace("DTStreamer3MDB:onMessage -- received message -->" + message.getText() + "command-->"
+          + message.getCommand() + "<--");
       
-      String command = message.getStringProperty("command");
+      String command = message.getCommand();
       if (command == null) {
         Log.debug("DTStreamer3MDB:onMessage -- received message with null command. Message-->" + message);
         return;
       }
       if (command.equalsIgnoreCase("updateQuote")) {
-        Log.trace("DTStreamer3MDB:onMessage -- received message -->" + ((TextMessage) message).getText() + "\n\t symbol = "
-              + message.getStringProperty("symbol") + "\n\t current price =" + message.getStringProperty("price") + "\n\t old price ="
-              + message.getStringProperty("oldPrice"));
+        Log.trace("DTStreamer3MDB:onMessage -- received message -->" + message.getText() + "\n\t symbol = "
+              + message.getSymbol() + "\n\t current price =" + message.getPrice() + "\n\t old price ="
+              + message.getOldPrice());
         
-        long publishTime = message.getLongProperty("publishTime");
+        long publishTime = message.getPublishTime();
         long receiveTime = System.currentTimeMillis();
 
-        TimerStat currentStats = mdbStats.addTiming("DTStreamer3MDB:udpateQuote", publishTime, receiveTime);
+        TimerStat currentStats = mdbStats.addTiming("DTStreamer3MDB:updateQuote", publishTime, receiveTime);
 
         if ((currentStats.getCount() % statInterval) == 0) {
           Log.log(" DTStreamer3MDB: " + statInterval + " prices updated:" +
@@ -101,10 +106,10 @@ public class DTStreamer3MDB implements MessageListener {
               " avg: " +currentStats.getAvgSecs() );
         }
       } else if (command.equalsIgnoreCase("ping")) {
-        Log.trace("DTStreamer3MDB:onMessage  received ping command -- message: " + ((TextMessage) message).getText());
+        Log.trace("DTStreamer3MDB:onMessage  received ping command -- message: " + message.getText());
         
 
-        long publishTime = message.getLongProperty("publishTime");
+        long publishTime = message.getPublishTime();
         long receiveTime = System.currentTimeMillis();
 
         TimerStat currentStats = mdbStats.addTiming("DTStreamer3MDB:ping", publishTime, receiveTime);
@@ -118,14 +123,13 @@ public class DTStreamer3MDB implements MessageListener {
               " avg: " +currentStats.getAvgSecs());
         }
       } else {
-        Log.error("DTStreamer3MDB:onMessage - unknown message request command-->" + command + "<-- message=" + ((TextMessage) message).getText());
+        Log.error("DTStreamer3MDB:onMessage - unknown message request command-->" + command + "<-- message=" + message.getText());
       }
     } catch (Throwable t) {
       // JMS onMessage should handle all exceptions
       Log.error("DTStreamer3MDB: Exception", t);
-      //UPDATE - Not rolling back for now -- so error messages are not redelivered
-      // mdc.setRollbackOnly();
-      throw new RuntimeException("Rolling back transaction", t);
+      // MIGRATION: mdc.setRollbackOnly() -> throw RuntimeException
+      throw new RuntimeException("DTStreamer3MDB processing failed", t);
     }
   }
 

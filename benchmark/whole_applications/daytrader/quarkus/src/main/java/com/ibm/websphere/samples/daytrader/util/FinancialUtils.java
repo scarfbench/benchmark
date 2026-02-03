@@ -16,43 +16,48 @@
 package com.ibm.websphere.samples.daytrader.util;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
-import java.util.Iterator;
 
 import com.ibm.websphere.samples.daytrader.entities.HoldingDataBean;
 
+/**
+ * MIGRATION NOTE: Updated to use RoundingMode enum instead of deprecated BigDecimal constants.
+ */
 public class FinancialUtils {
 
-    public static final int ROUND = BigDecimal.ROUND_HALF_UP;
+    public static final RoundingMode ROUND = RoundingMode.HALF_UP;
     public static final int SCALE = 2;
-    public static final BigDecimal ZERO = (new BigDecimal(0.00)).setScale(SCALE);
-    public static final BigDecimal ONE = (new BigDecimal(1.00)).setScale(SCALE);
-    public static final BigDecimal HUNDRED = (new BigDecimal(100.00)).setScale(SCALE);
+    public static final BigDecimal ZERO = new BigDecimal("0.00").setScale(SCALE, ROUND);
+    public static final BigDecimal ONE = new BigDecimal("1.00").setScale(SCALE, ROUND);
+    public static final BigDecimal HUNDRED = new BigDecimal("100.00").setScale(SCALE, ROUND);
 
     public static BigDecimal computeGain(BigDecimal currentBalance, BigDecimal openBalance) {
-        return currentBalance.subtract(openBalance).setScale(SCALE);
+        return currentBalance.subtract(openBalance).setScale(SCALE, ROUND);
     }
 
     public static BigDecimal computeGainPercent(BigDecimal currentBalance, BigDecimal openBalance) {
         if (openBalance.doubleValue() == 0.0) {
             return ZERO;
         }
-        BigDecimal gainPercent = currentBalance.divide(openBalance, ROUND).subtract(ONE).multiply(HUNDRED);
+        BigDecimal gainPercent = currentBalance.divide(openBalance, SCALE, ROUND)
+                .subtract(ONE)
+                .multiply(HUNDRED);
         return gainPercent;
     }
 
     public static BigDecimal computeHoldingsTotal(Collection<?> holdingDataBeans) {
-        BigDecimal holdingsTotal = new BigDecimal(0.0).setScale(SCALE);
+        BigDecimal holdingsTotal = new BigDecimal("0.0").setScale(SCALE, ROUND);
         if (holdingDataBeans == null) {
             return holdingsTotal;
         }
-        Iterator<?> it = holdingDataBeans.iterator();
-        while (it.hasNext()) {
-            HoldingDataBean holdingData = (HoldingDataBean) it.next();
-            BigDecimal total = holdingData.getPurchasePrice().multiply(new BigDecimal(holdingData.getQuantity()));
+        for (Object obj : holdingDataBeans) {
+            HoldingDataBean holdingData = (HoldingDataBean) obj;
+            BigDecimal total = holdingData.getPurchasePrice()
+                    .multiply(new BigDecimal(holdingData.getQuantity()));
             holdingsTotal = holdingsTotal.add(total);
         }
-        return holdingsTotal.setScale(SCALE);
+        return holdingsTotal.setScale(SCALE, ROUND);
     }
 
     public static String printGainHTML(BigDecimal gain) {
@@ -65,7 +70,8 @@ public class FinancialUtils {
             arrow = "arrowup.gif";
         }
 
-        htmlString += gain.setScale(SCALE, ROUND) + "</FONT><IMG src=\"images/" + arrow + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
+        htmlString += gain.setScale(SCALE, ROUND) + "</FONT><IMG src=\"images/" + arrow 
+                + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
         return htmlString;
     }
 
@@ -79,7 +85,8 @@ public class FinancialUtils {
             arrow = "arrowup.gif";
         }
 
-        htmlString += change + "</FONT><IMG src=\"images/" + arrow + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
+        htmlString += change + "</FONT><IMG src=\"images/" + arrow 
+                + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
         return htmlString;
     }
 
@@ -94,12 +101,12 @@ public class FinancialUtils {
         }
 
         htmlString += gain.setScale(SCALE, ROUND);
-        htmlString += "%</FONT></B>)<IMG src=\"images/" + arrow + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
+        htmlString += "%</FONT></B>)<IMG src=\"images/" + arrow 
+                + "\" width=\"10\" height=\"10\" border=\"0\"></IMG>";
         return htmlString;
     }
 
     public static String printQuoteLink(String symbol) {
         return "<A href=\"app?action=quotes&symbols=" + symbol + "\">" + symbol + "</A>";
     }
-
 }

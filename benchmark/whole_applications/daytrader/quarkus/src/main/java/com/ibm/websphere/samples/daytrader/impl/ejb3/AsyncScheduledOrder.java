@@ -15,7 +15,7 @@
  */
 package com.ibm.websphere.samples.daytrader.impl.ejb3;
 
-
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;

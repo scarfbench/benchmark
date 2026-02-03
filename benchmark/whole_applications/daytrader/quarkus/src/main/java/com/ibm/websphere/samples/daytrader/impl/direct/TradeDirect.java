@@ -28,24 +28,17 @@ import java.util.Collection;
 import java.util.concurrent.Future;
 
 import jakarta.annotation.Resource;
-// import javax.enterprise.concurrent.ManagedExecutorService;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.NotificationOptions;
 import jakarta.inject.Inject;
-import jakarta.jms.JMSContext;
-import jakarta.jms.JMSException;
-import jakarta.jms.JMSProducer;
-import jakarta.jms.ConnectionFactory;
-import jakarta.jms.Queue;
-import jakarta.jms.QueueConnectionFactory;
-import jakarta.jms.TextMessage;
-import jakarta.jms.Topic;
-import jakarta.jms.TopicConnectionFactory;
 import javax.sql.DataSource;
 import jakarta.transaction.UserTransaction;
 import jakarta.validation.constraints.NotNull;
-import org.eclipse.microprofile.context.ManagedExecutor;
+
+import io.quarkus.narayana.jta.QuarkusTransaction;
+
+import com.ibm.websphere.samples.daytrader.messaging.MessageProducerService;
 
 import com.ibm.websphere.samples.daytrader.interfaces.TradeServices;
 import com.ibm.websphere.samples.daytrader.beans.MarketSummaryDataBean;
@@ -59,13 +52,10 @@ import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.MDBStats;
 import com.ibm.websphere.samples.daytrader.util.RecentQuotePriceChangeList;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
-import com.ibm.websphere.samples.daytrader.util.TradeBrokerQueue;
-import com.ibm.websphere.samples.daytrader.util.TradeStreamerTopic;
 import com.ibm.websphere.samples.daytrader.interfaces.MarketSummaryUpdate;
 import com.ibm.websphere.samples.daytrader.interfaces.RuntimeMode;
 import com.ibm.websphere.samples.daytrader.interfaces.Trace;
 import com.ibm.websphere.samples.daytrader.interfaces.TradeJDBC;
-import jakarta.persistence.EntityNotFoundException;
 
 /**
  * TradeDirect uses direct JDBC and JMS access to a
@@ -84,13 +74,13 @@ import jakarta.persistence.EntityNotFoundException;
  *
  */
 
+// TradeDirect is injectable only via @TradeJDBC qualifier (no @Default)
+// This prevents ambiguity with TradeSLSBBean which is the @Default implementation
 @Dependent
 @TradeJDBC
 @RuntimeMode("Direct (JDBC)")
 @Trace
 public class TradeDirect implements TradeServices, Serializable {
-
-
   /**
    * 
    */
@@ -105,54 +95,15 @@ public class TradeDirect implements TradeServices, Serializable {
   private boolean inGlobalTxn = false;
   private boolean inSession = false;
 
-  // For Wildfly - add java:/ to these resource names.
-
-  // @Resource(name = "jms/QueueConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-  //@Resource(name = "java:/jms/QueueConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-  @Inject
-  private QueueConnectionFactory queueConnectionFactory;
-
-  // @Resource(name = "jms/TopicConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-  //@Resource(name = "java:/jms/TopicConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-  @Inject
-  private TopicConnectionFactory topicConnectionFactory;
-
-  // @Resource(lookup = "jms/TradeStreamerTopic")
-  // //@Resource(lookup = "java:/jms/TradeStreamerTopic")
-  // private Topic tradeStreamerTopic;
-
-  // @Resource(lookup = "jms/TradeBrokerQueue")
-  // //@Resource(lookup = "java:/jms/TradeBrokerQueue")
-  // private Queue tradeBrokerQueue;
-
-  // @Resource(lookup = "jdbc/TradeDataSource")
-  //@Resource(lookup = "java:/jdbc/TradeDataSource")
-
-
-  @Inject
-  JMSContext jmsContext;
-
-  @Inject
-  @TradeBrokerQueue
-  Queue tradeBrokerQueue;
-
-  @Inject
-  @TradeStreamerTopic
-  Topic tradeStreamerTopic;
-
-  public void sendToQueue(String message) {
-      jmsContext.createProducer().send(tradeBrokerQueue, message);
-  }
-
-  public void sendToTopic(String message) {
-      jmsContext.createProducer().send(tradeStreamerTopic, message);
-  }
+  // MIGRATION: JMS resources replaced with MessageProducerService
+  // Original Jakarta EE used JMS QueueConnectionFactory and TopicConnectionFactory
+  // Quarkus uses SmallRye Reactive Messaging via MessageProducerService
 
   @Inject
   private DataSource datasource;
 
-  @Resource
-  private  UserTransaction txn;
+  @Inject
+  private UserTransaction txn;
 
   @Inject
   RecentQuotePriceChangeList recentQuotePriceChangeList;
@@ -164,8 +115,11 @@ public class TradeDirect implements TradeServices, Serializable {
   @MarketSummaryUpdate
   Event<String> mkSummaryUpdateEvent;
   
+  // MIGRATION: ManagedExecutorService -> use CDI Event async
+  // For market summary updates, we use CDI Event.fireAsync()
+  
   @Inject
-  private ManagedExecutor mes;
+  MessageProducerService messageProducer;
   
 
   @Override
@@ -309,7 +263,8 @@ public class TradeDirect implements TradeServices, Serializable {
       commit(conn);
 
       marketSummaryData = new MarketSummaryDataBean(TSIA, openTSIA, volume, topGainersData, topLosersData);
-      mkSummaryUpdateEvent.fireAsync("MarketSummaryUpdate", NotificationOptions.builder().setExecutor(mes).build());
+      // MIGRATION: ManagedExecutorService -> use simple fireAsync
+      mkSummaryUpdateEvent.fireAsync("MarketSummaryUpdate");
 
     }
 
@@ -375,7 +330,8 @@ public class TradeDirect implements TradeServices, Serializable {
         } else  if (orderProcessingMode == TradeConfig.ASYNCH_2PHASE) {
           queueOrder(orderID, true); // 2-phase
         } 
-      } catch (JMSException je) {
+      } catch (Exception je) {
+        // MIGRATION: JMSException -> Exception (no JMS in Quarkus)
         Log.error("TradeBean:buy(" + userID + "," + symbol + "," + quantity + ") --> failed to queueOrder", je);
 
 
@@ -482,7 +438,8 @@ public class TradeDirect implements TradeServices, Serializable {
         } else if (orderProcessingMode == TradeConfig.ASYNCH_2PHASE) {
           queueOrder(orderData.getOrderID(), true);
         } 
-      } catch (JMSException je) {
+      } catch (Exception je) {
+        // MIGRATION: JMSException -> Exception (no JMS in Quarkus)
         Log.error("TradeBean:sell(" + userID + "," + holdingID + ") --> failed to queueOrder", je);
 
         cancelOrder(conn, orderData.getOrderID());
@@ -522,20 +479,10 @@ public class TradeDirect implements TradeServices, Serializable {
    
     Log.trace("TradeDirect:queueOrder - inSession(" + this.inSession + ")", orderID);
     
-
-    try (JMSContext context = queueConnectionFactory.createContext();){	
-      TextMessage message = context.createTextMessage();
-
-      message.setStringProperty("command", "neworder");
-      message.setIntProperty("orderID", orderID.intValue());
-      message.setBooleanProperty("twoPhase", twoPhase);
-      message.setBooleanProperty("direct", true);
-      message.setLongProperty("publishTime", System.currentTimeMillis());
-      message.setText("neworder: orderID=" + orderID + " runtimeMode=Direct twoPhase=" + twoPhase);
-      context.createProducer().send(tradeBrokerQueue, message);
-    } catch (Exception e) {            
-      throw e; // pass the exception
-    }
+    // MIGRATION: JMS Queue -> Reactive Messaging via MessageProducerService
+    // Original: Create JMSContext, TextMessage, set properties, send to queue
+    // Quarkus: Simply call messageProducer.queueOrderForProcessing()
+    messageProducer.queueOrderForProcessing(orderID, twoPhase);
   }
 
   /**
@@ -1407,31 +1354,21 @@ public class TradeDirect implements TradeServices, Serializable {
 
     Log.trace("TradeDirect:publishQuotePrice PUBLISHING to MDB quoteData = " + quoteData);       
 
-    try (JMSContext context = topicConnectionFactory.createContext();){
-      TextMessage message = context.createTextMessage();
-
-      message.setStringProperty("command", "updateQuote");
-      message.setStringProperty("symbol", quoteData.getSymbol());
-      message.setStringProperty("company", quoteData.getCompanyName());
-      message.setStringProperty("price", quoteData.getPrice().toString());
-      message.setStringProperty("oldPrice", oldPrice.toString());
-      message.setStringProperty("open", quoteData.getOpen().toString());
-      message.setStringProperty("low", quoteData.getLow().toString());
-      message.setStringProperty("high", quoteData.getHigh().toString());
-      message.setDoubleProperty("volume", quoteData.getVolume());
-
-      message.setStringProperty("changeFactor", changeFactor.toString());
-      message.setDoubleProperty("sharesTraded", sharesTraded);
-      message.setLongProperty("publishTime", System.currentTimeMillis());
-      message.setText("Update Stock price for " + quoteData.getSymbol() + " old price = " + oldPrice + " new price = " + quoteData.getPrice());
-
-
-      context.createProducer().send(tradeStreamerTopic, message);
-
-    } catch (Exception e) {
-      throw e; // pass exception back
-
-    }
+    // MIGRATION: JMS Topic -> Reactive Messaging via MessageProducerService
+    // Original: Create JMSContext, TextMessage, set properties, send to topic
+    // Quarkus: Simply call messageProducer.publishQuotePriceChange()
+    messageProducer.publishQuotePriceChange(
+        quoteData.getSymbol(),
+        quoteData.getCompanyName(),
+        quoteData.getPrice(),
+        oldPrice,
+        quoteData.getOpen(),
+        quoteData.getLow(),
+        quoteData.getHigh(),
+        quoteData.getVolume(),
+        changeFactor,
+        sharesTraded
+    );
   }
 
   /**
@@ -1453,8 +1390,8 @@ public class TradeDirect implements TradeServices, Serializable {
       ResultSet rs = stmt.executeQuery();
       if (!rs.next()) {
         Log.error("TradeDirect:login -- failure to find account for" + userID);
-        // throw new javax.ejb.FinderException("Cannot find account for" + userID);
-        throw new EntityNotFoundException("Cannot find account for " + userID);
+        // MIGRATION: javax.ejb.FinderException -> RuntimeException (no EJB in Quarkus)
+        throw new RuntimeException("Cannot find account for " + userID);
       }
 
       String pw = rs.getString("passwd");

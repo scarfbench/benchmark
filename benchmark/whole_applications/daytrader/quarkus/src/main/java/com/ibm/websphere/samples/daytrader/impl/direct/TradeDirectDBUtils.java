@@ -28,10 +28,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-import jakarta.annotation.Resource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import javax.sql.DataSource;
+
+import io.agroal.api.AgroalDataSource;
 
 import com.ibm.websphere.samples.daytrader.beans.RunStatsDataBean;
 import com.ibm.websphere.samples.daytrader.entities.AccountDataBean;
@@ -52,11 +53,9 @@ import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 @ApplicationScoped
 public class TradeDirectDBUtils implements TradeDB {
 
-  // For Wildfly - add java:/ to this resource.
-  
-  @Resource(lookup = "jdbc/TradeDataSource")
-  //@Resource(lookup = "java:/jdbc/TradeDataSource")
-  private DataSource datasource;
+  // MIGRATION: @Resource DataSource -> @Inject AgroalDataSource
+  @Inject
+  AgroalDataSource datasource;
 
   @Inject 
   @TradeJDBC

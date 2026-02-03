@@ -19,26 +19,20 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.annotation.Resource;
-// import javax.ejb.Lock;
-// import javax.ejb.LockType;
-// import javax.ejb.Schedule;
-import jakarta.inject.Singleton;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.eclipse.microprofile.context.ManagedExecutor;
-
-// import javax.enterprise.concurrent.ManagedExecutorService;
+// MIGRATION: javax.* -> jakarta.*
+// MIGRATION: @Singleton EJB -> @ApplicationScoped CDI
+// MIGRATION: @Schedule -> @Scheduled (Quarkus)
+// MIGRATION: @Lock -> synchronized methods
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.NotificationOptions;
 import jakarta.inject.Inject;
-import jakarta.json.JsonObject;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
+
+import io.quarkus.scheduler.Scheduled;
 
 import com.ibm.websphere.samples.daytrader.beans.MarketSummaryDataBean;
 import com.ibm.websphere.samples.daytrader.entities.QuoteDataBean;
@@ -47,32 +41,26 @@ import com.ibm.websphere.samples.daytrader.util.FinancialUtils;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
-import io.quarkus.arc.Lock;
-import io.quarkus.scheduler.Scheduled;
-
-@Singleton
+// MIGRATION: @Singleton EJB -> @ApplicationScoped CDI bean
+@ApplicationScoped
 public class MarketSummarySingleton {
 
-  private MarketSummaryDataBean marketSummaryDataBean;
+  private volatile MarketSummaryDataBean marketSummaryDataBean;
 
-  @PersistenceContext
-  private EntityManager entityManager;
+  @Inject
+  EntityManager entityManager;
   
   @Inject
   @MarketSummaryUpdate
   Event<String> mkSummaryUpdateEvent;
-
-  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   
-  // @Resource
-  // private ManagedExecutorService mes;
-    @Inject
-    private ManagedExecutor mes;
+  // MIGRATION: ManagedExecutorService removed, use simple fireAsync()
   
 
-    /* Update Market Summary every 20 seconds */
-    @Scheduled(every = "20s")
-  public void updateMarketSummary() { 
+  /* Update Market Summary every 20 seconds */
+  // MIGRATION: @Schedule -> @Scheduled (Quarkus)
+  @Scheduled(every = "20s")
+  void updateMarketSummary() { 
 
 
     Log.trace("MarketSummarySingleton:updateMarketSummary -- updating market summary");
@@ -80,10 +68,27 @@ public class MarketSummarySingleton {
 
     if (TradeConfig.getRunTimeMode() != TradeConfig.EJB3)
     {
-      Log.trace("MarketSummarySingleton:updateMarketSummary -- Not EJB3 Mode, so not updating");
-      return; // Only do the actual work if in EJB3 Mode
+      Log.trace("MarketSummarySingleton:updateMarketSummary -- Not EJB3 Mode, so not updating periodically");
+      return; // Only do the periodic update if in EJB3 Mode
     }
 
+    computeMarketSummary();
+    // MIGRATION: ManagedExecutorService removed, use simple fireAsync()
+    mkSummaryUpdateEvent.fireAsync("MarketSummaryUpdate");
+  }
+
+  // MIGRATION: @Lock(READ) -> synchronized getter (volatile field provides visibility)
+  public synchronized MarketSummaryDataBean getMarketSummaryDataBean() { 
+    if (marketSummaryDataBean == null){
+      // Compute market summary on first access regardless of mode
+      computeMarketSummary();
+    }
+
+    return marketSummaryDataBean;
+  }
+
+  // Internal method to compute market summary (called on-demand or by scheduler)
+  private void computeMarketSummary() {
     List<QuoteDataBean> quotes;
 
     try {        
@@ -129,30 +134,11 @@ public class MarketSummarySingleton {
     }
 
     setMarketSummaryDataBean(new MarketSummaryDataBean(TSIA, openTSIA, totalVolume, topGainers, topLosers));
-    mkSummaryUpdateEvent.fireAsync("MarketSummaryUpdate", NotificationOptions.builder().setExecutor(mes).build());
   }
 
-  // @Lock(LockType.READ)
-  public MarketSummaryDataBean getMarketSummaryDataBean() { 
-    lock.readLock().lock();
-    try {
-    if (marketSummaryDataBean == null){
-      updateMarketSummary();
-    }
-    return marketSummaryDataBean;
-     } finally {
-            lock.readLock().unlock();
-        }
-  }
-
-  // @Lock(LockType.WRITE)
-  public void setMarketSummaryDataBean(MarketSummaryDataBean marketSummaryDataBean) {
-    lock.writeLock().lock();
-        try {
+  // MIGRATION: @Lock(WRITE) -> synchronized setter
+  public synchronized void setMarketSummaryDataBean(MarketSummaryDataBean marketSummaryDataBean) {
     this.marketSummaryDataBean = marketSummaryDataBean;
-    } finally {
-            lock.writeLock().unlock();
-        }
   }
 
 }

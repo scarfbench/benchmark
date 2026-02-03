@@ -15,24 +15,29 @@
  */
 package com.ibm.websphere.samples.daytrader.impl.direct;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-import jakarta.annotation.Resource;
-import org.eclipse.microprofile.context.ManagedExecutor;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
+import io.quarkus.virtual.threads.VirtualThreads;
+import java.util.concurrent.ExecutorService;
+
+// MIGRATION: ManagedExecutorService -> Quarkus ExecutorService with virtual threads
 @RequestScoped
 public class AsyncOrderSubmitter {
-
+  
   @Inject
-  private ManagedExecutor mes;
+  @VirtualThreads
+  ExecutorService executorService;
 
   @Inject
   private AsyncOrder asyncOrder;
-
+  
+  
   public Future<?> submitOrder(Integer orderID, boolean twoPhase) {
-    asyncOrder.setProperties(orderID, twoPhase);
-    return mes.submit(asyncOrder);
+    asyncOrder.setProperties(orderID,twoPhase);
+    return CompletableFuture.runAsync(asyncOrder, executorService);
   }
 }

@@ -1,6 +1,0 @@
-# Python dependencies for run_processing scripts
-# Install with: pip install -r requirements.txt
-
-# YAML parsing for configuration files (used by run_agent.py and setup.py)
-PyYAML>=6.0
-

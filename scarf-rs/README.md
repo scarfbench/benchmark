@@ -60,6 +60,7 @@ Before installing the SCARF CLI, ensure you have the following tools installed:
 
 After installation, you can use the SCARF CLI to interact with the SCARF Benchmark. Here are some common commands:
 
+### 1. List Benchmarks
 ```bash
 ❯ ./target/release/scarf bench list --help
 List the application(s) in the benchmark.
@@ -74,7 +75,7 @@ Options:
 ```
 
 This should give you something like below
-```
+```bash
 ❯ ./target/release/scarf bench list --root /home/rkrsn/workspace/scarfbench/ --layer business_domain
 ┌─────────────────┬──────────────┬───────────┬─────────────────────────────────────────────────────────────────────────────────┐
 │ Layer           ┆ Application  ┆ Framework ┆ Path                                                                            │
@@ -96,6 +97,49 @@ This should give you something like below
 │ business_domain ┆ standalone   ┆ spring    ┆ /home/rkrsn/workspace/scarfbench/benchmark/business_domain/standalone/spring    │
 └─────────────────┴──────────────┴───────────┴─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### 2. Test Benchmark Layer(s)
+
+You can use the `scarf bench test` command to test specific benchmark layers or the whole benchmark. Here are some examples:
+
+```bash
+❯ ./target/release/scarf bench test --help
+Run regression tests (with `make test`) on the benchmark application(s).
+
+Usage: scarf bench test [OPTIONS] --root <ROOT>
+
+Options:
+      --root <ROOT>    Path to the root of the scarf repository.
+  -v, --verbose...     Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence.
+      --layer <LAYER>  Application layer to test.
+      --dry-run        Use dry run instead of full run.
+  -h, --help           Print help
+```
+
+For example, to test the `persistence` layer:
+
+```bash
+❯ ./target/release/scarf bench test --root /home/rkrsn/workspace/scarfbench/ --layer persistence
+```
+
+This will run `make tests` in all the apps in `persistence` layer and provide a summary of the results.
+
+```bash
+┌─────────────────────────────────────────────────────────────────────────────┬─────────┐
+│ Application Path                                                            ┆ Result  │
+╞═════════════════════════════════════════════════════════════════════════════╪═════════╡
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/order/jakarta        ┆ Failure │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/roster/spring        ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/order/quarkus        ┆ Failure │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/roster/quarkus       ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/roster/jakarta       ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/address-book/spring  ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/address-book/quarkus ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/address-book/jakarta ┆ Success │
+│ /home/rkrsn/workspace/scarfbench/benchmark/persistence/order/spring         ┆ Success │
+└─────────────────────────────────────────────────────────────────────────────┴─────────┘
+```
+
 
 ## Development
 

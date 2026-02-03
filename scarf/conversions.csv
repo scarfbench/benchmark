@@ -1,0 +1,25 @@
+solution,org,date,status,link,layer,from,to,compile,run,translate
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,jakarta,quarkus,66.7,53.3,-
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,jakarta,spring,46.7,13.3,-
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,quarkus,jakarta,80.0,6.7,-
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,quarkus,spring,60.0,13.3,-
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,spring,jakarta,46.7,26.7,-
+claude-sonnet-4.5,Anthropic,12/17/25,Computed,https://www.anthropic.com/news/claude-sonnet-4-5,whole app,spring,quarkus,20.0,13.3,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,jakarta,quarkus,100.0,46.7,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,jakarta,spring,93.3,66.7,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,quarkus,jakarta,13.3,0.0,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,quarkus,spring,20.0,0.0,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,spring,jakarta,20.0,0.0,-
+gpt-5,OpenAI,12/17/25,Computed,https://openai.com/gpt-5/,whole app,spring,quarkus,6.7,0.0,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,jakarta,quarkus,53.3,53.3,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,jakarta,spring,86.7,40.0,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,quarkus,jakarta,66.7,26.7,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,quarkus,spring,80.0,26.7,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,spring,jakarta,60.0,13.3,-
+gemini-2.5-pro,Google DeepMind,12/17/25,Computed,https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf,whole app,spring,quarkus,53.3,46.7,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,jakarta,quarkus,0.0,0.0,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,jakarta,spring,0.0,0.0,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,quarkus,jakarta,0.0,0.0,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,quarkus,spring,20.0,20.0,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,spring,jakarta,20.0,6.7,-
+qwen3-coder-480b,Alibaba,12/17/25,Computed,https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct,whole app,spring,quarkus,20.0,0.0,-

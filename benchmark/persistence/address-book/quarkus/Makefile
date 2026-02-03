@@ -1,7 +1,7 @@
 ### Quarkus Justfile
 APP_NAME       := "address-book-quarkus"
 IMAGE_NAME     := "address-book-quarkus:latest"
-SUCCESS_PATTERN := started in.*Listening on:
+SUCCESS_PATTERN := Listening on: http://0.0.0.0:8080
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .

@@ -1,8 +1,26 @@
-use crate::cli::BenchTestArgs;
 use anyhow::{Context, Result};
+use clap::Args;
 use rayon::prelude::*;
 use std::{path::PathBuf, process::Command, sync::mpsc};
 use walkdir::WalkDir;
+
+
+#[derive(Args, Debug)]
+pub struct BenchTestArgs {
+    #[arg(long, help = "Path to the root of the scarf repository.")]
+    pub root: String,
+
+    #[arg(long, help = "Application layer to test.")]
+    pub layer: Option<String>,
+
+    #[arg(
+        long = "dry-run",
+        action = clap::ArgAction::SetTrue,
+        help = "Use dry run instead of full run."
+    )]
+    pub dry_run: bool,
+}
+
 
 /// Create a container to hold command run result
 struct RunResult {

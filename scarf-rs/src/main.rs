@@ -3,6 +3,7 @@ use clap::Parser;
 
 mod bench;
 mod cli;
+mod eval;
 
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();
@@ -10,6 +11,9 @@ fn main() -> Result<()> {
 
     let code = match cli.command {
         cli::Commands::Bench(cmd) => bench::run(cmd)?,
+        cli::Commands::Eval(_cmd) => {
+            unimplemented!("Eval command is not yet implemented");
+        }
     };
     std::process::exit(code);
 }

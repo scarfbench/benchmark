@@ -1,9 +1,18 @@
-use crate::cli::BenchListArgs;
 use anyhow::Result;
+use clap::Args;
 use comfy_table::Table;
 use log;
 use std::path::PathBuf;
 use walkdir::WalkDir;
+
+#[derive(Args, Debug)]
+pub struct BenchListArgs {
+    #[arg(long, help = "Path to the root of the scarf repository.")]
+    pub root: String,
+
+    #[arg(long, help = "Application layer to list.")]
+    pub layer: Option<String>,
+}
 
 /// A simple list subcommand that lists all the benchmark applications as a table.
 pub fn run(args: BenchListArgs) -> Result<i32> {

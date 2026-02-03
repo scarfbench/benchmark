@@ -33,7 +33,7 @@ pub fn run(args: BenchListArgs) -> Result<i32> {
     let header = gen_header();
     match gen_rows(&base, &bench_root) {
         Ok(rows) => {
-            // rows is find, so let's use it!
+            // rows is fine, so let's use it!
             println!("{}", tabulate(&header, &rows));
         }
         Err(e) => {

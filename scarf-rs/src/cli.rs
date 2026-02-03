@@ -52,4 +52,11 @@ pub struct BenchTestArgs {
 
     #[arg(long, help = "Application layer to test.")]
     pub layer: Option<String>,
+
+    #[arg(
+        long = "dry-run",
+        action = clap::ArgAction::SetTrue,
+        help = "Use dry run instead of full run."
+    )]
+    pub dry_run: bool,
 }

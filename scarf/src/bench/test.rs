@@ -103,9 +103,13 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         // Each worker does its job (i.e., run the makefile and return the result as RunResult)
         log::info!("Running makefile test in directory: {}", dir.display());
         let result = run_makefile(dir, args.dry_run);
-        let status = result.as_ref().map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
+        let status = result
+            .as_ref()
+            .map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
         log::info!(
-            "Completed makefile test in directory: {}. Status: {}", dir.display(), status
+            "Completed makefile test in directory: {}. Status: {}",
+            dir.display(),
+            status
         );
         // Now, clone into an owned directory (using to_path_buf) that each of the worker is
         // using and send that back to the receiver along with the ownership of the result.

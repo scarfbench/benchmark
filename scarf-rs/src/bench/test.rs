@@ -93,6 +93,7 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     // Let's obtain a multi-provider (tx) single channel (rx) to collect results
     let (tx, rx) = mpsc::channel::<(PathBuf, anyhow::Result<RunResult>)>();
     //                              ^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^
+    //                                 ▲                  ▲
     //                                 │                  │
     //                                Tx type     Rx Result (Result of makefile run)
 
@@ -101,13 +102,10 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     app_dirs.par_iter().for_each_with(tx, |tx, dir| {
         // Each worker does its job (i.e., run the makefile and return the result as RunResult)
         log::info!("Running makefile test in directory: {}", dir.display());
-
-        let now = std::time::Instant::now();
         let result = run_makefile(dir, args.dry_run);
+        let status = result.as_ref().map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
         log::info!(
-            "Completed makefile test in directory: {} in {} seconds",
-            dir.display(),
-            now.elapsed().as_secs()
+            "Completed makefile test in directory: {}. Status: {}", dir.display(), status
         );
         // Now, clone into an owned directory (using to_path_buf) that each of the worker is
         // using and send that back to the receiver along with the ownership of the result.
@@ -115,11 +113,10 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     });
 
     let mut results: Vec<[String; 2]> = Vec::new();
-
-    //             Only iterate as many times as we have directories
-    //                                     │
-    //                                     ▼
-    //                              |``````````````|
+    //              Only iterate as many times as we have directories
+    //                                       │
+    //                                       ▼
+    //                             |```````````````````|
     // for (dir, res) in rx.iter().take(app_dirs.len()) {
     for (dir, res) in rx.iter() {
         match res {

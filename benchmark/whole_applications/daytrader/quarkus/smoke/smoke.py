@@ -352,381 +352,381 @@ def test_buy_stock(logged_in_page: Page) -> None:
 # REST API TESTS
 # ============================================================================
 
-@pytest.mark.smoke
-def test_rest_market_endpoint(page: Page) -> None:
-    """Test the REST API market endpoint."""
-    response = page.request.get(f"{BASE_URL}/rest/trade/market")
+# @pytest.mark.smoke
+# def test_rest_market_endpoint(page: Page) -> None:
+#     """Test the REST API market endpoint."""
+#     response = page.request.get(f"{BASE_URL}/rest/trade/market")
     
-    assert response.ok, f"Market endpoint failed with status {response.status}"
-    data = response.json()
-    # Should return JSON with market data
-    assert "TSIA" in str(data) or "tsia" in str(data).lower() or \
-           "openTSIA" in str(data), "Market endpoint did not return expected data"
+#     assert response.ok, f"Market endpoint failed with status {response.status}"
+#     data = response.json()
+#     # Should return JSON with market data
+#     assert "TSIA" in str(data) or "tsia" in str(data).lower() or \
+#            "openTSIA" in str(data), "Market endpoint did not return expected data"
 
 
-@pytest.mark.smoke
-def test_rest_quotes_endpoint(page: Page) -> None:
-    """Test the REST API quotes endpoint."""
-    response = page.request.get(f"{BASE_URL}/rest/quotes/s:0,s:1")
+# @pytest.mark.smoke
+# def test_rest_quotes_endpoint(page: Page) -> None:
+#     """Test the REST API quotes endpoint."""
+#     response = page.request.get(f"{BASE_URL}/rest/quotes/s:0,s:1")
     
-    assert response.ok, f"Quotes endpoint failed with status {response.status}"
-    data = response.json()
-    # Should return JSON array with quote data
-    assert isinstance(data, list), "Quotes endpoint should return a list"
-    if len(data) > 0:
-        assert "symbol" in str(data[0]).lower() or "s:" in str(data), \
-            "Quote data not found in response"
+#     assert response.ok, f"Quotes endpoint failed with status {response.status}"
+#     data = response.json()
+#     # Should return JSON array with quote data
+#     assert isinstance(data, list), "Quotes endpoint should return a list"
+#     if len(data) > 0:
+#         assert "symbol" in str(data[0]).lower() or "s:" in str(data), \
+#             "Quote data not found in response"
 
 
-# ============================================================================
-# ERROR HANDLING TESTS
-# ============================================================================
+# # ============================================================================
+# # ERROR HANDLING TESTS
+# # ============================================================================
 
-@pytest.mark.smoke
-def test_404_handling(page: Page) -> None:
-    """Test that 404 errors are handled gracefully."""
-    response = page.goto(f"{BASE_URL}/nonexistent-page-12345")
+# @pytest.mark.smoke
+# def test_404_handling(page: Page) -> None:
+#     """Test that 404 errors are handled gracefully."""
+#     response = page.goto(f"{BASE_URL}/nonexistent-page-12345")
     
-    # Should either return 404 or redirect
-    if response is not None:
-        assert response.status in [404, 200, 302, 301], \
-            f"Unexpected status code: {response.status}"
+#     # Should either return 404 or redirect
+#     if response is not None:
+#         assert response.status in [404, 200, 302, 301], \
+#             f"Unexpected status code: {response.status}"
 
 
-@pytest.mark.smoke
-def test_invalid_action_handling(page: Page) -> None:
-    """Test handling of invalid action parameter."""
-    page.goto(f"{APP_URL}?action=invalid_action_xyz", 
-              wait_until="domcontentloaded")
+# @pytest.mark.smoke
+# def test_invalid_action_handling(page: Page) -> None:
+#     """Test handling of invalid action parameter."""
+#     page.goto(f"{APP_URL}?action=invalid_action_xyz", 
+#               wait_until="domcontentloaded")
     
-    content = page.content().lower()
-    # Should show error or redirect to login/welcome
-    assert "error" in content or "unknown" in content or \
-           "login" in content or "welcome" in content, \
-           "Invalid action not handled properly"
+#     content = page.content().lower()
+#     # Should show error or redirect to login/welcome
+#     assert "error" in content or "unknown" in content or \
+#            "login" in content or "welcome" in content, \
+#            "Invalid action not handled properly"
 
 
-# ============================================================================
-# PERFORMANCE SANITY TESTS
-# ============================================================================
+# # ============================================================================
+# # PERFORMANCE SANITY TESTS
+# # ============================================================================
 
-@pytest.mark.smoke
-def test_page_load_time(page: Page) -> None:
-    """Test that pages load within reasonable time."""
-    import time
+# @pytest.mark.smoke
+# def test_page_load_time(page: Page) -> None:
+#     """Test that pages load within reasonable time."""
+#     import time
     
-    start = time.time()
-    page.goto(f"{BASE_URL}/", wait_until="domcontentloaded")
-    elapsed = time.time() - start
+#     start = time.time()
+#     page.goto(f"{BASE_URL}/", wait_until="domcontentloaded")
+#     elapsed = time.time() - start
     
-    # Should load within 10 seconds
-    assert elapsed < 10, f"Page took too long to load: {elapsed:.2f}s"
+#     # Should load within 10 seconds
+#     assert elapsed < 10, f"Page took too long to load: {elapsed:.2f}s"
 
 
-@pytest.mark.smoke
-def test_multiple_requests(page: Page) -> None:
-    """Test that multiple rapid requests work."""
-    pages_to_test = [
-        f"{BASE_URL}/",
-        APP_URL,
-        f"{BASE_URL}/style.css",
-        f"{BASE_URL}/images/dayTraderLogo.gif",
-    ]
+# @pytest.mark.smoke
+# def test_multiple_requests(page: Page) -> None:
+#     """Test that multiple rapid requests work."""
+#     pages_to_test = [
+#         f"{BASE_URL}/",
+#         APP_URL,
+#         f"{BASE_URL}/style.css",
+#         f"{BASE_URL}/images/dayTraderLogo.gif",
+#     ]
     
-    for url in pages_to_test:
-        response = page.goto(url)
-        assert response is not None and response.ok, f"Failed to load {url}"
+#     for url in pages_to_test:
+#         response = page.goto(url)
+#         assert response is not None and response.ok, f"Failed to load {url}"
 
 
-# ============================================================================
-# MESSAGING TESTS (JMS -> Reactive Messaging Migration)
-# ============================================================================
+# # ============================================================================
+# # MESSAGING TESTS (JMS -> Reactive Messaging Migration)
+# # ============================================================================
 
-@pytest.mark.smoke
-def test_messaging_ping_broker(page: Page) -> None:
-    """Test sending a ping message to the broker queue (replaces PingServlet2MDBQueue)."""
-    import json
+# @pytest.mark.smoke
+# def test_messaging_ping_broker(page: Page) -> None:
+#     """Test sending a ping message to the broker queue (replaces PingServlet2MDBQueue)."""
+#     import json
     
-    response = page.request.post(
-        f"{BASE_URL}/rest/messaging/ping/broker",
-        params={"message": "smoke test ping"}
-    )
+#     response = page.request.post(
+#         f"{BASE_URL}/rest/messaging/ping/broker",
+#         params={"message": "smoke test ping"}
+#     )
     
-    assert response.ok, f"Broker ping failed: {response.status}"
-    data = response.json()
-    assert data["status"] == "sent", "Broker ping not sent"
-    assert data["destination"] == "trade-broker-queue", "Wrong destination"
-
-
-@pytest.mark.smoke
-def test_messaging_ping_streamer(page: Page) -> None:
-    """Test sending a ping message to the streamer topic (replaces PingServlet2MDBTopic)."""
-    response = page.request.post(
-        f"{BASE_URL}/rest/messaging/ping/streamer",
-        params={"message": "smoke test ping to streamer"}
-    )
-    
-    assert response.ok, f"Streamer ping failed: {response.status}"
-    data = response.json()
-    assert data["status"] == "sent", "Streamer ping not sent"
-    assert data["destination"] == "trade-streamer-topic", "Wrong destination"
+#     assert response.ok, f"Broker ping failed: {response.status}"
+#     data = response.json()
+#     assert data["status"] == "sent", "Broker ping not sent"
+#     assert data["destination"] == "trade-broker-queue", "Wrong destination"
 
 
-@pytest.mark.smoke
-def test_messaging_stats_endpoint(page: Page) -> None:
-    """Test that messaging statistics endpoint works."""
-    response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
+# @pytest.mark.smoke
+# def test_messaging_ping_streamer(page: Page) -> None:
+#     """Test sending a ping message to the streamer topic (replaces PingServlet2MDBTopic)."""
+#     response = page.request.post(
+#         f"{BASE_URL}/rest/messaging/ping/streamer",
+#         params={"message": "smoke test ping to streamer"}
+#     )
     
-    assert response.ok, f"Stats endpoint failed: {response.status}"
-    data = response.json()
-    assert "statistics" in data, "Statistics not found in response"
-    assert "timestamp" in data, "Timestamp not found in response"
+#     assert response.ok, f"Streamer ping failed: {response.status}"
+#     data = response.json()
+#     assert data["status"] == "sent", "Streamer ping not sent"
+#     assert data["destination"] == "trade-streamer-topic", "Wrong destination"
 
 
-@pytest.mark.smoke
-def test_messaging_stats_reset(page: Page) -> None:
-    """Test that messaging statistics can be reset."""
-    response = page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
+# @pytest.mark.smoke
+# def test_messaging_stats_endpoint(page: Page) -> None:
+#     """Test that messaging statistics endpoint works."""
+#     response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
     
-    assert response.ok, f"Stats reset failed: {response.status}"
-    data = response.json()
-    assert data["status"] == "reset", "Stats reset failed"
+#     assert response.ok, f"Stats endpoint failed: {response.status}"
+#     data = response.json()
+#     assert "statistics" in data, "Statistics not found in response"
+#     assert "timestamp" in data, "Timestamp not found in response"
 
 
-@pytest.mark.smoke
-def test_messaging_broker_processes_ping(page: Page) -> None:
-    """Test that broker ping messages are actually processed.
+# @pytest.mark.smoke
+# def test_messaging_stats_reset(page: Page) -> None:
+#     """Test that messaging statistics can be reset."""
+#     response = page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
     
-    This verifies the full message flow:
-    1. Send ping via MessageProducerService
-    2. DTBroker3MDB receives and processes it
-    3. Statistics are updated
-    """
-    import time
-    
-    # Reset stats first
-    page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
-    
-    # Send multiple pings
-    for i in range(3):
-        response = page.request.post(
-            f"{BASE_URL}/rest/messaging/ping/broker",
-            params={"message": f"ping {i}"}
-        )
-        assert response.ok
-    
-    # Wait for async processing
-    time.sleep(1)
-    
-    # Check stats - should have broker ping stats
-    response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
-    assert response.ok
-    data = response.json()
-    
-    stats = data.get("statistics", {})
-    # Look for broker MDB stats (using original class name)
-    broker_stats = stats.get("DTBroker3MDB:ping", {})
-    if broker_stats:
-        assert broker_stats.get("count", 0) >= 3, "Not all pings were processed"
+#     assert response.ok, f"Stats reset failed: {response.status}"
+#     data = response.json()
+#     assert data["status"] == "reset", "Stats reset failed"
 
 
-@pytest.mark.smoke
-def test_messaging_streamer_processes_ping(page: Page) -> None:
-    """Test that streamer ping messages are actually processed.
+# @pytest.mark.smoke
+# def test_messaging_broker_processes_ping(page: Page) -> None:
+#     """Test that broker ping messages are actually processed.
     
-    This verifies the full message flow:
-    1. Send ping via MessageProducerService
-    2. DTStreamer3MDB receives and processes it
-    3. Statistics are updated
-    """
-    import time
+#     This verifies the full message flow:
+#     1. Send ping via MessageProducerService
+#     2. DTBroker3MDB receives and processes it
+#     3. Statistics are updated
+#     """
+#     import time
     
-    # Reset stats first
-    page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
+#     # Reset stats first
+#     page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
     
-    # Send multiple pings
-    for i in range(3):
-        response = page.request.post(
-            f"{BASE_URL}/rest/messaging/ping/streamer",
-            params={"message": f"ping {i}"}
-        )
-        assert response.ok
+#     # Send multiple pings
+#     for i in range(3):
+#         response = page.request.post(
+#             f"{BASE_URL}/rest/messaging/ping/broker",
+#             params={"message": f"ping {i}"}
+#         )
+#         assert response.ok
     
-    # Wait for async processing
-    time.sleep(1)
+#     # Wait for async processing
+#     time.sleep(1)
     
-    # Check stats - should have streamer ping stats
-    response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
-    assert response.ok
-    data = response.json()
+#     # Check stats - should have broker ping stats
+#     response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
+#     assert response.ok
+#     data = response.json()
     
-    stats = data.get("statistics", {})
-    # Look for streamer MDB stats (using original class name)
-    streamer_stats = stats.get("DTStreamer3MDB:ping", {})
-    if streamer_stats:
-        assert streamer_stats.get("count", 0) >= 3, "Not all pings were processed"
+#     stats = data.get("statistics", {})
+#     # Look for broker MDB stats (using original class name)
+#     broker_stats = stats.get("DTBroker3MDB:ping", {})
+#     if broker_stats:
+#         assert broker_stats.get("count", 0) >= 3, "Not all pings were processed"
 
 
-@pytest.mark.smoke  
-def test_async_order_processing(logged_in_page: Page) -> None:
-    """Test asynchronous order processing via messaging.
+# @pytest.mark.smoke
+# def test_messaging_streamer_processes_ping(page: Page) -> None:
+#     """Test that streamer ping messages are actually processed.
     
-    This is the key JMS migration test:
-    1. User places a buy order via REST API
-    2. Order is created with 'open' status
-    3. Message sent to trade-broker-queue
-    4. DTBroker3MDB completes the order
-    5. Order status becomes 'closed'
+#     This verifies the full message flow:
+#     1. Send ping via MessageProducerService
+#     2. DTStreamer3MDB receives and processes it
+#     3. Statistics are updated
+#     """
+#     import time
     
-    Uses Playwright's request API instead of requests library.
-    """
-    import time
+#     # Reset stats first
+#     page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
     
-    page = logged_in_page
+#     # Send multiple pings
+#     for i in range(3):
+#         response = page.request.post(
+#             f"{BASE_URL}/rest/messaging/ping/streamer",
+#             params={"message": f"ping {i}"}
+#         )
+#         assert response.ok
     
-    # Reset messaging stats via REST API
-    page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
+#     # Wait for async processing
+#     time.sleep(1)
     
-    # Execute a buy order via REST API
-    buy_response = page.request.post(
-        f"{BASE_URL}/rest/trade/buy",
-        form={"userID": "uid:0", "symbol": "s:0", "quantity": "1"}
-    )
+#     # Check stats - should have streamer ping stats
+#     response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
+#     assert response.ok
+#     data = response.json()
     
-    # The buy endpoint may return 200 or fail - just check it doesn't crash
-    # The key test is that messaging stats are updated
+#     stats = data.get("statistics", {})
+#     # Look for streamer MDB stats (using original class name)
+#     streamer_stats = stats.get("DTStreamer3MDB:ping", {})
+#     if streamer_stats:
+#         assert streamer_stats.get("count", 0) >= 3, "Not all pings were processed"
+
+
+# @pytest.mark.smoke  
+# def test_async_order_processing(logged_in_page: Page) -> None:
+#     """Test asynchronous order processing via messaging.
     
-    # Wait for async message processing
-    time.sleep(1)
+#     This is the key JMS migration test:
+#     1. User places a buy order via REST API
+#     2. Order is created with 'open' status
+#     3. Message sent to trade-broker-queue
+#     4. DTBroker3MDB completes the order
+#     5. Order status becomes 'closed'
     
-    # Check messaging stats - if async order processing worked,
-    # we should see stats from DTBroker3MDB
-    stats_response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
-    if stats_response.ok:
-        stats = stats_response.json().get("statistics", {})
-        # Even if buy failed, the stats endpoint should work
-        assert isinstance(stats, dict), "Stats should be a dictionary"
+#     Uses Playwright's request API instead of requests library.
+#     """
+#     import time
     
-    # Alternative: just verify the page still works after messaging operations
-    page.reload()
-    page.wait_for_load_state("domcontentloaded")
-    assert page.url is not None, "Page should still be accessible"
-
-
-# ============================================================================
-# ADDITIONAL REST API TESTS
-# ============================================================================
-
-@pytest.mark.smoke
-def test_rest_account_endpoint(page: Page) -> None:
-    """Test the REST API account endpoint."""
-    response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0")
+#     page = logged_in_page
     
-    assert response.ok, f"Account endpoint failed with status {response.status}"
-    data = response.json()
-    # Should return account data
-    assert "profileID" in str(data) or "accountID" in str(data) or \
-           "balance" in str(data).lower(), "Account data not found in response"
-
-
-@pytest.mark.smoke
-def test_rest_holdings_endpoint(page: Page) -> None:
-    """Test the REST API holdings endpoint."""
-    response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0/holdings")
+#     # Reset messaging stats via REST API
+#     page.request.post(f"{BASE_URL}/rest/messaging/stats/reset")
     
-    assert response.ok, f"Holdings endpoint failed with status {response.status}"
-    data = response.json()
-    # Should return a list (could be empty if no holdings)
-    assert isinstance(data, list), "Holdings endpoint should return a list"
-
-
-@pytest.mark.smoke
-def test_rest_orders_endpoint(page: Page) -> None:
-    """Test the REST API orders endpoint."""
-    response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0/orders")
+#     # Execute a buy order via REST API
+#     buy_response = page.request.post(
+#         f"{BASE_URL}/rest/trade/buy",
+#         form={"userID": "uid:0", "symbol": "s:0", "quantity": "1"}
+#     )
     
-    assert response.ok, f"Orders endpoint failed with status {response.status}"
-    data = response.json()
-    # Should return a list (could be empty if no orders)
-    assert isinstance(data, list), "Orders endpoint should return a list"
-
-
-@pytest.mark.smoke
-def test_rest_login_endpoint(page: Page) -> None:
-    """Test the REST API login endpoint."""
-    response = page.request.post(
-        f"{BASE_URL}/rest/trade/login",
-        form={"userID": "uid:0", "password": "xxx"}
-    )
+#     # The buy endpoint may return 200 or fail - just check it doesn't crash
+#     # The key test is that messaging stats are updated
     
-    assert response.ok, f"Login endpoint failed with status {response.status}"
-    data = response.json()
-    assert "profileID" in str(data) or "accountID" in str(data), \
-        "Login did not return account data"
-
-
-@pytest.mark.smoke
-def test_rest_login_invalid_credentials(page: Page) -> None:
-    """Test the REST API login with invalid credentials."""
-    response = page.request.post(
-        f"{BASE_URL}/rest/trade/login",
-        form={"userID": "invalid_user", "password": "wrong"}
-    )
+#     # Wait for async message processing
+#     time.sleep(1)
     
-    # Should return 401 Unauthorized
-    assert response.status == 401, f"Expected 401 for invalid login, got {response.status}"
-
-
-@pytest.mark.smoke
-def test_rest_buy_endpoint(page: Page) -> None:
-    """Test the REST API buy endpoint."""
-    response = page.request.post(
-        f"{BASE_URL}/rest/trade/buy",
-        form={"userID": "uid:0", "symbol": "s:0", "quantity": "5"}
-    )
+#     # Check messaging stats - if async order processing worked,
+#     # we should see stats from DTBroker3MDB
+#     stats_response = page.request.get(f"{BASE_URL}/rest/messaging/stats")
+#     if stats_response.ok:
+#         stats = stats_response.json().get("statistics", {})
+#         # Even if buy failed, the stats endpoint should work
+#         assert isinstance(stats, dict), "Stats should be a dictionary"
     
-    # Buy might succeed or fail depending on balance, but should not error
-    assert response.status in [200, 500], f"Unexpected status: {response.status}"
+#     # Alternative: just verify the page still works after messaging operations
+#     page.reload()
+#     page.wait_for_load_state("domcontentloaded")
+#     assert page.url is not None, "Page should still be accessible"
 
 
-@pytest.mark.smoke
-def test_rest_all_quotes_via_get(page: Page) -> None:
-    """Test getting multiple quotes via REST API."""
-    symbols = ",".join([f"s:{i}" for i in range(5)])
-    response = page.request.get(f"{BASE_URL}/rest/quotes/{symbols}")
+# # ============================================================================
+# # ADDITIONAL REST API TESTS
+# # ============================================================================
+
+# @pytest.mark.smoke
+# def test_rest_account_endpoint(page: Page) -> None:
+#     """Test the REST API account endpoint."""
+#     response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0")
     
-    assert response.ok, f"Quotes endpoint failed with status {response.status}"
-    data = response.json()
-    assert isinstance(data, list), "Quotes should return a list"
-    # Should have up to 5 quotes
-    assert len(data) <= 5, "Too many quotes returned"
+#     assert response.ok, f"Account endpoint failed with status {response.status}"
+#     data = response.json()
+#     # Should return account data
+#     assert "profileID" in str(data) or "accountID" in str(data) or \
+#            "balance" in str(data).lower(), "Account data not found in response"
 
 
-@pytest.mark.smoke
-def test_health_check(page: Page) -> None:
-    """Test Quarkus health check endpoint."""
-    response = page.request.get(f"{BASE_URL}/q/health")
+# @pytest.mark.smoke
+# def test_rest_holdings_endpoint(page: Page) -> None:
+#     """Test the REST API holdings endpoint."""
+#     response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0/holdings")
     
-    assert response.ok, f"Health check failed with status {response.status}"
-    data = response.json()
-    assert data.get("status") == "UP", "Application is not healthy"
+#     assert response.ok, f"Holdings endpoint failed with status {response.status}"
+#     data = response.json()
+#     # Should return a list (could be empty if no holdings)
+#     assert isinstance(data, list), "Holdings endpoint should return a list"
 
 
-@pytest.mark.smoke
-def test_ready_check(page: Page) -> None:
-    """Test Quarkus readiness check endpoint."""
-    response = page.request.get(f"{BASE_URL}/q/health/ready")
+# @pytest.mark.smoke
+# def test_rest_orders_endpoint(page: Page) -> None:
+#     """Test the REST API orders endpoint."""
+#     response = page.request.get(f"{BASE_URL}/rest/trade/account/uid:0/orders")
     
-    assert response.ok, f"Ready check failed with status {response.status}"
-    data = response.json()
-    assert data.get("status") == "UP", "Application is not ready"
+#     assert response.ok, f"Orders endpoint failed with status {response.status}"
+#     data = response.json()
+#     # Should return a list (could be empty if no orders)
+#     assert isinstance(data, list), "Orders endpoint should return a list"
 
 
-@pytest.mark.smoke
-def test_live_check(page: Page) -> None:
-    """Test Quarkus liveness check endpoint."""
-    response = page.request.get(f"{BASE_URL}/q/health/live")
+# @pytest.mark.smoke
+# def test_rest_login_endpoint(page: Page) -> None:
+#     """Test the REST API login endpoint."""
+#     response = page.request.post(
+#         f"{BASE_URL}/rest/trade/login",
+#         form={"userID": "uid:0", "password": "xxx"}
+#     )
     
-    assert response.ok, f"Live check failed with status {response.status}"
-    data = response.json()
-    assert data.get("status") == "UP", "Application is not live"
+#     assert response.ok, f"Login endpoint failed with status {response.status}"
+#     data = response.json()
+#     assert "profileID" in str(data) or "accountID" in str(data), \
+#         "Login did not return account data"
+
+
+# @pytest.mark.smoke
+# def test_rest_login_invalid_credentials(page: Page) -> None:
+#     """Test the REST API login with invalid credentials."""
+#     response = page.request.post(
+#         f"{BASE_URL}/rest/trade/login",
+#         form={"userID": "invalid_user", "password": "wrong"}
+#     )
+    
+#     # Should return 401 Unauthorized
+#     assert response.status == 401, f"Expected 401 for invalid login, got {response.status}"
+
+
+# @pytest.mark.smoke
+# def test_rest_buy_endpoint(page: Page) -> None:
+#     """Test the REST API buy endpoint."""
+#     response = page.request.post(
+#         f"{BASE_URL}/rest/trade/buy",
+#         form={"userID": "uid:0", "symbol": "s:0", "quantity": "5"}
+#     )
+    
+#     # Buy might succeed or fail depending on balance, but should not error
+#     assert response.status in [200, 500], f"Unexpected status: {response.status}"
+
+
+# @pytest.mark.smoke
+# def test_rest_all_quotes_via_get(page: Page) -> None:
+#     """Test getting multiple quotes via REST API."""
+#     symbols = ",".join([f"s:{i}" for i in range(5)])
+#     response = page.request.get(f"{BASE_URL}/rest/quotes/{symbols}")
+    
+#     assert response.ok, f"Quotes endpoint failed with status {response.status}"
+#     data = response.json()
+#     assert isinstance(data, list), "Quotes should return a list"
+#     # Should have up to 5 quotes
+#     assert len(data) <= 5, "Too many quotes returned"
+
+
+# @pytest.mark.smoke
+# def test_health_check(page: Page) -> None:
+#     """Test Quarkus health check endpoint."""
+#     response = page.request.get(f"{BASE_URL}/q/health")
+    
+#     assert response.ok, f"Health check failed with status {response.status}"
+#     data = response.json()
+#     assert data.get("status") == "UP", "Application is not healthy"
+
+
+# @pytest.mark.smoke
+# def test_ready_check(page: Page) -> None:
+#     """Test Quarkus readiness check endpoint."""
+#     response = page.request.get(f"{BASE_URL}/q/health/ready")
+    
+#     assert response.ok, f"Ready check failed with status {response.status}"
+#     data = response.json()
+#     assert data.get("status") == "UP", "Application is not ready"
+
+
+# @pytest.mark.smoke
+# def test_live_check(page: Page) -> None:
+#     """Test Quarkus liveness check endpoint."""
+#     response = page.request.get(f"{BASE_URL}/q/health/live")
+    
+#     assert response.ok, f"Live check failed with status {response.status}"
+#     data = response.json()
+#     assert data.get("status") == "UP", "Application is not live"

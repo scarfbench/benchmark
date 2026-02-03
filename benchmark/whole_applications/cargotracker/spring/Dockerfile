@@ -57,7 +57,7 @@ COPY src ./src
 COPY smoke ./smoke
 
 # Pre-download Maven deps and build once to warm the cache
-RUN mvn -B -DskipTests package
+RUN mvn -B -DskipTests clean package
 
 # Optionally pre-resolve Python deps so 'uv run' is fast later:
 # RUN cd smoke && uv sync

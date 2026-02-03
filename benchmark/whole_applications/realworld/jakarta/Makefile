@@ -1,11 +1,13 @@
 # Run `make` to see available recipes
 
-APP_NAME       := "realworld-liberty"
+APP_NAME       := realworld-liberty
 IMAGE_NAME   := $(APP_NAME):latest
-SERVER_PORT    := "8080"               # Application server internal HTTP
-HOST_PORT      := "10012"               # Host port to map to Application server's internal HTTP
-POSTGRES_CONTAINER_NAME  := "postgres-liberty"
-NETWORK_NAME   := "realworld-liberty-net"
+# Application server internal HTTP
+SERVER_PORT    := 8080
+# Host port to map to Application server's internal HTTP
+HOST_PORT      := 10012
+POSTGRES_CONTAINER_NAME  := postgres-liberty
+NETWORK_NAME   := realworld-liberty-net
 
 # Set shell
 SHELL := /bin/bash

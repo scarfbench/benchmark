@@ -1,9 +1,11 @@
 # Run `make` to see available recipes
 
-APP_NAME       := "realworld-spring"
+APP_NAME       := realworld-spring
 IMAGE_NAME   := $(APP_NAME):latest
-SERVER_PORT    := "8080"               # Application server internal HTTP
-HOST_PORT      := "10014"               # Host port to map to Application server's internal HTTP
+# Application server internal HTTP
+SERVER_PORT    := 8080
+# Host port to map to Application server's internal HTTP
+HOST_PORT      := 10014
 
 # Set shell
 SHELL := /bin/bash

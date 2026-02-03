@@ -98,7 +98,7 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     //                                Tx type     Rx Result (Result of makefile run)
 
     // Each item in the apps_dir will be sent to the following closure such that the closure gets
-    // a tx (a transmitter to the common of its own) and the reference to the dir to do its work
+    // a tx (a transmitter of its own to the common channel) and the reference to the dir to do its work
     app_dirs.par_iter().for_each_with(tx, |tx, dir| {
         // Each worker does its job (i.e., run the makefile and return the result as RunResult)
         log::info!("Running makefile test in directory: {}", dir.display());

@@ -1,0 +1,16 @@
+FROM eclipse-temurin:17-jdk
+
+USER root
+RUN apt-get update && apt-get install -y python3 curl maven && rm -rf /var/lib/apt/lists/*
+RUN useradd -m -u 1001 appuser
+
+USER appuser
+WORKDIR /app
+
+COPY --chown=1001:1001 . .
+
+RUN mvn clean package -Dmaven.test.skip=true
+
+EXPOSE 8080
+
+CMD ["mvn", "quarkus:dev"]

@@ -1,20 +1,23 @@
-use std::{collections::HashMap, fs::{self, create_dir_all}, path::{Path, PathBuf}};
+use std::{collections::HashMap, fs::{self, File, create_dir_all}, path::{Path, PathBuf}};
+use std::io::Write;
 
+use serde::Serialize;
 use walkdir::WalkDir;
 
-use crate::{eval::run::EvalRunArgs};
+use crate::{eval::run::EvalRunArgs, utils};
+
 /*
  * Some helper types
  */
 /// Here we maintain the outer layout to handle the runs
-#[allow(unused)] // <---[TODO]---: Remove when used
+#[derive(Serialize)]
 struct RunLayout {
     root: PathBuf,
     evals: HashMap<String, EvalLayout>,
 }
 
 /// This holds the eval datastructure
-#[allow(unused)] // <---[TODO]---: Remove when used
+#[derive(Serialize)]
 struct EvalLayout {
     root: PathBuf,
     input: PathBuf,
@@ -22,15 +25,26 @@ struct EvalLayout {
     validation: PathBuf
 }
 
+/// This hold the run metadata for processing later
+#[derive(Serialize)]
+struct RunMetaData {
+    eval_id: String,
+    agent: String,
+    layer: String,
+    app: String,
+    from_framework: String,
+    to_framework: String,
+    status: String,
+}
+
 /// The public facing prepare harness that sets up the evaluation environment
 pub fn prepare_harness(args: &EvalRunArgs) -> anyhow::Result<()> {
-
     let eval_out_dir = &args.eval_out;
-    let _ = RunLayout {
+    let run_layout = RunLayout {
         root: eval_out_dir.to_path_buf(),
         evals: initialize_evals(&args)?,
     };
-    log::info!("Evaluation harness prepared at {}", eval_out_dir.display());
+    log::info!("Evaluation harness prepared\n{}", utils::json_pretty(&run_layout));
     Ok(())
 }
 
@@ -111,6 +125,14 @@ fn initialize_evals(args: &EvalRunArgs) -> anyhow::Result<HashMap<String, EvalLa
                     anyhow::bail!("Failed to create eval instance directory {}: {}", eval_instance_dir.display(), e);
                 }
             }
+            match create_eval_metadata(&eval_instance_dir, &eval_instance_key) {
+                Ok(_) => {
+                    log::debug!("Created eval metadata file in: {}", eval_instance_dir.display());
+                }
+                Err(e) => {
+                    anyhow::bail!("Failed to create eval metadata file in {}: {}", eval_instance_dir.display(), e);
+                }
+            }
 
             // Create the input, output, and validation directories
             let eval_input_dir: PathBuf = eval_instance_dir.join("input");
@@ -157,6 +179,32 @@ fn initialize_evals(args: &EvalRunArgs) -> anyhow::Result<HashMap<String, EvalLa
             );
         }
     Ok(evals)
+}
+
+fn create_eval_metadata(eval_instance_dir: &PathBuf, eval_id: &String) -> anyhow::Result<()> {
+    let metadata: RunMetaData = {
+        let [agent, layer, app, from_framework, to_framework]: [&str; 5] = eval_id
+            .split("__")
+            .take(5)
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("Failed to parse eval instance directory name");
+        RunMetaData {
+            eval_id: eval_id.clone(),
+            layer: layer.to_string(),
+            agent: agent.to_string(),
+            app: app.to_string(),
+            from_framework: from_framework.to_string(),
+            to_framework: to_framework.to_string(),
+            status: "PREPARED".to_string()
+        }
+    };
+    // Generate a JSON String (that's prettified)
+    let json = serde_json::to_string_pretty(&metadata)?;
+
+    let mut file =File::create(eval_instance_dir.join("metadata.json"))?;
+    file.write_all(json.as_bytes())?;
+    Ok(())
 }
 
 fn copy_app_dir(apps: &Path, from_framework: &String, dest: &Path) -> anyhow::Result<()> {

@@ -4,6 +4,7 @@ use clap::Parser;
 mod bench;
 mod cli;
 mod eval;
+mod utils;
 
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();

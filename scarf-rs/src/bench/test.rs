@@ -4,7 +4,6 @@ use rayon::prelude::*;
 use std::{path::PathBuf, process::Command, sync::mpsc};
 use walkdir::WalkDir;
 
-
 #[derive(Args, Debug)]
 pub struct BenchTestArgs {
     #[arg(long, help = "Path to the root of the scarf repository.")]
@@ -20,7 +19,6 @@ pub struct BenchTestArgs {
     )]
     pub dry_run: bool,
 }
-
 
 /// Create a container to hold command run result
 struct RunResult {

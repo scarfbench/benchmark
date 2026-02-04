@@ -1,6 +1,6 @@
+use crate::bench::BenchCmd;
+use crate::eval::EvalCmd;
 use clap::{Parser, Subcommand};
-use crate::bench::{BenchCmd};
-use crate::eval::{EvalCmd};
 
 #[derive(Parser, Debug)]
 #[command(name = "scarf", version, about = "ScarfBench CLI")]
@@ -28,9 +28,6 @@ pub enum Commands {
     )]
     Bench(BenchCmd),
 
-    #[command(
-        subcommand,
-        about = "Subcommands to run evaluation over the benchmark"
-    )]
+    #[command(subcommand, about = "Subcommands to run evaluation over the benchmark")]
     Eval(EvalCmd),
 }

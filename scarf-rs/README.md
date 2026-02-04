@@ -171,7 +171,7 @@ This will run `make tests` in all the apps in `persistence` layer and provide a 
 
 ### Development Dependencies
 
-If you're contributing to the SCARF CLI, install these additional tools:
+Use `make setup` to install and verify tooling (`rustup`, `rustfmt`, `clippy`, `cargo-nextest`, `cargo-llvm-cov`). You can also install them manually:
 
 1. **Clippy** - Linting and code quality checks
    ```bash
@@ -199,17 +199,12 @@ If you're contributing to the SCARF CLI, install these additional tools:
 The project follows idiomatic Rust testing practices:
 
 - **Unit tests**: Located within each module under the `#[cfg(test)]` attribute
-- **Integration tests**: Located in the `tests/` directory at the project root for testing CLI commands
+- **Integration tests**: Place in `tests/` (not currently present) for CLI-level coverage. 
+  - For intergation tests, use descriptive names for test files, e.g., `cli_tests.rs`.
 
 ### Building and Testing
 
-A [Makefile](Makefile) is provided to streamline development tasks. Run `make help` to see available commands:
-
-```bash
-make help
-```
-
-**Available targets:**
+A [Makefile](Makefile) is provided to streamline development tasks. Run `make help` to see available commands. You can run `make help` to see all available targets:
 
 | Target     | Description                                                      |
 |------------|------------------------------------------------------------------|
@@ -223,9 +218,13 @@ make help
 | `clean`    | Run `cargo clean`                                                |
 | `help`     | Show help message                                                |
 
-
-Just run `make` to execute the full development pipeline:
+Run the full pipeline with:
 ```bash
-# Run the full development pipeline
 make
+```
+
+To build a release binary:
+```bash
+cargo build --release
+./target/release/scarf --help
 ```

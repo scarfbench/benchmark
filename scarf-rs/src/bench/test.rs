@@ -60,9 +60,15 @@ fn run_makefile(path: &PathBuf, dry_run: bool) -> Result<RunResult> {
         ));
     }
 
-    let output = Command::new("make")
-        .arg(if dry_run { "-n" } else { "" })
-        .arg("test")
+    let mut cmd: Command = Command::new("make");
+
+    if dry_run {
+        cmd.arg("-n");
+    }
+
+    cmd.arg("test");
+
+    let output = cmd
         .current_dir(path)
         .output()
         .with_context(|| format!("Failed to execute 'make [-n] test' in {}", path.display()))?;
@@ -80,10 +86,12 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     log::info!("Running tests to ensure functionality of benchmark applications...");
 
     // Obtain the benchmark root from the repository root
-    let bench_root = std::fs::canonicalize(PathBuf::from(args.root.as_str())).context(format!(
-        "Failed to canonicalize the benchmark root path: {}",
-        args.root
-    )).unwrap();
+    let bench_root = std::fs::canonicalize(PathBuf::from(args.root.as_str()))
+        .context(format!(
+            "Failed to canonicalize the benchmark root path: {}",
+            args.root
+        ))
+        .unwrap();
     assert!(
         bench_root.exists(),
         "The benchmark folder {} does not exist?",

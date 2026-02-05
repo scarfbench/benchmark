@@ -25,7 +25,6 @@ pub fn run(args: BenchListArgs) -> Result<i32> {
     );
     log::debug!("Benchmark root: {}", bench_root.display());
 
-
     let base = match &args.layer {
         Some(layer) => bench_root.join(layer),
         None => bench_root.clone(),

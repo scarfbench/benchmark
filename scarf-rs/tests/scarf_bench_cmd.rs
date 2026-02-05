@@ -28,14 +28,14 @@ fn bench_list_outputs_a_table() {
 #[test]
 fn bench_list_outputs_a_table_with_a_specific_layer() {
     let benchmark_dir = benchmark_dir();
-
+    let (layer, _, __) = helpers::find_first_app(&benchmark_dir);
     let output = scarf_command()
         .arg("bench")
         .arg("list")
         .arg("--root")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
-        .arg("business_domain")
+        .arg(layer.as_str())
         .output()
         .expect("Run scarf bench list --root ... --layer ... ");
 
@@ -45,7 +45,7 @@ fn bench_list_outputs_a_table_with_a_specific_layer() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(
-        String::from_utf8_lossy(&output.stdout).contains("business_domain"),
+        String::from_utf8_lossy(&output.stdout).contains(layer.as_str()),
         "Output did not contain the specified layer"
     );
 }
@@ -84,14 +84,14 @@ fn bench_list_bails_when_a_layer_does_not_exist() {
 #[test]
 fn bench_test_as_a_dryrun_on_a_specfic_layer() {
     let benchmark_dir = benchmark_dir();
-
+    let (layer, app, framework) = helpers::find_first_app(&benchmark_dir);
     let output = scarf_command()
         .arg("bench")
         .arg("test")
         .arg("--root")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
-        .arg("persistence")
+        .arg(layer.as_str())
         .arg("--dry-run") // <--- This test is a dryrun by not actually running make test (see src/bench/test.rs:L15)
         .output()
         .expect("Run scarf bench test --root ... --layer ... ");
@@ -107,16 +107,12 @@ fn bench_test_as_a_dryrun_on_a_specfic_layer() {
 
     // There must a report that's generated a table
     assert!(
-        stdout.contains("persistence"),
-        "Output did not contain the benchmark test report"
-    );
-
-    assert!(
         stdout.contains("Application Path")
             && stdout.contains("Result")
-            && stdout.contains("persistence/order/quarkus")
+            && stdout.contains(
+                format!("{}/{}/{}", layer.as_str(), app.as_str(), framework.as_str()).as_str()
+            )
             && stdout.contains("Success")
-            && stdout.contains("persistence/order/jakarta")
     );
 }
 

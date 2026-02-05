@@ -30,6 +30,16 @@ pub fn run(args: BenchListArgs) -> Result<i32> {
         None => bench_root.clone(),
     };
 
+    if base.exists() {
+        log::debug!("Base directory: {}", base.display());
+    } else {
+        anyhow::bail!(
+            "The specified layer {} does not exist under base directory {}?",
+            args.layer.as_deref().unwrap_or(""),
+            base.display()
+        );
+    }
+
     let header = gen_header();
     match gen_rows(&base, &bench_root) {
         Ok(rows) => {

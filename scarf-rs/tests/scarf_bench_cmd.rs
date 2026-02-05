@@ -1,6 +1,11 @@
 use crate::helpers::{benchmark_dir, scarf_command};
 mod helpers;
 
+/*
+ * +--------------------------------------+
+ * | Tests for scarf bench list commands  |
+ * +--------------------------------------+
+ */
 #[test]
 fn bench_list_outputs_a_table() {
     let benchmark_dir = benchmark_dir();
@@ -42,5 +47,102 @@ fn bench_list_outputs_a_table_with_a_specific_layer() {
     assert!(
         String::from_utf8_lossy(&output.stdout).contains("business_domain"),
         "Output did not contain the specified layer"
+    );
+}
+
+#[test]
+fn bench_list_bails_when_a_layer_does_not_exist() {
+    let benchmark_dir = benchmark_dir();
+
+    let output = scarf_command()
+        .arg("bench")
+        .arg("list")
+        .arg("--root")
+        .arg(benchmark_dir.to_str().unwrap())
+        .arg("--layer")
+        .arg("this_layer_does_not_exist")
+        .output()
+        .expect("Run scarf bench list --root ... --layer ... ");
+
+    assert!(
+        !output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("this_layer_does_not_exist"),
+        "Error message did not include the non-existent layer name"
+    );
+}
+
+/*
+ * +--------------------------------------+
+ * | Tests for scarf bench test commands  |
+ * +--------------------------------------+
+ */
+#[test]
+fn bench_test_as_a_dryrun_on_a_specfic_layer() {
+    let benchmark_dir = benchmark_dir();
+
+    let output = scarf_command()
+        .arg("bench")
+        .arg("test")
+        .arg("--root")
+        .arg(benchmark_dir.to_str().unwrap())
+        .arg("--layer")
+        .arg("persistence")
+        .arg("--dry-run") // <--- This test is a dryrun by not actually running make test (see src/bench/test.rs:L15)
+        .output()
+        .expect("Run scarf bench test --root ... --layer ... ");
+
+    // The command must run without failures
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // There must a report that's generated a table
+    assert!(
+        stdout.contains("persistence"),
+        "Output did not contain the benchmark test report"
+    );
+
+    assert!(
+        stdout.contains("Application Path")
+            && stdout.contains("Result")
+            && stdout.contains("persistence/order/quarkus")
+            && stdout.contains("Success")
+            && stdout.contains("persistence/order/jakarta")
+    );
+}
+
+#[test]
+fn bench_test_on_an_absent_layer() {
+    let benchmark_dir = benchmark_dir();
+
+    let output = scarf_command()
+        .arg("bench")
+        .arg("test")
+        .arg("--root")
+        .arg(benchmark_dir.to_str().unwrap())
+        .arg("--layer")
+        .arg("this_layer_does_not_exist")
+        .output()
+        .expect("Run scarf bench test --root ... --layer ... ");
+
+    // The command must panic with failures
+    assert!(
+        !output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("this_layer_does_not_exist"),
+        "Error message did not include the non-existent layer name"
     );
 }

@@ -92,17 +92,30 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
             args.root
         ))
         .unwrap();
-    assert!(
-        bench_root.exists(),
-        "The benchmark folder {} does not exist?",
-        bench_root.display()
-    );
-    log::info!("Benchmark directory: {}", bench_root.display());
+
+    if bench_root.exists() {
+        log::debug!("Benchmark directory: {}", bench_root.display());
+    } else {
+        anyhow::bail!(
+            "The benchmark directory {} does not exist?",
+            bench_root.display()
+        );
+    }
 
     let base = match &args.layer {
         Some(layer) => bench_root.join(layer),
         None => bench_root.clone(),
     };
+
+    if base.exists() {
+        log::debug!("Base directory: {}", base.display());
+    } else {
+        anyhow::bail!(
+            "The specified layer {} does not exist under base directory {}?",
+            args.layer.as_deref().unwrap_or(""),
+            base.display()
+        );
+    }
 
     log::info!("Base directory: {}", base.display());
 

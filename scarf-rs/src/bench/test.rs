@@ -6,7 +6,7 @@ use walkdir::WalkDir;
 
 #[derive(Args, Debug)]
 pub struct BenchTestArgs {
-    #[arg(long, help = "Path to the root of the scarf repository.")]
+    #[arg(long, help = "Path to the root of the scarf benchmark.")]
     pub root: String,
 
     #[arg(long, help = "Application layer to test.")]
@@ -78,18 +78,12 @@ fn run_makefile(path: &PathBuf, dry_run: bool) -> Result<RunResult> {
 /// The test subcommand that runs make test on all the applications to ensure they work as expected
 pub fn run(args: BenchTestArgs) -> Result<i32> {
     log::info!("Running tests to ensure functionality of benchmark applications...");
-    // Get parse repository root
-    let repo_root = std::fs::canonicalize(PathBuf::from(args.root.as_str()))
-        .expect("Failed to canonicalize repository root path");
-    assert!(
-        repo_root.exists(),
-        "This provided repository root {} doesn't exist?",
-        repo_root.display()
-    );
-    log::info!("Repository root: {}", repo_root.display());
 
     // Obtain the benchmark root from the repository root
-    let bench_root = repo_root.join("benchmark");
+    let bench_root = std::fs::canonicalize(PathBuf::from(args.root.as_str())).context(format!(
+        "Failed to canonicalize the benchmark root path: {}",
+        args.root
+    )).unwrap();
     assert!(
         bench_root.exists(),
         "The benchmark folder {} does not exist?",

@@ -1,5 +1,5 @@
-pub mod run;
 mod prepare;
+pub mod run;
 
 use clap::Subcommand;
 use run::EvalRunArgs;

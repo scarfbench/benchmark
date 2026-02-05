@@ -1,5 +1,5 @@
 [package]
-name = "scarf"
+name    = "scarf"
 version = "0.1.0"
 edition = "2024"
 include = [
@@ -11,17 +11,19 @@ include = [
 authors = ["Rahul Krishna <i.m.ralk@gmail.com>"]
 
 [dependencies]
-anyhow = "1.0.100"
-clap = { version = "4.5.55", features = ["derive"]}
+log         = "0.4.29"
+rayon       = "1.11.0"
+regex       = "1.12.2"
+syntect     = "5.3.0"
+walkdir     = "2.5.0"
+anyhow      = "1.0.100"
+env_logger  = "0.11"
+tempfile    = "3.24.0"
 comfy-table = "7.2.2"
-env_logger = "0.11"
-log = "0.4.29"
-rayon = "1.11.0"
-regex = "1.12.2"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-syntect = "5.3.0"
-walkdir = "2.5.0"
+serde_json  = "1.0.149"
+clap        = { version = "4.5.55", features = ["derive"] }
+serde       = { version = "1.0.228", features = ["derive"] }
 
 [dev-dependencies]
-tempfile = "3.24.0"
+tempfile   = "3.24.0"
+assert_cmd = "2.1.2"

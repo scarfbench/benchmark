@@ -7,10 +7,17 @@ use crate::eval::prepare;
 
 #[derive(Args, Debug, Serialize)]
 pub struct EvalRunArgs {
-    #[arg(long = "benchmark-dir", help = "Path (directory) to the benchmark.", value_name = "DIR")]
+    #[arg(
+        long = "benchmark-dir",
+        help = "Path (directory) to the benchmark.",
+        value_name = "DIR"
+    )]
     pub benchmark_dir: PathBuf,
 
-    #[arg(long = "agent-dir", help = "Path (directory) to agent implementation harness.")]
+    #[arg(
+        long = "agent-dir",
+        help = "Path (directory) to agent implementation harness."
+    )]
     pub agent_dir: PathBuf,
 
     #[arg(
@@ -40,14 +47,14 @@ pub struct EvalRunArgs {
     #[arg(
         long = "from-framework",
         help = "The source framework for conversion.",
-        value_name="FRAMEWORK"
+        value_name = "FRAMEWORK"
     )]
     pub from_framework: String,
 
     #[arg(
         long = "to-framework",
         help = "The target framework for conversion.",
-        value_name="FRAMEWORK"
+        value_name = "FRAMEWORK"
     )]
     pub to_framework: String,
 
@@ -56,14 +63,22 @@ pub struct EvalRunArgs {
         long = "pass-at-k",
         default_value_t = 1,
         help = "Value of K to run for generating an Pass@K value.",
-        value_name="K"
+        value_name = "K"
     )]
     pub pass_at_k: u32,
 
-    #[arg(long, help="Output directory where the agent runs and evaluation output are stored.")]
+    #[arg(
+        long,
+        help = "Output directory where the agent runs and evaluation output are stored."
+    )]
     pub eval_out: PathBuf,
 
-    #[arg(short, long = "num-jobs", default_value_t = 1, help = "Number of parallel jobs to run.")]
+    #[arg(
+        short,
+        long = "num-jobs",
+        default_value_t = 1,
+        help = "Number of parallel jobs to run."
+    )]
     pub n: u32,
 
     #[arg(
@@ -73,7 +88,6 @@ pub struct EvalRunArgs {
     )]
     pub prepare_only: bool,
 }
-
 
 // Create the evaluation output directory if it doesn't
 pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
@@ -93,7 +107,10 @@ pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
         _ => (),
     }
 
-    log::info!("Preparing evaluation harness at {}", args.eval_out.display());
+    log::info!(
+        "Preparing evaluation harness at {}",
+        args.eval_out.display()
+    );
     prepare::prepare_harness(&args)?;
 
     if args.prepare_only {

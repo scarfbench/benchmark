@@ -102,7 +102,7 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         );
     }
 
-    let base = match args.layer {
+    let base = match &args.layer {
         Some(layer) => bench_root.join(layer),
         None => bench_root.clone(),
     };

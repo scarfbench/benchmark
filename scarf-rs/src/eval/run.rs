@@ -22,14 +22,6 @@ pub struct EvalRunArgs {
     pub agent_dir: PathBuf,
 
     #[arg(
-        long = "skills",
-        value_name = "DIR",
-        action = ArgAction::Append,
-        help = "Path (directory) to agent skills.",
-    )]
-    pub skills: Option<Vec<PathBuf>>,
-
-    #[arg(
         long,
         value_name = "LAYER",
         action = ArgAction::Append,

@@ -101,3 +101,42 @@ fn eval_run_with_jobs_less_than_one() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn eval_run_must_error_out_when_from_to_framework_are_same() {
+    let benchmark_dir = benchmark_dir();
+    let (layer, app, _) = find_first_app(&benchmark_dir);
+    let test_env = TestEnv::new();
+    let output = scarf_command()
+        .arg("eval")
+        .arg("run")
+        .arg("--prepare-only")
+        .arg("--benchmark-dir")
+        .arg(benchmark_dir.to_str().unwrap())
+        .arg("--agent-dir")
+        .arg(test_env.agent_dir().to_str().unwrap())
+        .arg("--layer")
+        .arg(layer.as_str())
+        .arg("--app")
+        .arg(app.as_str())
+        .arg("--jobs")
+        .arg("0")
+        .arg("--from-framework=spring")
+        .arg("--to-framework=spring")
+        .arg("--eval-out")
+        .arg(test_env.eval_out().to_str().unwrap())
+        .output()
+        .expect("Run scarf eval run --benchmark-dir ... --prepare-only ...");
+
+    assert!(
+        !output.status.success(),
+        "THe command should have errored out when from and to frameworks are the same."
+    );
+
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("From and To frameworks cannot be the same"),
+        "Must error out with the message 'From and To frameworks cannot be the same' when from and to frameworks are the same. Actual stderr: {}",
+        String::from_utf8_lossy(&output.stderr),
+    );
+}

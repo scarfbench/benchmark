@@ -16,7 +16,7 @@ pub struct TestEnv {
 #[allow(unused)]
 impl TestEnv {
     /// Initialize a new TestEnv with a temporary directory and temporary folder underneath
-    fn new() -> Self {
+    pub fn new() -> Self {
         let tmp = tempfile::tempdir().expect("Failed to create temp dir for test env");
         let eval_out = tmp.path().join("test_eval_out");
         let agent_dir = tmp.path().join("test_agent_dir");
@@ -32,12 +32,12 @@ impl TestEnv {
     }
 
     /// Getter for eval_out
-    fn eval_out(&self) -> &PathBuf {
+    pub fn eval_out(&self) -> &PathBuf {
         &self.eval_out
     }
 
     /// Get agent dir
-    fn agent_dir(&self) -> &PathBuf {
+    pub fn agent_dir(&self) -> &PathBuf {
         &self.agent_dir
     }
 }

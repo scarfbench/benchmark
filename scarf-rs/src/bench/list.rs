@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 #[derive(Args, Debug)]
 pub struct BenchListArgs {
     #[arg(long, help = "Path to the root of the scarf benchmark.")]
-    pub root: String,
+    pub benchmark_dir: String,
 
     #[arg(long, help = "Application layer to list.")]
     pub layer: Option<String>,
@@ -17,7 +17,7 @@ pub struct BenchListArgs {
 /// A simple list subcommand that lists all the benchmark applications as a table.
 pub fn run(args: BenchListArgs) -> Result<i32> {
     // Get parse repository root
-    let bench_root = PathBuf::from(args.root.as_str());
+    let bench_root = PathBuf::from(args.benchmark_dir.as_str());
     assert!(
         bench_root.exists(),
         "This provided repository root {} doesn't exist?",

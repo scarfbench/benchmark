@@ -13,10 +13,10 @@ fn bench_list_outputs_a_table() {
     let output = scarf_command()
         .arg("bench")
         .arg("list")
-        .arg("--root")
+        .arg("--benchmark-dir")
         .arg(benchmark_dir.to_str().unwrap())
         .output()
-        .expect("Run scarf bench list --root ... ");
+        .expect("Run scarf bench list --benchmark-dir ... ");
 
     assert!(
         output.status.success(),
@@ -32,12 +32,12 @@ fn bench_list_outputs_a_table_with_a_specific_layer() {
     let output = scarf_command()
         .arg("bench")
         .arg("list")
-        .arg("--root")
+        .arg("--benchmark-dir")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
         .arg(layer.as_str())
         .output()
-        .expect("Run scarf bench list --root ... --layer ... ");
+        .expect("Run scarf bench list --benchmark-dir ... --layer ... ");
 
     assert!(
         output.status.success(),
@@ -57,12 +57,12 @@ fn bench_list_bails_when_a_layer_does_not_exist() {
     let output = scarf_command()
         .arg("bench")
         .arg("list")
-        .arg("--root")
+        .arg("--benchmark-dir")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
         .arg("this_layer_does_not_exist")
         .output()
-        .expect("Run scarf bench list --root ... --layer ... ");
+        .expect("Run scarf bench list --benchmark-dir ... --layer ... ");
 
     assert!(
         !output.status.success(),
@@ -88,13 +88,13 @@ fn bench_test_as_a_dryrun_on_a_specfic_layer() {
     let output = scarf_command()
         .arg("bench")
         .arg("test")
-        .arg("--root")
+        .arg("--benchmark-dir")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
         .arg(layer.as_str())
-        .arg("--dry-run") // <--- This test is a dryrun by not actually running make test (see src/bench/test.rs:L15)
+        .arg("--dry-run") // <--- Not actually running make test (see src/bench/test.rs:L15)
         .output()
-        .expect("Run scarf bench test --root ... --layer ... ");
+        .expect("Run scarf bench test --benchmark-dir ... --layer ... ");
 
     // The command must run without failures
     assert!(
@@ -123,12 +123,12 @@ fn bench_test_on_an_absent_layer() {
     let output = scarf_command()
         .arg("bench")
         .arg("test")
-        .arg("--root")
+        .arg("--benchmark-dir")
         .arg(benchmark_dir.to_str().unwrap())
         .arg("--layer")
         .arg("this_layer_does_not_exist")
         .output()
-        .expect("Run scarf bench test --root ... --layer ... ");
+        .expect("Run scarf bench test --benchmark-dir ... --layer ... ");
 
     // The command must panic with failures
     assert!(

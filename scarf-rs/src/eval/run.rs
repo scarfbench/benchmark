@@ -16,7 +16,8 @@ pub struct EvalRunArgs {
 
     #[arg(
         long = "agent-dir",
-        help = "Path (directory) to agent implementation harness."
+        help = "Path (directory) to agent implementation harness.",
+        value_name = "DIR"
     )]
     pub agent_dir: PathBuf,
 
@@ -26,7 +27,7 @@ pub struct EvalRunArgs {
         action = ArgAction::Append,
         help = "Path (directory) to agent skills.",
     )]
-    pub skills: Vec<PathBuf>,
+    pub skills: Option<Vec<PathBuf>>,
 
     #[arg(
         long,
@@ -75,11 +76,11 @@ pub struct EvalRunArgs {
 
     #[arg(
         short,
-        long = "num-jobs",
+        long = "jobs",
         default_value_t = 1,
         help = "Number of parallel jobs to run."
     )]
-    pub n: u32,
+    pub jobs: u32,
 
     #[arg(
         long="prepare-only",
@@ -100,9 +101,9 @@ pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
     }
 
     // If number of jobs is less than 1, set to 1 by default
-    match args.n {
+    match args.jobs {
         j if j < 1 => {
-            args.n = 1;
+            args.jobs = 1;
         }
         _ => (),
     }

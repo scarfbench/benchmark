@@ -35,6 +35,7 @@ smoke: up
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
+test: smoke
 # Optional: run app locally without Docker, if you still want that path.
 local:
 	./mvnw clean package cargo:run

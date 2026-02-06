@@ -91,10 +91,10 @@ After installation, you can use the SCARF CLI to interact with the SCARF Benchma
 ❯ ./target/release/scarf bench list --help
 List the application(s) in the benchmark.
 
-Usage: scarf bench list [OPTIONS] --root <ROOT>
+Usage: scarf bench list [OPTIONS] --benchmark-dir <ROOT>
 
 Options:
-      --root <ROOT>    Path to the root of the scarf repository.
+      --benchmark-dir <ROOT>    Path to the root of the scarf benchmark.
   -v, --verbose...     Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence.
       --layer <LAYER>  Application layer to list.
   -h, --help           Print help
@@ -102,7 +102,7 @@ Options:
 
 This should give you something like below
 ```bash
-❯ ./target/release/scarf bench list --root /home/rkrsn/workspace/scarfbench/ --layer business_domain
+❯ ./target/release/scarf bench list --benchmark-dir /home/rkrsn/workspace/scarfbench/benchmark --layer business_domain
 ┌─────────────────┬──────────────┬───────────┬─────────────────────────────────────────────────────────────────────────────────┐
 │ Layer           ┆ Application  ┆ Framework ┆ Path                                                                            │
 ╞═════════════════╪══════════════╪═══════════╪═════════════════════════════════════════════════════════════════════════════════╡
@@ -132,10 +132,10 @@ You can use the `scarf bench test` command to test specific benchmark layers or 
 ❯ ./target/release/scarf bench test --help
 Run regression tests (with `make test`) on the benchmark application(s).
 
-Usage: scarf bench test [OPTIONS] --root <ROOT>
+Usage: scarf bench test [OPTIONS] --benchmark-dir <ROOT>
 
 Options:
-      --root <ROOT>    Path to the root of the scarf repository.
+      --benchmark-dir <ROOT>    Path to the root of the scarf benchmark.
   -v, --verbose...     Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence.
       --layer <LAYER>  Application layer to test.
       --dry-run        Use dry run instead of full run.
@@ -145,7 +145,7 @@ Options:
 For example, to test the `persistence` layer:
 
 ```bash
-❯ ./target/release/scarf bench test --root /home/rkrsn/workspace/scarfbench/ --layer persistence
+❯ ./target/release/scarf bench test --benchmark-dir /home/rkrsn/workspace/scarfbench/benchmark --layer persistence
 ```
 
 This will run `make tests` in all the apps in `persistence` layer and provide a summary of the results.

@@ -7,7 +7,7 @@ use walkdir::WalkDir;
 #[derive(Args, Debug)]
 pub struct BenchTestArgs {
     #[arg(long, help = "Path to the root of the scarf benchmark.")]
-    pub root: String,
+    pub benchmark_dir: String,
 
     #[arg(long, help = "Application layer to test.")]
     pub layer: Option<String>,
@@ -86,10 +86,10 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
     log::info!("Running tests to ensure functionality of benchmark applications...");
 
     // Obtain the benchmark root from the repository root
-    let bench_root = std::fs::canonicalize(PathBuf::from(args.root.as_str()))
+    let bench_root = std::fs::canonicalize(PathBuf::from(args.benchmark_dir.as_str()))
         .context(format!(
             "Failed to canonicalize the benchmark root path: {}",
-            args.root
+            args.benchmark_dir
         ))
         .unwrap();
 
@@ -102,7 +102,7 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         );
     }
 
-    let base = match &args.layer {
+    let base = match args.layer {
         Some(layer) => bench_root.join(layer),
         None => bench_root.clone(),
     };

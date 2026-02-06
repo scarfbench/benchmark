@@ -6,7 +6,7 @@ use run::EvalRunArgs;
 
 #[derive(Subcommand, Debug)]
 pub enum EvalCmd {
-    #[command(about = "")]
+    #[command(about = "Evaluate an agent on Scarfbench")]
     Run(EvalRunArgs),
 }
 

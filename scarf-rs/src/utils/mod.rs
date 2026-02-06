@@ -30,3 +30,24 @@ pub fn json_pretty<T: Serialize>(value: &T) -> String {
         None => pretty.unwrap(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn test_json_pretty() {
+        let data = json!({
+            "name": "TestApp",
+            "version": "1.0",
+            "features": ["feature1", "feature2", "feature3"]
+        });
+
+        let pretty_output = json_pretty(&data);
+        println!("{}", pretty_output);
+        let plain = String::from_utf8(strip_ansi_escapes::strip(pretty_output)).unwrap();
+        assert!(plain.contains("\"name\": \"TestApp\""));
+        assert!(plain.contains("\"version\": \"1.0\""));
+        assert!(plain.contains("\"features\": ["));
+    }
+}

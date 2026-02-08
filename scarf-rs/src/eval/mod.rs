@@ -1,5 +1,6 @@
 mod prepare;
 pub mod run;
+mod driver;
 
 use clap::Subcommand;
 use run::EvalRunArgs;

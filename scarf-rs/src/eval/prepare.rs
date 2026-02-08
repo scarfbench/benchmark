@@ -15,7 +15,7 @@ use crate::{eval::run::EvalRunArgs, utils};
  */
 /// Here we maintain the outer layout to handle the runs
 #[derive(Serialize)]
-struct RunLayout {
+pub(crate) struct RunLayout {
     root: PathBuf,
     evals: HashMap<String, EvalLayout>,
 }
@@ -42,7 +42,7 @@ struct RunMetaData {
 }
 
 /// The public facing prepare harness that sets up the evaluation environment
-pub fn prepare_harness(args: &EvalRunArgs) -> anyhow::Result<()> {
+pub fn prepare_harness(args: &EvalRunArgs) -> anyhow::Result<(RunLayout)> {
     let eval_out_dir = &args.eval_out;
     let run_layout = RunLayout {
         root: eval_out_dir.to_path_buf(),
@@ -52,7 +52,7 @@ pub fn prepare_harness(args: &EvalRunArgs) -> anyhow::Result<()> {
         "Evaluation harness prepared\n{}",
         utils::json_pretty(&run_layout)
     );
-    Ok(())
+    Ok(run_layout)
 }
 
 /// Populate the evals data structure

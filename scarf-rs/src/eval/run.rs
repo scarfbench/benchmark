@@ -43,18 +43,18 @@ pub struct EvalRunArgs {
     pub app: Vec<String>,
 
     #[arg(
-        long = "from-framework",
+        long = "source-framework",
         help = "The source framework for conversion.",
         value_name = "FRAMEWORK"
     )]
-    pub from_framework: String,
+    pub source_framework: String,
 
     #[arg(
-        long = "to-framework",
+        long = "target-framework",
         help = "The target framework for conversion.",
         value_name = "FRAMEWORK"
     )]
-    pub to_framework: String,
+    pub target_framework: String,
 
     #[arg(
         short,
@@ -90,10 +90,10 @@ pub struct EvalRunArgs {
 // Create the evaluation output directory if it doesn't
 pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
     // Make sure from and to frameworks are not the same
-    if args.from_framework.eq(&args.to_framework) {
+    if args.source_framework.eq(&args.target_framework) {
         anyhow::bail!(
             "From and To frameworks cannot be the same: {}",
-            args.from_framework
+            args.source_framework
         );
     }
 

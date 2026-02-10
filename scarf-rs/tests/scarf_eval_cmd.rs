@@ -23,8 +23,8 @@ fn eval_run_prepare_only() {
         .arg(layer.as_str())
         .arg("--app")
         .arg(app.as_str())
-        .arg("--from-framework=spring")
-        .arg("--to-framework=quarkus")
+        .arg("--source-framework=spring")
+        .arg("--target-framework=quarkus")
         .arg("--eval-out")
         .arg(test_env.eval_out().to_str().unwrap())
         .output()
@@ -55,8 +55,8 @@ fn eval_run_prepare_only_with_several_layers_at_once() {
         .arg("persistence")
         .arg("--layer")
         .arg("infrastructure")
-        .arg("--from-framework=spring")
-        .arg("--to-framework=quarkus")
+        .arg("--source-framework=spring")
+        .arg("--target-framework=quarkus")
         .arg("--eval-out")
         .arg(test_env.eval_out().to_str().unwrap())
         .output()
@@ -88,8 +88,8 @@ fn eval_run_with_jobs_less_than_one() {
         .arg(app.as_str())
         .arg("--jobs")
         .arg("0")
-        .arg("--from-framework=spring")
-        .arg("--to-framework=quarkus")
+        .arg("--source-framework=spring")
+        .arg("--target-framework=quarkus")
         .arg("--eval-out")
         .arg(test_env.eval_out().to_str().unwrap())
         .output()
@@ -103,7 +103,7 @@ fn eval_run_with_jobs_less_than_one() {
 }
 
 #[test]
-fn eval_run_must_error_out_when_from_to_framework_are_same() {
+fn eval_run_must_error_out_when_from_target_framework_are_same() {
     let benchmark_dir = benchmark_dir();
     let (layer, app, _) = find_first_app(&benchmark_dir);
     let test_env = TestEnv::new();
@@ -121,8 +121,8 @@ fn eval_run_must_error_out_when_from_to_framework_are_same() {
         .arg(app.as_str())
         .arg("--jobs")
         .arg("0")
-        .arg("--from-framework=spring")
-        .arg("--to-framework=spring")
+        .arg("--source-framework=spring")
+        .arg("--target-framework=spring")
         .arg("--eval-out")
         .arg(test_env.eval_out().to_str().unwrap())
         .output()

@@ -32,8 +32,8 @@ pub fn dispatch_agent(agent_dir: &Path, eval_layout: &EvalLayout) -> Result<()> 
                 .arg("./run.sh")
                 .current_dir(agent_dir)
                 .env("SCARF_WORK_DIR", eval_instance.output())
-                .env("SCARF_FROM_FRAMEWORK", run_metadata.from_framework())
-                .env("SCARF_TO_FRAMEWORK", run_metadata.to_framework())
+                .env("SCARF_SOURCE_FRAMEWORK", run_metadata.source_framework())
+                .env("SCARF_TARGET_FRAMEWORK", run_metadata.target_framework())
                 .stderr(Stdio::piped())
                 .stdout(Stdio::piped())
                 .status()?;

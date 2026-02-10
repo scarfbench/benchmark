@@ -25,14 +25,13 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
     let mut evals: HashMap<EvalKey, EvalGroup> = HashMap::new();
 
     // We'll assume for now that the agent name is the directory name where the agent is (I can change this later if needed)
-    let agent_name = format!(
-        "{}",
-        args.agent_dir
-            .file_name()
-            .and_then(|f| f.to_str())
-            .ok_or_else(|| anyhow::anyhow!("--agent-dir must be a valid UTF-8 name!"))?
-            .to_string()
-    );
+    let agent_name = args
+        .agent_dir
+        .file_name()
+        .and_then(|f| f.to_str())
+        .ok_or_else(|| anyhow::anyhow!("--agent-dir must be a valid UTF-8 name!"))?
+        .to_string();
+
     log::debug!("Using agent name: {}", &agent_name);
 
     // Iterate over all the selected layers and pick the apps chosen by the user
@@ -97,8 +96,8 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
                             &agent_name,
                             layer,
                             app,
-                            &args.from_framework,
-                            &args.to_framework,
+                            &args.source_framework,
+                            &args.target_framework,
                         )
                     })
             })
@@ -111,8 +110,8 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
             // Create a directory in the --eval-out directory
             let eval_instance_dir = args
                 .eval_out
-                .join(&eval_instance_key.to_string())
-                .join(format!("run_{}", run.to_string()));
+                .join(eval_instance_key.repr())
+                .join(format!("run_{}", run));
 
             // Create the outer eval directory
             match create_dir_all(&eval_instance_dir) {
@@ -164,7 +163,7 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
                 }
             }
             // Copy the app files into the input directory
-            copy_app_dir(app_path, &args.from_framework, &eval_input_dir)?;
+            copy_app_dir(app_path, &args.source_framework, &eval_input_dir)?;
 
             let eval_output_dir: PathBuf = eval_instance_dir.join("output");
             match create_dir_all(eval_instance_dir.join("output")) {
@@ -182,7 +181,7 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
                     );
                 }
             }
-            copy_app_dir(app_path, &args.from_framework, &eval_output_dir)?;
+            copy_app_dir(app_path, &args.source_framework, &eval_output_dir)?;
 
             let eval_validation_dir: PathBuf = eval_instance_dir.join("validation");
             match create_dir_all(eval_instance_dir.join("validation")) {
@@ -212,7 +211,7 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
         // Update evals directory structure.
         evals.insert(
             eval_instance_key.to_owned(),
-            EvalGroup::new(args.eval_out.join(eval_instance_key.to_string()), runs),
+            EvalGroup::new(args.eval_out.join(eval_instance_key.repr()), runs),
         );
     }
     Ok(evals)
@@ -225,8 +224,8 @@ fn create_eval_metadata(eval_instance_dir: &Path, eval_key: &EvalKey, run: &u32)
         eval_key.app(),
         "PREPARED",
         run.to_owned(),
-        eval_key.from_framework(),
-        eval_key.to_framework(),
+        eval_key.source_framework(),
+        eval_key.target_framework(),
     );
     // Generate a JSON String (that's prettified)
     let json = serde_json::to_string_pretty(&metadata)?;
@@ -236,11 +235,11 @@ fn create_eval_metadata(eval_instance_dir: &Path, eval_key: &EvalKey, run: &u32)
     Ok(())
 }
 
-fn copy_app_dir(apps: &Path, from_framework: &String, dest: &Path) -> Result<()> {
+fn copy_app_dir(apps: &Path, source_framework: &String, dest: &Path) -> Result<()> {
     for entry in apps
-        .join(from_framework)
+        .join(source_framework)
         .read_dir()
-        .expect("Failed to read {from_framework} directory")
+        .expect("Failed to read {source_framework} directory")
     {
         let entry = entry.expect("Failed to read file in app directory");
         log::trace!("Processing entry: {}", entry.path().display());

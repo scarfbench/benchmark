@@ -42,9 +42,9 @@ impl EvalInstance {
 ///
 /// # Fields:
 /// - root: The outer directory where all the runs are stored. Typically, its structured as follows:
-///         agent__layer__app__from_framework__to_framework/...
+///   agent__layer__app__source_framework__target_framework/...
 /// - runs: A vector of EvalInstance corresponding to each run of the evaluation (the length of this
-///         vector match the value of k from the pass at k value)
+///   vector match the value of k from the pass at k value)
 #[derive(Serialize)]
 pub(super) struct EvalGroup {
     root: PathBuf,
@@ -76,30 +76,30 @@ impl<'a> IntoIterator for &'a EvalGroup {
 /// - agent: Name of the agent (derived from the name of the agent dir)
 /// - layer: Application layer
 /// - app: Name of the application
-/// - from_framework: The orgin framework to begin conversion
-/// - to_framework: The destination framework to end conversion
+/// - source_framework: The orgin framework to begin conversion
+/// - target_framework: The destination framework to end conversion
 #[derive(Serialize, Eq, PartialEq, Hash, Clone)]
 pub(super) struct EvalKey {
     agent: String,
     layer: String,
     app: String,
-    from_framework: String,
-    to_framework: String,
+    source_framework: String,
+    target_framework: String,
 }
 impl EvalKey {
     pub(super) fn new(
         agent: impl Into<String>,
         layer: impl Into<String>,
         app: impl Into<String>,
-        from_framework: impl Into<String>,
-        to_framework: impl Into<String>,
+        source_framework: impl Into<String>,
+        target_framework: impl Into<String>,
     ) -> Self {
         Self {
             agent: agent.into(),
             layer: layer.into(),
             app: app.into(),
-            from_framework: from_framework.into(),
-            to_framework: to_framework.into(),
+            source_framework: source_framework.into(),
+            target_framework: target_framework.into(),
         }
     }
     pub(super) fn agent(&self) -> String {
@@ -111,17 +111,17 @@ impl EvalKey {
     pub(super) fn app(&self) -> String {
         self.app.to_string()
     }
-    pub(super) fn from_framework(&self) -> String {
-        self.from_framework.to_string()
+    pub(super) fn source_framework(&self) -> String {
+        self.source_framework.to_string()
     }
-    pub(super) fn to_framework(&self) -> String {
-        self.to_framework.to_string()
+    pub(super) fn target_framework(&self) -> String {
+        self.target_framework.to_string()
     }
 
-    pub(super) fn to_string(&self) -> String {
+    pub(super) fn repr(&self) -> String {
         format!(
             "{}_{}_{}_{}_{}",
-            &self.agent, &self.layer, &self.app, &self.from_framework, &self.to_framework
+            &self.agent, &self.layer, &self.app, &self.source_framework, &self.target_framework
         )
     }
 }
@@ -170,8 +170,8 @@ pub(super) struct RunMetaData {
     app: String,
     status: String,
     repeat: u32,
-    from_framework: String,
-    to_framework: String,
+    source_framework: String,
+    target_framework: String,
 }
 impl RunMetaData {
     pub(super) fn new(
@@ -180,8 +180,8 @@ impl RunMetaData {
         app: impl Into<String>,
         status: impl Into<String>,
         repeat: impl Into<u32>,
-        from_framework: impl Into<String>,
-        to_framework: impl Into<String>,
+        source_framework: impl Into<String>,
+        target_framework: impl Into<String>,
     ) -> Self {
         Self {
             agent: agent.into(),
@@ -189,14 +189,14 @@ impl RunMetaData {
             app: app.into(),
             status: status.into(),
             repeat: repeat.into(),
-            from_framework: from_framework.into(),
-            to_framework: to_framework.into(),
+            source_framework: source_framework.into(),
+            target_framework: target_framework.into(),
         }
     }
-    pub(super) fn from_framework(&self) -> String {
-        self.from_framework.to_string()
+    pub(super) fn source_framework(&self) -> String {
+        self.source_framework.to_string()
     }
-    pub(super) fn to_framework(&self) -> String {
-        self.to_framework.to_string()
+    pub(super) fn target_framework(&self) -> String {
+        self.target_framework.to_string()
     }
 }

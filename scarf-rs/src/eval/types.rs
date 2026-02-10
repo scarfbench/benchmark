@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator};
 use serde::{Deserialize, Serialize};
 
 /// This holds the eval datastructure
@@ -60,16 +61,30 @@ impl EvalGroup {
             runs: runs.into(),
         }
     }
-    fn runs(&self) -> &[EvalInstance] {
+    pub(super) fn runs(&self) -> &[EvalInstance] {
         &self.runs
+    }
+    pub(super) fn par_runs(&self) -> rayon::slice::Iter<'_, EvalInstance> {
+        self.runs().par_iter()
     }
 }
 impl<'a> IntoIterator for &'a EvalGroup {
     type Item = &'a EvalInstance;
     type IntoIter = std::slice::Iter<'a, EvalInstance>;
-
     fn into_iter(self) -> Self::IntoIter {
         self.runs().iter()
+    }
+}
+// Parallel iterator so I can call eval_group.par_iter()
+impl<'a> IntoParallelIterator for &'a EvalGroup
+where
+    EvalInstance: Sync,
+{
+    type Item = &'a EvalInstance;
+    type Iter = rayon::slice::Iter<'a, EvalInstance>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        self.par_runs()
     }
 }
 

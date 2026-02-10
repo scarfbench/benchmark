@@ -1,11 +1,12 @@
+use crate::eval::types::{EvalLayout, RunMetaData};
+use rayon::ThreadPoolBuilder;
+use rayon::prelude::*;
 use std::{
     fs::{self, File},
     io::Write,
     path::{Path, PathBuf},
     process::Command,
 };
-
-use crate::eval::types::{EvalLayout, RunMetaData};
 
 /// The main helper to dispatch calls to the user defined agent
 pub fn dispatch_agent(agent_dir: &Path, eval_layout: &EvalLayout) -> anyhow::Result<()> {
@@ -18,37 +19,58 @@ pub fn dispatch_agent(agent_dir: &Path, eval_layout: &EvalLayout) -> anyhow::Res
         {
             continue;
         }
-        // TODO: The following loop ought to be parallelized...
-        for eval_instance in eval_group {
-            // Read the current eval metadata
-            let mut run_metadata: RunMetaData =
-                fs::read_to_string(eval_instance.root().join("metadata.json"))
-                    .map_err(anyhow::Error::from)
-                    .and_then(|metadata_file| {
-                        serde_json::from_str::<RunMetaData>(&metadata_file)
+
+        let pool = ThreadPoolBuilder::new()
+            .num_threads(std::cmp::min(
+                eval_group.runs().len(),
+                std::thread::available_parallelism()
+                    .map(|t| t.get())
+                    .unwrap_or(1),
+            ))
+            .build()?;
+
+        let _: anyhow::Result<Vec<()>> = pool.install(|| {
+            eval_group
+                .par_iter()
+                .map(|eval_instance| -> anyhow::Result<()> {
+                    // Read the current eval metadata
+                    let mut run_metadata: RunMetaData =
+                        fs::read_to_string(eval_instance.root().join("metadata.json"))
                             .map_err(anyhow::Error::from)
-                    })?;
+                            .and_then(|metadata_file| {
+                                serde_json::from_str::<RunMetaData>(&metadata_file)
+                                    .map_err(anyhow::Error::from)
+                            })?;
 
-            let result = Command::new("bash")
-                .arg("-lc")
-                .arg("./run.sh")
-                .current_dir(agent_dir)
-                .env("SCARF_WORK_DIR", eval_instance.output())
-                .env("SCARF_SOURCE_FRAMEWORK", run_metadata.source_framework())
-                .env("SCARF_TARGET_FRAMEWORK", run_metadata.target_framework())
-                .stderr(File::create(eval_instance.validation().join("agent.err"))?.try_clone()?)
-                .stdout(File::create(eval_instance.validation().join("agent.out"))?.try_clone()?)
-                .output()?;
+                    let result = Command::new("bash")
+                        .arg("-lc")
+                        .arg("./run.sh")
+                        .current_dir(agent_dir)
+                        .env("SCARF_WORK_DIR", eval_instance.output())
+                        .env("SCARF_SOURCE_FRAMEWORK", run_metadata.source_framework())
+                        .env("SCARF_TARGET_FRAMEWORK", run_metadata.target_framework())
+                        .stderr(
+                            File::create(eval_instance.validation().join("agent.err"))?
+                                .try_clone()?,
+                        )
+                        .stdout(
+                            File::create(eval_instance.validation().join("agent.out"))?
+                                .try_clone()?,
+                        )
+                        .output()?;
 
-            if result.status.success() {
-                log::info!("Agent exectuion complete");
-                run_metadata.set_status(String::from("AGENT EXECUTION COMPLETE"));
-                update_eval_metadata(eval_instance.root(), &run_metadata)?;
-            } else {
-                run_metadata.set_status(String::from("AGENT EXECUTION FAILED"));
-                update_eval_metadata(eval_instance.root(), &run_metadata)?;
-            }
-        }
+                    if result.status.success() {
+                        log::debug!("Agent {} exectuion complete", eval_key.agent());
+                        run_metadata.set_status(String::from("AGENT EXECUTION COMPLETE"));
+                        update_eval_metadata(eval_instance.root(), &run_metadata)?;
+                    } else {
+                        run_metadata.set_status(String::from("AGENT EXECUTION FAILED"));
+                        update_eval_metadata(eval_instance.root(), &run_metadata)?;
+                    }
+                    Ok(())
+                })
+                .collect()
+        });
     }
     Ok(())
 }

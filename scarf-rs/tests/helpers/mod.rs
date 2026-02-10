@@ -17,12 +17,16 @@ pub struct TestEnv {
 impl TestEnv {
     /// Initialize a new TestEnv with a temporary directory and temporary folder underneath
     pub fn new() -> Self {
+        // Use the agent directory from
+        let agent_dir: PathBuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("fixtures")
+            .join("test_agent");
+
+        // Create a temporary eval out directory
         let tmp = tempfile::tempdir().expect("Failed to create temp dir for test env");
         let eval_out = tmp.path().join("test_eval_out");
-        let agent_dir = tmp.path().join("test_agent_dir");
-
         std::fs::create_dir_all(&eval_out).expect("Failed to create eval_out dir");
-        std::fs::create_dir_all(&agent_dir).expect("Failed to create agent_dir dir");
 
         Self {
             _tmp: tmp,

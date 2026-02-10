@@ -36,6 +36,9 @@ impl EvalInstance {
     pub(super) fn output(&self) -> PathBuf {
         self.output.to_path_buf()
     }
+    pub(super) fn validation(&self) -> PathBuf {
+        self.validation.to_path_buf()
+    }
 }
 
 /// A container to hold all the eval instance off k runs of an agent
@@ -120,7 +123,7 @@ impl EvalKey {
 
     pub(super) fn repr(&self) -> String {
         format!(
-            "{}_{}_{}_{}_{}",
+            "{}__{}__{}__{}__{}",
             &self.agent, &self.layer, &self.app, &self.source_framework, &self.target_framework
         )
     }
@@ -198,5 +201,9 @@ impl RunMetaData {
     }
     pub(super) fn target_framework(&self) -> String {
         self.target_framework.to_string()
+    }
+    pub(super) fn set_status(&mut self, status: String) -> &mut Self {
+        self.status = status;
+        self
     }
 }

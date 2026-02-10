@@ -5,18 +5,17 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::eval::run::EvalRunArgs;
 use crate::eval::types::{EvalGroup, EvalInstance, EvalKey, EvalLayout, RunMetaData};
-use crate::{eval::run::EvalRunArgs, utils};
 use anyhow::Result;
 use walkdir::WalkDir;
 
 /// The public facing prepare harness that sets up the evaluation environment
+///
+/// Parameters:
+/// - args: All the arguments passed by the user
 pub fn prepare_harness(args: &EvalRunArgs) -> Result<EvalLayout> {
     let eval_layout = EvalLayout::new(initialize_evals(args)?);
-    log::info!(
-        "Evaluation harness prepared\n{}",
-        utils::json_pretty(&eval_layout)
-    );
     Ok(eval_layout)
 }
 
@@ -70,7 +69,7 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
     })
     .collect();
 
-    // If the user gave --app(s) and they weren't any of the layer(s) the user provided then
+    // If the user provided some --app(s) but they weren't any of the layer(s) the user provided then...
     if apps.is_empty() {
         anyhow::bail!(
             "The app(s) provided with the --app flag were not found for the specified --layer(s)."
@@ -83,15 +82,17 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
             app_path.display()
         );
 
+        // Build an evaluation index key for the each of the evaluation instances
         let eval_instance_key = app_path
             .file_name()
             .and_then(|n| n.to_str())
             .and_then(|app| {
                 app_path
-                    .parent()
-                    .and_then(|p| p.file_name())
-                    .and_then(|layer| layer.to_str())
+                    .parent() // The parent to get the layer
+                    .and_then(|p| p.file_name()) // Get the layer folder's filename
+                    .and_then(|layer| layer.to_str()) // Covert folder name to string representation
                     .map(|layer| {
+                        // Use the later name to generate an key to index all the evaluation instances
                         EvalKey::new(
                             &agent_name,
                             layer,
@@ -103,11 +104,12 @@ fn initialize_evals(args: &EvalRunArgs) -> Result<HashMap<EvalKey, EvalGroup>> {
             })
             .unwrap();
 
+        // A container to gather all the evaluation runs
         let mut runs: Vec<EvalInstance> = Vec::new();
 
         // Repeat for k (pass @ k) loops 1...k
         for run in 1..=args.pass_at_k {
-            // Create a directory in the --eval-out directory
+            // Create a directory in the --eval-out/agent_layer_app_source_framework_dest_framework directory
             let eval_instance_dir = args
                 .eval_out
                 .join(eval_instance_key.repr())

@@ -1,10 +1,9 @@
 #!/bin/bash
 
 echo "[INFO] Running a mock agent"
-sleep 2
 
 if [[ "$FAIL" == "true" ]]; then
-    echo "[ERROR] Agent run failed"
+    echo "[ERROR] Agent run failed" >&2
     exit 1
 else
     echo "[INFO] Agent successfully ran"

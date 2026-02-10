@@ -6,6 +6,7 @@ use syntect::util::LinesWithEndings;
 /// * `value` - A reference to a serializable value
 /// # Returns
 /// A `String` containing the pretty-printed and colorized JSON representation of the input value
+#[allow(unused)]
 pub fn json_pretty<T: Serialize>(value: &T) -> String {
     let pretty = serde_json::to_string_pretty(value);
 

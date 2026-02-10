@@ -116,7 +116,7 @@ pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
         log::debug!("--prepare-only flag is set. Exiting after preparation.");
         return Ok(0);
     } else {
-        log::debug!("Running Agent");
+        log::debug!("Dispatching Agent");
         driver::dispatch_agent(&args.agent_dir, &eval_layout)?;
     }
     Ok(0)

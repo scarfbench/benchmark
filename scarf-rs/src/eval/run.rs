@@ -77,7 +77,7 @@ pub struct EvalRunArgs {
         default_value_t = 1,
         help = "Number of parallel jobs to run."
     )]
-    pub jobs: u32,
+    pub jobs: usize,
 
     #[arg(
         long="prepare-only",
@@ -111,13 +111,13 @@ pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
         args.eval_out.display()
     );
     let eval_layout: EvalLayout = prepare::prepare_harness(&args)?;
-
     if args.prepare_only {
         log::debug!("--prepare-only flag is set. Exiting after preparation.");
         return Ok(0);
-    } else {
-        log::debug!("Dispatching Agent");
-        driver::dispatch_agent(&args.agent_dir, &eval_layout)?;
     }
+
+    log::debug!("Dispatching Agent(s)");
+    driver::dispatch_agent(&args.agent_dir, &eval_layout)?;
+
     Ok(0)
 }

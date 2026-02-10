@@ -179,6 +179,17 @@ impl<'a> IntoIterator for &'a EvalLayout {
         self.evals.iter()
     }
 }
+impl<'x> IntoParallelIterator for &'x EvalLayout
+where
+    EvalKey: Sync,
+    EvalGroup: Sync,
+{
+    type Item = (&'x EvalKey, &'x EvalGroup);
+    type Iter = rayon::collections::hash_map::Iter<'x, EvalKey, EvalGroup>;
+    fn into_par_iter(self) -> Self::Iter {
+        self.evals.par_iter()
+    }
+}
 
 /// This is to hold the run metadata for saving in the evals folder later
 #[derive(Serialize, Deserialize)]

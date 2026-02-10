@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use clap::{ArgAction, Args};
 use serde::Serialize;
 
-use crate::eval::{driver, prepare};
+use crate::eval::{
+    driver,
+    prepare::{self},
+    types::EvalLayout,
+};
 
 #[derive(Args, Debug, Serialize)]
 pub struct EvalRunArgs {
@@ -17,6 +21,7 @@ pub struct EvalRunArgs {
     #[arg(
         long = "agent-dir",
         help = "Path (directory) to agent implementation harness.",
+        action = ArgAction::Append,
         value_name = "DIR"
     )]
     pub agent_dir: PathBuf,
@@ -105,19 +110,14 @@ pub fn run(mut args: EvalRunArgs) -> anyhow::Result<i32> {
         "Preparing evaluation harness at {}",
         args.eval_out.display()
     );
-    let run_layout = prepare::prepare_harness(&args)?;
+    let eval_layout: EvalLayout = prepare::prepare_harness(&args)?;
 
     if args.prepare_only {
         log::debug!("--prepare-only flag is set. Exiting after preparation.");
         return Ok(0);
     } else {
-        driver::dispatch_agent(
-            &args.agent_dir,
-            &args.from_framework,
-            &args.to_framework,
-            &run_layout,
-        );
+        log::debug!("Running Agent");
+        driver::dispatch_agent(&args.agent_dir, &eval_layout)?;
     }
-
     Ok(0)
 }

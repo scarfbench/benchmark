@@ -1,6 +1,8 @@
-mod prepare;
-pub mod run;
 mod driver;
+mod prepare;
+mod types;
+
+pub(crate) mod run;
 
 use clap::Subcommand;
 use run::EvalRunArgs;

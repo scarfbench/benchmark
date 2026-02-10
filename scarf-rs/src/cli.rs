@@ -1,9 +1,16 @@
 use crate::bench::BenchCmd;
 use crate::eval::EvalCmd;
+use crate::utils::logo;
 use clap::{Parser, Subcommand};
+use owo_colors::OwoColorize;
 
 #[derive(Parser, Debug)]
-#[command(name = "scarf", version, about = "ScarfBench CLI")]
+#[command(
+    name = "scarf",
+    version,
+    before_long_help=logo(),
+    about=format!("{}: {}", "ScarfBench CLI".bold().bright_red(), "The command line helper tool for scarf bench".bright_red()),
+)]
 pub struct Cli {
     #[arg(
         short,

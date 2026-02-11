@@ -1,7 +1,7 @@
 ### Quarkus Justfile
 APP_NAME       := "order-quarkus"
 IMAGE_NAME     := "order-quarkus:latest"
-SUCCESS_PATTERN := started in.*Listening on:
+SUCCESS_PATTERN := Listening on:
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .

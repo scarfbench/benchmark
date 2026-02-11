@@ -28,7 +28,7 @@ up: build
 	echo "[INFO] Removing existing container"; \
 	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run -d --name $(APP_NAME) -p $(HOST_PORT):$(SERVER_PORT) $(IMAGE_NAME)
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
 	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "Tomcat started on port $(SERVER_PORT)|Started .* in .* seconds"; do sleep 1; done
 	@echo "[INFO] Application server started, port $(HOST_PORT) is ready."

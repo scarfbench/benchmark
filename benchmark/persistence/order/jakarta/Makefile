@@ -20,7 +20,7 @@ up: build
 	@echo "[INFO] Building $(APP_NAME) in container..."
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 
-	@echo "[INFO] Assessing build failure
+	@echo "[INFO] Assessing build failure"
 	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; do \
 	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
 	break; \

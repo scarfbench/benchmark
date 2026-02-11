@@ -14,8 +14,8 @@ package jakarta.tutorial.producerfields.web;
 import java.io.Serializable;
 import java.util.List;
 
-import jakarta.ejb.EJB;
 import jakarta.enterprise.context.ConversationScoped;
+import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.tutorial.producerfields.ejb.RequestBean;
 import jakarta.tutorial.producerfields.entity.ToDo;
@@ -24,10 +24,10 @@ import jakarta.validation.constraints.NotNull;
 @Named
 @ConversationScoped
 public class ListBean implements Serializable {
-    
+
     private static final long serialVersionUID = 8751711591138727525L;
-    
-    @EJB
+
+    @Inject
     private RequestBean request;
     @NotNull
     private String inputString;
@@ -37,7 +37,7 @@ public class ListBean implements Serializable {
     public void createTask() {
         this.toDo = request.createToDo(inputString);
     }
-    
+
     public String getInputString() {
         return inputString;
     }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Open Liberty server">
+    <featureManager>
+        <feature>jakartaee-10.0</feature>
+    </featureManager>
+
+    <basicRegistry id="basic" realm="BasicRealm">
+        <user name="appuser" password="changeMe123!"/>
+    </basicRegistry>
+
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+
+    <library id="DerbyLib">
+        <fileset dir="${env.HOME}/.m2/repository/org/apache/derby/derby/10.14.2.0" includes="derby-*.jar"/>
+    </library>
+
+    <dataSource id="DefaultDataSource" jndiName="DefaultDataSource">
+        <jdbcDriver libraryRef="DerbyLib"/>
+        <properties.derby.embedded databaseName="memory:producerfields" createDatabase="create"/>
+    </dataSource>
+
+    <application location="producerfields.war" type="war"/>
+
+</server>

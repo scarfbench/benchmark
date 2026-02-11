@@ -15,10 +15,10 @@ Exit codes:
 import os
 import sys
 from datetime import datetime
+
 from playwright.sync_api import Page, sync_playwright
 
-
-DEFAULT_BASE = "http://localhost:8080"
+DEFAULT_BASE = "http://localhost:9080"
 BASE_URL = os.getenv("PRODUCER_FIELDS_BASE_URL", DEFAULT_BASE)
 DEFAULT_ENDPOINT = "/producerfields"
 HOME_URI = os.getenv("PRODUCER_FIELDS_HOME_URI", DEFAULT_ENDPOINT)

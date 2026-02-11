@@ -11,31 +11,22 @@
  */
 package jakarta.tutorial.producerfields.db;
 
+import jakarta.ejb.Singleton;
 import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 @Singleton
 public class UserDatabaseEntityManager {
 
-    // declare a producer field
-    @Produces
-    @UserDatabase 
+    // Inject the container-managed EntityManager and expose it via a producer
+    // method.
     @PersistenceContext
-    private EntityManager em;
-
-    // use methods to create and dispose of a producer field
- /* @PersistenceContext
     private EntityManager em;
 
     @Produces
     @UserDatabase
-    public EntityManager create() {
+    public EntityManager produceUserEntityManager() {
         return em;
     }
-
-    public void close(@Disposes @UserDatabase EntityManager em) {
-        em.close();
-    } */
 }

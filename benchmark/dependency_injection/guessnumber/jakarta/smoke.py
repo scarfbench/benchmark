@@ -27,6 +27,17 @@ DEFAULT_ENDPOINT = "/guessnumber-cdi"
 HOME_URI = os.getenv("GUESS_NUMBER_HOME_URI", DEFAULT_ENDPOINT)
 
 
+def ensure_guess_input_enabled(page: Page, max_resets: int = 5) -> bool:
+    """Reset the game until the guess input is enabled."""
+    guess_input = page.get_by_label("Number:")
+    for _ in range(max_resets):
+        if guess_input.is_enabled():
+            return True
+        with page.expect_navigation():
+            page.get_by_role("button", name="Reset").click()
+    return guess_input.is_enabled()
+
+
 def visit_main_page(page: Page) -> int:
     passed = 0
     page.goto(BASE_URL + HOME_URI)
@@ -42,6 +53,10 @@ def visit_main_page(page: Page) -> int:
 
 def guess(page: Page, number: int) -> int:
     passed = 0
+
+    if not ensure_guess_input_enabled(page):
+        print("[FAIL] Guess input is disabled.", file=sys.stderr)
+        return passed
 
     # Guess and hope it's not the selected number
     page.get_by_label("Number:").fill(f"{number}")
@@ -63,13 +78,18 @@ def guess(page: Page, number: int) -> int:
 
 def trigger_validation_error(page: Page, number: int) -> int:
     passed = 0
+
+    if not ensure_guess_input_enabled(page):
+        print("[FAIL] Guess input is disabled.", file=sys.stderr)
+        return passed
+
     page.get_by_label("Number:").fill(f"{number}")
     with page.expect_navigation():
         page.get_by_role("button", name="Guess").click()
 
     # Assert we have an error on page
-    number = page.get_by_label("Number:").input_value()
-    if "Invalid guess" in page.content() and "1" == number:
+    entered = page.get_by_label("Number:").input_value()
+    if "Invalid guess" in page.content() and str(number) == entered:
         print("[PASS] Error displayed correctly.")
         passed = 1
     else:
@@ -109,8 +129,8 @@ def main() -> int:
         passed_tests += guess(page=page, number=1)
 
         num_tests += 1
-        # Try number out of range, since we selected 1 before let's do it again
-        passed_tests += trigger_validation_error(page=page, number=1)
+        # Try a guaranteed out-of-range number
+        passed_tests += trigger_validation_error(page=page, number=101)
 
         num_tests += 1
         # Click the "Reset" button

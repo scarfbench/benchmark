@@ -1,7 +1,7 @@
 APP_NAME       := "cart-liberty"
 IMAGE_NAME     := "cart-liberty:latest"
 SUCCESS_PATTERN := CWWKF0011I
-FAILURE_PATTERN := BUILD FAILURE|ProjectBuildingException|The build could not read
+FAILURE_PATTERN := BUILD FAILURE|\\[ERROR\\] \\[ERROR\\] Some problems were encountered while processing the POMs:|\\[ERROR\\] The build could not read [0-9]+ projects|\\[FATAL\\]|Malformed POM|ProjectBuildingException|ModelParseException
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .

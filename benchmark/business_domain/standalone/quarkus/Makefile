@@ -2,8 +2,8 @@
 
 APP_NAME       := "standalone-quarkus"
 IMAGE_NAME   := $(APP_NAME):latest
-SERVER_PORT    := "8080"               # Application server internal HTTP
-HOST_PORT      := "10052"               # Host port to map to Application server's internal HTTP
+SUCCESS_PATTERN := Listening on:
+FAILURE_PATTERN := BUILD FAILURE|\\[ERROR\\] \\[ERROR\\] Some problems were encountered while processing the POMs:|\\[ERROR\\] The build could not read [0-9]+ projects|\\[FATAL\\]|Malformed POM|ProjectBuildingException|ModelParseException
 
 # Set shell
 SHELL := /bin/bash
@@ -28,10 +28,26 @@ up: build
 	echo "[INFO] Removing existing container"; \
 	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run -d --name $(APP_NAME) -p $(HOST_PORT):$(SERVER_PORT) $(IMAGE_NAME)
+
+	### Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
-	@until docker logs $(APP_NAME) 2>&1 | grep -q '[io.quarkus].*started in .*Listening on:'; do sleep 1; done
-	@echo "[INFO] Application server started, port $(HOST_PORT) is ready."
+
+	### Check for startup failure or success
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi; \
+	if ! docker inspect -f '{{.State.Running}}' $(APP_NAME) 2>/dev/null | grep -q true; then \
+	echo "[ERROR] Container exited before startup success:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi; \
+	sleep 1; \
+	done
+	@echo "[INFO] Quarkus application started and ready."
 
 # See the app logs
 logs:

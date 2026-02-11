@@ -16,7 +16,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>jakarta.examples.tutorial.ejb.cart</groupId>
-  <artifactId>parent</artifactId>
+  <artifactId>cart</artifactId>
   <version>10-SNAPSHOT</version>
   <packaging>pom</packaging>
 

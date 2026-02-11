@@ -1,7 +1,9 @@
 # Run `make` to see available recipes
 
 APP_NAME       := "helloservice-liberty"
-IMAGE_NAME   := $(APP_NAME):latest
+IMAGE_NAME     := "helloservice-liberty:latest"
+SUCCESS_PATTERN := CWWKF0011I
+FAILURE_PATTERN := BUILD FAILURE|ProjectBuildingException|The build could not read
 SERVER_PORT    := "9080"               # Application server internal HTTP
 HOST_PORT      := "10041"               # Host port to map to Application server's internal HTTP
 
@@ -31,6 +33,18 @@ up: build
 	docker run -d --name $(APP_NAME) -p $(HOST_PORT):$(SERVER_PORT) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
 	@until docker logs $(APP_NAME) 2>&1 | grep -q "CWWKF0011I"; do sleep 1; done
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+	break; \
+	fi; \
+	sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi
 	@echo "[INFO] Application server started, port $(HOST_PORT) is ready."
 
 # See the app logs

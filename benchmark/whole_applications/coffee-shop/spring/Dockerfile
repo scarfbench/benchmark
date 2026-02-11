@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "bash", "-lc", "./mvnw -pl web-service -am clean install -DskipTests && ./mvnw -f web-service/pom.xml spring-boot:run" ]
+CMD [ "bash", "-lc", "mvn -pl web-service -am clean install -DskipTests && mvn -f web-service/pom.xml spring-boot:run" ]

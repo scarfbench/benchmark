@@ -1,6 +1,15 @@
+# VCS
+.git/
+
 # Maven
+.mvn/
+**/.mvn/
+mvnw
+mvnw.cmd
+**/mvnw
+**/mvnw.cmd
 target/
-!target/timersession-10-SNAPSHOT.war
+**/target/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -8,45 +17,25 @@ pom.xml.next
 release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
 
-# IDE
+# IDE / Editor
+.vscode/
+**/.vscode/
+.zed/
+**/.zed/
 .idea/
-*.iws
+**/.idea/
 *.iml
 *.ipr
-.project
-.classpath
-.settings/
-.vscode/
+*.iws
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
+**/.DS_Store
 Thumbs.db
+ehthumbs.db
 
-# Logs
+# Logs / temp
 *.log
-
-# Runtime
-*.class
-*.jar
-*.war
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# Package Files
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
+*.tmp
+*.temp

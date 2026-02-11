@@ -35,9 +35,15 @@ down:
 	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
+clean: down
+	- docker rmi $(IMAGE_NAME)
+	- docker image prune -f
+	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+
 test: up
 	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
+	$(MAKE) clean
 
 local:
 	./mvnw clean package quarkus:run

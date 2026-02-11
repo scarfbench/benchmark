@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "./mvnw", "-pl", "orders-service", "-am", "clean", "liberty:run" ]
+CMD [ "mvn", "-pl", "orders-service", "-am", "clean", "liberty:run" ]

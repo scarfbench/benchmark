@@ -10,9 +10,6 @@
       <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
       <maven.compiler.source>1.8</maven.compiler.source>
       <maven.compiler.target>1.8</maven.compiler.target>
-      <!-- Derby library -->
-      <version.derby>10.17.1.0</version.derby>
-      <derby.path>${user.home}/.m2/repository/org/apache/derby/derby</derby.path>
       <!-- Liberty configuration -->
       <testServerHttpPort>9080</testServerHttpPort>
       <testServerHttpsPort>9443</testServerHttpsPort>
@@ -48,11 +45,10 @@
          <version>2.3.0</version>
          <scope>provided</scope>
       </dependency>
-      <!-- Derby from https://mvnrepository.com/artifact/org.apache.derby/derby -->
       <dependency>
-         <groupId>org.apache.derby</groupId>
-         <artifactId>derby</artifactId>
-         <version>${version.derby}</version>
+         <groupId>com.h2database</groupId>
+         <artifactId>h2</artifactId>
+         <version>2.3.232</version>
          <scope>test</scope>
       </dependency>
    </dependencies>
@@ -69,25 +65,22 @@
                 <default.http.port>${testServerHttpPort}</default.http.port>
                 <default.https.port>${testServerHttpsPort}</default.https.port>
               </bootstrapProperties>
+               <copyDependencies>
+                  <dependencyGroup>
+                  <location>${project.build.directory}/liberty/wlp/usr/shared/resources</location>
+                  <dependency>
+                     <groupId>com.h2database</groupId>
+                     <artifactId>h2</artifactId>
+                     <version>2.3.232</version>
+                  </dependency>
+                  </dependencyGroup>
+               </copyDependencies>
             </configuration>
          </plugin>
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
             <version>3.1.2</version>
-            <executions>
-               <execution>
-                  <id>copy-derby-dependency</id>
-                  <phase>package</phase>
-                  <goals>
-                     <goal>copy-dependencies</goal>
-                  </goals>
-                  <configuration>
-                     <includeArtifactIds>derby</includeArtifactIds>
-                     <outputDirectory>${project.build.directory}/liberty/wlp/usr/shared/resources/DerbyLibs/</outputDirectory>
-                  </configuration>
-               </execution>
-            </executions>
          </plugin>
          <plugin>
             <artifactId>maven-resources-plugin</artifactId>

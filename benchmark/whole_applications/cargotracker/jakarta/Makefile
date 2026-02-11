@@ -13,10 +13,14 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
-	@echo "[INFO] Started $(APP_NAME) (internal port $(APP_PORT))..."
-	@echo "[INFO] Tip: use 'just logs' to watch startup, or 'just smoke' to run Playwright smoke tests once it's up."
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "started on port"; do sleep 1; done
+	@echo "[INFO] Application server started."
 
 logs:
 	docker logs -f $(APP_NAME)
@@ -25,17 +29,17 @@ down:
 	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container $(APP_NAME) removed (if it existed)."
 
-# Run Playwright-based smoke tests inside the running container
-# This does:
-#   cd smoke
-#   uv sync
-#   uv run playwright install chromium
-#   uv run smoke.py
 smoke: up
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
 test: smoke
+
+# Clean up
+clean: down
+	docker rmi $(APP_NAME)
+	@echo "[INFO] Image removed (if it existed)"
+
 # Optional: run app locally without Docker, if you still want that path.
 local:
 	./mvnw clean package cargo:run

@@ -4,7 +4,7 @@ from playwright.sync_api import Page, expect
 
 def test_cargo_tracker_homepage(page: Page):
     # 1. Navigate to the Cargo Tracker homepage
-    page.goto("http://localhost:8080/cargo-tracker/")
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
 
     # 2. Verify page title
     expect(page).to_have_title("Eclipse Cargo Tracker")
@@ -27,7 +27,7 @@ def test_cargo_tracker_homepage(page: Page):
 
 def test_navigate_to_public_tracking_interface(page: Page):
     # 1. Navigate to home page
-    page.goto("http://localhost:8080/cargo-tracker/")
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
 
     # 2. Click on "Public Tracking Interface" button
     page.get_by_role("link", name="Public Tracking Interface").click()
@@ -41,7 +41,7 @@ def test_navigate_to_public_tracking_interface(page: Page):
 
 def test_navigate_to_administration_interface(page: Page):
     # 1. Navigate to home page
-    page.goto("http://localhost:8080/cargo-tracker/")
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
 
     # 2. Click on "Administration" button
     page.get_by_role("link", name="Administration").click()
@@ -57,7 +57,7 @@ def test_navigate_to_administration_interface(page: Page):
 
 def test_open_event_logging_interface_popup(page: Page):
     # 1. Navigate to home page
-    page.goto("http://localhost:8080/cargo-tracker/")
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
 
     # 2. Click on "Event Logging Interface" button and wait for popup
     with page.expect_popup() as popup_info:
@@ -84,8 +84,9 @@ def test_verify_public_tracking_page_structure(page: Page):
     expect(page).to_have_title("Track Cargo")
 
     # 3. Verify side menu contains required items
-    expect(page.get_by_role("link", name="Tracking")).to_be_visible()
-    expect(page.get_by_role("link", name="About")).to_be_visible()
+    # PrimeFaces menu items render as links within .ui-menu-list
+    expect(page.locator(".ui-menu-list >> text=Tracking")).to_be_visible()
+    expect(page.locator(".ui-menu-list >> text=About")).to_be_visible()
 
     # 4. Verify tracking form is present with input field and submit button
     expect(page.get_by_placeholder("XYZ789")).to_be_visible()
@@ -186,7 +187,8 @@ def test_navigate_to_about_page_from_public_tracking(page: Page):
     page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
 
     # 2. Click on "About" menu item in side panel
-    page.get_by_role("link", name="About").click()
+    # PrimeFaces menu items render as links within .ui-menu-list
+    page.locator(".ui-menu-list >> text=About").click()
 
     # 3. Verify URL changes to `/public/about.xhtml` (may include query params)
     assert "cargo-tracker/public/about.xhtml" in page.url
@@ -200,7 +202,7 @@ def test_verify_dashboard_structure(page: Page):
     Verify the basic structure of the dashboard page.
     """
     # 1. Navigate to admin dashboard page
-    page.goto("localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
 
     # 2. Find the Routed Cargo Section table
     routed_cargo_table = page.locator(
@@ -257,7 +259,7 @@ def test_click_on_routed_cargo_details(page: Page):
     Test clicking on a routed cargo item to view its details.
     """
     # 1. Navigate to admin dashboard page
-    page.goto("localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
 
     # 2. Find the Routed Cargo Section table
     routed_cargo_table = page.locator(

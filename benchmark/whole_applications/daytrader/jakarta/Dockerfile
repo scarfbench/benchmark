@@ -64,7 +64,7 @@ COPY smoke ./smoke
 
 # Build the Quarkus app once during image build
 # (use -DskipTests if you want it faster)
-RUN mvn -B -DskipTests package
+RUN mvn -B -DskipTests clean package
 
 # --------------------------------------------------------------------
 # Default command: run the Quarkus app via Maven

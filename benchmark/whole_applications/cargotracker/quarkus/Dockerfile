@@ -61,7 +61,7 @@ COPY smoke ./smoke
 
 # Build the Quarkus app once during image build
 # (use -DskipTests if you want it faster)
-RUN mvn -B -DskipTests package
+RUN mvn -B -DskipTests clean package
 
 # --------------------------------------------------------------------
 # Default command: run the Quarkus app via Maven
@@ -69,4 +69,4 @@ RUN mvn -B -DskipTests package
 # You can then exec into the container to run:
 #   cd smoke && uv run pytest smoke.py
 # --------------------------------------------------------------------
-CMD ["mvn", "clean", "package", "quarkus:run"]
+CMD ["mvn", "quarkus:run"]

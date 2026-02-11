@@ -1,87 +1,191 @@
-# daytrader-quarkus
+# DayTrader Quarkus
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A Quarkus-based implementation of the classic DayTrader benchmark application, migrated from Jakarta EE.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Prerequisites
 
-## Running the application in dev mode
+- Java 17+
+- Maven 3.9+ (or use the included wrapper)
+- Python 3.11+ with [uv](https://docs.astral.sh/uv/) (for smoke tests)
 
-You can run your application in dev mode that enables live coding using:
+## Quick Start
 
-```shell script
+### Development Mode
+
+```bash
+# Start the application in dev mode with hot reload
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+The application will be available at:
+- **Home**: http://localhost:8080/
+- **Trading App**: http://localhost:8080/app
+- **REST API**: http://localhost:8080/rest
 
-## Packaging and running the application
+### Production Build
 
-The application can be packaged using:
+```bash
+# Build the application
+./mvnw clean package -DskipTests
 
-```shell script
-./mvnw package
+# Run the JAR
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Docker
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+```bash
+# Build the image
+docker build -t daytrader-quarkus .
 
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+# Run the container
+docker run -p 8080:8080 daytrader-quarkus
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Default Users
 
-## Creating a native executable
+The application automatically populates the database on startup with:
+- **50 users**: `uid:0` through `uid:49` (password matches username)
+- **100 stock quotes**: `s:0` through `s:99`
 
-You can create a native executable using:
+Default test user: `uid:0` / `uid:0`
 
-```shell script
-./mvnw package -Dnative
+## REST API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /rest/quotes/{symbol}` | Get quote by symbol |
+| `GET /rest/quotes` | Get all quotes |
+| `GET /rest/portfolio/{userID}` | Get user's holdings |
+| `GET /rest/account/{userID}` | Get account information |
+| `GET /rest/market-summary` | Get market summary |
+| `POST /rest/orders/buy` | Buy stocks |
+| `POST /rest/orders/sell/{holdingID}` | Sell stocks |
+
+## Smoke Tests
+
+Run Playwright-based smoke tests to validate the application:
+
+```bash
+cd smoke
+
+# Install dependencies
+uv sync
+
+# Install Playwright browsers
+uv run playwright install chromium
+
+# Run tests (app must be running on localhost:8080)
+uv run pytest smoke.py -v
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### Test Categories
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+```bash
+# Run only login tests
+uv run pytest smoke.py -v -m login
+
+# Run only navigation tests  
+uv run pytest smoke.py -v -m navigation
+
+# Run only trading tests
+uv run pytest smoke.py -v -m trading
+
+# Run only API tests
+uv run pytest smoke.py -v -m api
 ```
 
-You can then execute your native executable with: `./target/daytrader-quarkus-1.0.0-SNAPSHOT-runner`
+### Docker-based Testing
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+```bash
+# Build test image
+docker build -f Dockerfile.test -t daytrader-smoke .
 
-## Related Guides
+# Run tests (with host networking to reach localhost:8080)
+docker run --network host daytrader-smoke
+```
 
-- Artemis JMS ([guide](https://docs.quarkiverse.io/quarkus-artemis/dev/index.html)): Use JMS APIs to connect to ActiveMQ Artemis via its native protocol
-- Cache ([guide](https://quarkus.io/guides/cache)): Enable application data caching in CDI beans
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- WebSockets ([guide](https://quarkus.io/guides/websockets)): WebSocket communication channel support
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Hibernate Validator ([guide](https://quarkus.io/guides/validation)): Validate object properties (field, getter) and method parameters for your beans (REST, CDI, Jakarta Persistence)
+## Migration from Jakarta EE
 
-## Provided Code
+This project was migrated from Jakarta EE 8 (Liberty) with these key changes:
 
-### Hibernate ORM
+| Jakarta EE | Quarkus |
+|------------|---------|
+| `javax.*` packages | `jakarta.*` packages |
+| `@Stateless` EJB | `@ApplicationScoped` CDI |
+| `@PersistenceContext` | `@Inject EntityManager` |
+| `persistence.xml` | `application.properties` |
+| Servlet (`web.xml`) | JAX-RS Resource |
+| Derby database | H2 in-memory |
+| Liberty server | Quarkus runtime |
+| Port 9080 | Port 8080 |
 
-Create your first JPA entity
+## Project Structure
 
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
+```
+daytrader-quarkus/
+├── pom.xml                    # Maven build with Quarkus BOM
+├── Dockerfile                 # Production multi-stage build
+├── Dockerfile.test            # Smoke test runner
+├── src/main/java/com/ibm/websphere/samples/daytrader/
+│   ├── beans/                 # CDI beans and market summary
+│   │   ├── MarketSummaryDataBean.java
+│   │   └── RunStatsDataBean.java
+│   ├── entities/              # JPA entities
+│   │   ├── AccountDataBean.java
+│   │   ├── AccountProfileDataBean.java
+│   │   ├── HoldingDataBean.java
+│   │   ├── OrderDataBean.java
+│   │   └── QuoteDataBean.java
+│   ├── impl/                  # TradeServices implementations (from original DayTrader)
+│   │   ├── direct/            # Direct JDBC implementation
+│   │   │   └── TradeDirect.java
+│   │   ├── ejb3/              # EJB3 implementation (adapted to CDI)
+│   │   │   ├── AsyncScheduledCompletedOrders.java
+│   │   │   └── TradeSLSBBean.java
+│   │   └── session2direct/    # Session-to-direct delegate
+│   │       └── DirectSLSBBean.java
+│   ├── interfaces/            # Service interfaces
+│   │   └── TradeServices.java
+│   ├── messaging/             # SmallRye Reactive Messaging (replaces JMS/MDB)
+│   │   ├── MessageProducerService.java
+│   │   ├── TradeBrokerProcessor.java
+│   │   └── TradeStreamerProcessor.java
+│   ├── rest/                  # JAX-RS resources
+│   │   ├── TradeResource.java
+│   │   ├── QuoteResource.java
+│   │   └── MessagingResource.java
+│   ├── util/                  # Utilities
+│   │   ├── TradeConfig.java
+│   │   ├── FinancialUtils.java
+│   │   └── Log.java
+│   └── web/                   # Web servlets and primitives
+│       └── prims/
+├── src/main/resources/
+│   ├── application.properties
+│   └── META-INF/resources/    # Static web content (JSP/HTML pages)
+└── smoke/                     # Playwright smoke tests
+    ├── smoke.py
+    ├── pyproject.toml
+    ├── pytest.ini
+    └── README.md
+```
 
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
+## Architecture
 
+The application preserves the original DayTrader multi-implementation architecture:
 
-### REST
+| Implementation | Class | Description |
+|----------------|-------|-------------|
+| EJB3 | `TradeSLSBBean` | Full-featured impl with async messaging (CDI + Reactive Messaging) |
+| Direct | `TradeDirect` | Direct JDBC implementation |
+| Session2Direct | `DirectSLSBBean` | Session bean delegating to TradeDirect |
 
-Easily start your REST Web Services
+**CDI Producer Pattern**: `TradeServicesProducer` provides the `TradeServices` bean injection point.
+The active implementation is selected based on `TradeConfig.getRunTimeMode()` (default: EJB3 mode).
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+The individual implementations use `@Typed` to prevent CDI ambiguity - they're injected by their concrete type, not as `TradeServices`.
 
-### WebSockets
+## License
 
-WebSocket communication channel starter code
-
-[Related guide section...](https://quarkus.io/guides/websockets)
+Apache License 2.0

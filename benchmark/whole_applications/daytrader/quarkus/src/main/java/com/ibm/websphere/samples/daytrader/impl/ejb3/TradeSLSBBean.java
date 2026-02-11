@@ -23,29 +23,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import jakarta.annotation.Resource;
+// MIGRATION: javax.* -> jakarta.*
+// MIGRATION: EJB annotations -> CDI + @Transactional
 import jakarta.enterprise.context.ApplicationScoped;
-
-// import javax.ejb.EJB;
-// import javax.ejb.EJBException;
-// import javax.ejb.SessionContext;
-// import javax.ejb.Stateless;
-// import javax.ejb.TransactionAttribute;
-// import javax.ejb.TransactionAttributeType;
-// import javax.ejb.TransactionManagement;
-// import javax.ejb.TransactionManagementType;
-
-import javax.management.RuntimeErrorException;
-
 import jakarta.inject.Inject;
-import jakarta.jms.JMSContext;
-import jakarta.jms.Queue;
-import jakarta.jms.QueueConnectionFactory;
-import jakarta.jms.TextMessage;
-import jakarta.jms.Topic;
-import jakarta.jms.TopicConnectionFactory;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -58,6 +40,7 @@ import com.ibm.websphere.samples.daytrader.interfaces.RuntimeMode;
 import com.ibm.websphere.samples.daytrader.interfaces.Trace;
 import com.ibm.websphere.samples.daytrader.interfaces.TradeEJB;
 import com.ibm.websphere.samples.daytrader.interfaces.TradeServices;
+import com.ibm.websphere.samples.daytrader.messaging.MessageProducerService;
 import com.ibm.websphere.samples.daytrader.beans.MarketSummaryDataBean;
 import com.ibm.websphere.samples.daytrader.entities.AccountDataBean;
 import com.ibm.websphere.samples.daytrader.entities.AccountProfileDataBean;
@@ -68,73 +51,30 @@ import com.ibm.websphere.samples.daytrader.util.FinancialUtils;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.RecentQuotePriceChangeList;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
-import com.ibm.websphere.samples.daytrader.util.TradeBrokerQueue;
-import com.ibm.websphere.samples.daytrader.util.TradeStreamerTopic;
-import com.ibm.websphere.samples.daytrader.util.TradeUpdatesTopic;
 
-// @Stateless
+import jakarta.enterprise.inject.Default;
+
+// MIGRATION: @Stateless -> @ApplicationScoped
+// MIGRATION: @TransactionAttribute(REQUIRED) -> @Transactional
+// MIGRATION: @TransactionManagement removed (CDI uses declarative transactions)
+// This is the default/primary TradeServices implementation
+// @Default added explicitly since custom qualifiers remove implicit @Default
+@ApplicationScoped
+@Default
 @TradeEJB
 @RuntimeMode("Full EJB3")
 @Trace
-@ApplicationScoped
-@Transactional  // replaces TransactionAttribute + TransactionManagement
-// @TransactionAttribute(TransactionAttributeType.REQUIRED)
-// @TransactionManagement(TransactionManagementType.CONTAINER)
+@Transactional
 public class TradeSLSBBean implements TradeServices {
 
-    // For Wildfly - add java:/ to these resource names.
-    // @Resource(name = "jms/QueueConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-    //@Resource(name = "java:/jms/QueueConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-    // private QueueConnectionFactory queueConnectionFactory;
+    // MIGRATION: JMS resources replaced with MessageProducerService
+    @Inject
+    MessageProducerService messageProducer;
 
     @Inject
-    QueueConnectionFactory queueConnectionFactory;
+    EntityManager entityManager;
 
-    // @Resource(name = "jms/TopicConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-    //@Resource(name = "java:/jms/TopicConnectionFactory", authenticationType = javax.annotation.Resource.AuthenticationType.APPLICATION)
-    // private TopicConnectionFactory topicConnectionFactory;
-    
-    @Inject
-    TopicConnectionFactory topicConnectionFactory;
-
-    @Inject
-    JMSContext jmsContext;
-
-    @Inject
-    @TradeBrokerQueue
-    Queue tradeBrokerQueue;
-
-    @Inject
-    @TradeUpdatesTopic
-    Topic tradeUpdatesTopic;
-
-    @Inject
-    @TradeStreamerTopic
-    Topic tradeStreamerTopic;
-
-    public void sendTradeMessage(String message) {
-        jmsContext.createProducer().send(tradeBrokerQueue, message);
-    }
-
-    public void publishTradeUpdate(String message) {
-        jmsContext.createProducer().send(tradeUpdatesTopic, message);
-    }
-
-
-    // @Resource(lookup = "jms/TradeStreamerTopic")
-    // //@Resource(lookup = "java:/jms/TradeStreamerTopic")
-    // private Topic tradeStreamerTopic;
-
-    // @Resource(lookup = "jms/TradeBrokerQueue")
-    // //@Resource(lookup = "java:/jms/TradeBrokerQueue")
-    // private Queue tradeBrokerQueue;
-
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    // @Resource
-    // private SessionContext context;
-
+    // MIGRATION: @EJB -> @Inject
     @Inject
     MarketSummarySingleton marketSummarySingleton;
 
@@ -151,7 +91,6 @@ public class TradeSLSBBean implements TradeServices {
 
     @Override
     @NotNull
-    @Transactional(rollbackOn = Exception.class)
     public OrderDataBean buy(String userID, String symbol, double quantity, int orderProcessingMode) {
         OrderDataBean order = null;
         BigDecimal total;
@@ -185,15 +124,13 @@ public class TradeSLSBBean implements TradeServices {
             /* On exception - cancel the order */
             // TODO figure out how to do this with JPA
             // if (order != null) order.cancel();
-            // throw new EJBException(e);
-             throw new RuntimeException("Trade failed", e);
+            throw new RuntimeException(e);
         }
         return order;
     }
 
     @Override
     @NotNull
-    @Transactional(rollbackOn = Exception.class)
     public OrderDataBean sell(final String userID, final Integer holdingID, int orderProcessingMode) {
         OrderDataBean order=null;
         BigDecimal total;
@@ -243,39 +180,24 @@ public class TradeSLSBBean implements TradeServices {
             Log.error("TradeSLSBBean:sell(" + userID + "," + holdingID + ") --> failed", e);
             // if (order != null) order.cancel();
             // UPDATE - handle all exceptions like:
-            // throw new EJBException("TradeSLSBBean:sell(" + userID + "," + holdingID + ")", e);
+            // MIGRATION: RuntimeException -> RuntimeException
             throw new RuntimeException("TradeSLSBBean:sell(" + userID + "," + holdingID + ")", e);
         }
         return order;
     }
 
-    @Transactional(rollbackOn = Exception.class)
     public void queueOrder(Integer orderID, boolean twoPhase) {
-
-        // 2 phase
-        try (JMSContext queueContext = queueConnectionFactory.createContext();) {
-          TextMessage message = queueContext.createTextMessage();
-
-          message.setStringProperty("command", "neworder");
-          message.setIntProperty("orderID", orderID);
-          message.setBooleanProperty("twoPhase", twoPhase);
-          message.setText("neworder: orderID=" + orderID + " runtimeMode=EJB twoPhase=" + twoPhase);
-          message.setLongProperty("publishTime", System.currentTimeMillis());
-
-          queueContext.createProducer().send(tradeBrokerQueue, message);
-
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage(), e); // pass the exception
-        }
+        // MIGRATION: JMS -> MessageProducerService
+        messageProducer.queueOrderForProcessing(orderID, twoPhase);
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
     public OrderDataBean completeOrder(Integer orderID, boolean twoPhase) throws Exception {
         OrderDataBean order = entityManager.find(OrderDataBean.class, orderID);
 
         if (order == null) {
           System.out.println("error");
+            // MIGRATION: RuntimeException -> RuntimeException
             throw new RuntimeException("Error: attempt to complete Order that is null\n" + order);
         }
 
@@ -312,7 +234,7 @@ public class TradeSLSBBean implements TradeServices {
             if (holding == null) {
                 Log.debug("TradeSLSBBean:completeOrder -- Unable to sell order " + order.getOrderID() + " holding already sold");
                 order.cancel();
-                //throw new EJBException("TradeSLSBBean:completeOrder -- Unable to sell order " + order.getOrderID() + " holding already sold");
+                //throw new RuntimeException("TradeSLSBBean:completeOrder -- Unable to sell order " + order.getOrderID() + " holding already sold");
             } else {
                 entityManager.remove(holding);
                 order.setHolding(null);
@@ -347,13 +269,16 @@ public class TradeSLSBBean implements TradeServices {
 
     @Override
     public Collection<OrderDataBean> getOrders(String userID) {
-        AccountProfileDataBean profile = entityManager.find(AccountProfileDataBean.class, userID);
-        AccountDataBean account = profile.getAccount();
-        return account.getOrders();
+        // Use a JPQL query to eagerly fetch orders for the user
+        // This avoids lazy loading issues when returning the collection
+        TypedQuery<OrderDataBean> query = entityManager.createQuery(
+            "SELECT o FROM orderejb o WHERE o.account.profile.userID = :userID ORDER BY o.openDate DESC",
+            OrderDataBean.class);
+        query.setParameter("userID", userID);
+        return query.getResultList();
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
     public Collection<OrderDataBean> getClosedOrders(String userID) {
 
         try {
@@ -395,7 +320,6 @@ public class TradeSLSBBean implements TradeServices {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
     public QuoteDataBean createQuote(String symbol, String companyName, BigDecimal price) {
         try {
             QuoteDataBean quote = new QuoteDataBean(symbol, companyName, 0, price, price, price, price, 0);
@@ -509,7 +433,6 @@ public class TradeSLSBBean implements TradeServices {
     }
 
     @Override
-    @Transactional(rollbackOn = Exception.class)
     public AccountDataBean login(String userID, String password) throws RollbackException {
         AccountProfileDataBean profile = entityManager.find(AccountProfileDataBean.class, userID);
         if (profile == null) {
@@ -558,38 +481,28 @@ public class TradeSLSBBean implements TradeServices {
         return account;
     }
 
-    // @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-
-    @Transactional(value = Transactional.TxType.REQUIRES_NEW, rollbackOn = Exception.class)   
+    // MIGRATION: @TransactionAttribute(REQUIRES_NEW) -> @Transactional(REQUIRES_NEW)
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void publishQuotePriceChange(QuoteDataBean quote, BigDecimal oldPrice, BigDecimal changeFactor, double sharesTraded) {
         if (!TradeConfig.getPublishQuotePriceChange()) {
             return;
         }
 
-        try (JMSContext topicContext = topicConnectionFactory.createContext();) {
-            TextMessage message = topicContext.createTextMessage();
-
-            message.setStringProperty("command", "updateQuote");
-            message.setStringProperty("symbol", quote.getSymbol());
-            message.setStringProperty("company", quote.getCompanyName());
-            message.setStringProperty("price", quote.getPrice().toString());
-            message.setStringProperty("oldPrice", oldPrice.toString());
-            message.setStringProperty("open", quote.getOpen().toString());
-            message.setStringProperty("low", quote.getLow().toString());
-            message.setStringProperty("high", quote.getHigh().toString());
-            message.setDoubleProperty("volume", quote.getVolume());
-            message.setStringProperty("changeFactor", changeFactor.toString());
-            message.setDoubleProperty("sharesTraded", sharesTraded);
-            message.setLongProperty("publishTime", System.currentTimeMillis());
-            message.setText("Update Stock price for " + quote.getSymbol() + " old price = " + oldPrice + " new price = " + quote.getPrice());
-
-            topicContext.createProducer().send(tradeStreamerTopic, message);
-        } catch (Exception e) {
-             throw new RuntimeException(e.getMessage(), e); // pass the exception
-        }
+        // MIGRATION: JMS Topic -> MessageProducerService
+        messageProducer.publishQuotePriceChange(
+            quote.getSymbol(),
+            quote.getCompanyName(),
+            quote.getPrice(),
+            oldPrice,
+            quote.getOpen(),
+            quote.getLow(),
+            quote.getHigh(),
+            quote.getVolume(),
+            changeFactor,
+            sharesTraded
+        );
     }
 
-    @Transactional(rollbackOn = Exception.class)
     public OrderDataBean createOrder(AccountDataBean account, QuoteDataBean quote, HoldingDataBean holding, String orderType, double quantity) {
         OrderDataBean order;
 
@@ -621,10 +534,9 @@ public class TradeSLSBBean implements TradeServices {
     public QuoteDataBean pingTwoPhase(String symbol) throws Exception {
         QuoteDataBean quoteData = null;
 
-        try (JMSContext queueContext = queueConnectionFactory.createContext();) {
-
-            
-            // Get a Quote and send a JMS message in a 2-phase commit
+        try {
+            // Get a Quote and send a message in a 2-phase commit
+            // MIGRATION: JMS -> MessageProducerService
             quoteData = entityManager.find(QuoteDataBean.class, symbol);
             
             double sharesTraded = (Math.random() * 100) + 1 ;
@@ -639,12 +551,7 @@ public class TradeSLSBBean implements TradeServices {
             quoteData.setVolume(quoteData.getVolume() + sharesTraded);
             entityManager.merge(quoteData);
 
-            TextMessage message = queueContext.createTextMessage();
-
-            message.setStringProperty("command", "ping");
-            message.setLongProperty("publishTime", System.currentTimeMillis());
-            message.setText("Ping message for queue java:comp/env/jms/TradeBrokerQueue sent from TradeSLSBBean:pingTwoPhase at " + new java.util.Date());
-            queueContext.createProducer().send(tradeBrokerQueue, message);
+            messageProducer.sendBrokerPing("Ping message sent from TradeSLSBBean:pingTwoPhase at " + new java.util.Date());
         } catch (Exception e) {
             Log.error("TradeSLSBBean:pingTwoPhase -- exception caught", e);
         }

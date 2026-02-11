@@ -17,9 +17,9 @@ package com.ibm.websphere.samples.daytrader.entities;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-//import java.sql.Timestamp;
 import java.util.Date;
 
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -32,7 +32,6 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.TableGenerator;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
@@ -41,68 +40,61 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
 @Entity(name = "orderejb")
 @Table(name = "orderejb")
 @NamedQueries({
-        @NamedQuery(name = "orderejb.findByOrderfee", query = "SELECT o FROM orderejb o WHERE o.orderFee = :orderfee"),
-        @NamedQuery(name = "orderejb.findByCompletiondate", query = "SELECT o FROM orderejb o WHERE o.completionDate = :completiondate"),
-        @NamedQuery(name = "orderejb.findByOrdertype", query = "SELECT o FROM orderejb o WHERE o.orderType = :ordertype"),
-        @NamedQuery(name = "orderejb.findByOrderstatus", query = "SELECT o FROM orderejb o WHERE o.orderStatus = :orderstatus"),
-        @NamedQuery(name = "orderejb.findByPrice", query = "SELECT o FROM orderejb o WHERE o.price = :price"),
-        @NamedQuery(name = "orderejb.findByQuantity", query = "SELECT o FROM orderejb o WHERE o.quantity = :quantity"),
-        @NamedQuery(name = "orderejb.findByOpendate", query = "SELECT o FROM orderejb o WHERE o.openDate = :opendate"),
-        @NamedQuery(name = "orderejb.findByOrderid", query = "SELECT o FROM orderejb o WHERE o.orderID = :orderid"),
-        @NamedQuery(name = "orderejb.findByAccountAccountid", query = "SELECT o FROM orderejb o WHERE o.account.accountID = :accountAccountid"),
-        @NamedQuery(name = "orderejb.findByQuoteSymbol", query = "SELECT o FROM orderejb o WHERE o.quote.symbol = :quoteSymbol"),
-        @NamedQuery(name = "orderejb.findByHoldingHoldingid", query = "SELECT o FROM orderejb o WHERE o.holding.holdingID = :holdingHoldingid"),
-        @NamedQuery(name = "orderejb.closedOrders", query = "SELECT o FROM orderejb o WHERE o.orderStatus = 'closed' AND o.account.profile.userID  = :userID"),
-        @NamedQuery(name = "orderejb.completeClosedOrders", query = "UPDATE orderejb o SET o.orderStatus = 'completed' WHERE o.orderStatus = 'closed' AND o.account.profile.userID  = :userID") })
+    @NamedQuery(name = "orderejb.findByOrderfee", query = "SELECT o FROM orderejb o WHERE o.orderFee = :orderfee"),
+    @NamedQuery(name = "orderejb.findByOrderstatus", query = "SELECT o FROM orderejb o WHERE o.orderStatus = :orderstatus"),
+    @NamedQuery(name = "orderejb.findByOrderid", query = "SELECT o FROM orderejb o WHERE o.orderID = :orderid"),
+    @NamedQuery(name = "orderejb.findByAccountAccountid", query = "SELECT o FROM orderejb o WHERE o.account.accountID = :accountAccountid"),
+    @NamedQuery(name = "orderejb.closedOrders", query = "SELECT o FROM orderejb o WHERE o.orderStatus = 'closed' AND o.account.profile.userID  = :userID"),
+    @NamedQuery(name = "orderejb.completeClosedOrders", query = "UPDATE orderejb o SET o.orderStatus = 'completed' WHERE o.orderStatus = 'closed' AND o.account.profile.userID  = :userID")
+})
 public class OrderDataBean implements Serializable {
 
     private static final long serialVersionUID = 120650490200739057L;
 
+    // MIGRATION: Simplified ID generation for Quarkus
     @Id
-    @TableGenerator(name = "orderIdGen", table = "KEYGENEJB", pkColumnName = "KEYNAME", valueColumnName = "KEYVAL", pkColumnValue = "order", allocationSize = 1000)
-    @GeneratedValue(strategy = GenerationType.TABLE, generator = "orderIdGen")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ORDERID", nullable = false)
-    private Integer orderID; /* orderID */
+    private Integer orderID;
 
     @Column(name = "ORDERTYPE")
     @NotBlank
-    private String orderType; /* orderType (buy, sell, etc.) */
+    private String orderType;
 
     @Column(name = "ORDERSTATUS")
     @NotBlank
-    private String orderStatus; /*
-                                 * orderStatus (open, processing, completed,
-                                 * closed, cancelled)
-                                 */
+    private String orderStatus;
 
     @Column(name = "OPENDATE")
     @Temporal(TemporalType.TIMESTAMP)
     @PastOrPresent
-    private Date openDate; /* openDate (when the order was entered) */
+    private Date openDate;
 
     @Column(name = "COMPLETIONDATE")
     @PastOrPresent
     @Temporal(TemporalType.TIMESTAMP)
-    private Date completionDate; /* completionDate */
+    private Date completionDate;
 
     @NotNull
     @Column(name = "QUANTITY", nullable = false)
-    private double quantity; /* quantity */
+    private double quantity;
 
     @Column(name = "PRICE")
     @Positive
-    private BigDecimal price; /* price */
+    private BigDecimal price;
 
     @Column(name = "ORDERFEE")
     @Positive
-    private BigDecimal orderFee; /* price */
+    private BigDecimal orderFee;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ACCOUNT_ACCOUNTID")
     private AccountDataBean account;
@@ -111,19 +103,20 @@ public class OrderDataBean implements Serializable {
     @JoinColumn(name = "QUOTE_SYMBOL")
     private QuoteDataBean quote;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "HOLDING_HOLDINGID")
     private HoldingDataBean holding;
 
-    /* Fields for relationship fields are not kept in the Data Bean */
     @Transient
     private String symbol;
 
     public OrderDataBean() {
     }
 
-    public OrderDataBean(Integer orderID, String orderType, String orderStatus, Date openDate, Date completionDate, double quantity, BigDecimal price,
-            BigDecimal orderFee, String symbol) {
+    public OrderDataBean(Integer orderID, String orderType, String orderStatus, 
+            Date openDate, Date completionDate, double quantity, 
+            BigDecimal price, BigDecimal orderFee, String symbol) {
         setOrderID(orderID);
         setOrderType(orderType);
         setOrderStatus(orderStatus);
@@ -135,8 +128,10 @@ public class OrderDataBean implements Serializable {
         setSymbol(symbol);
     }
 
-    public OrderDataBean(String orderType, String orderStatus, Date openDate, Date completionDate, double quantity, BigDecimal price, BigDecimal orderFee,
-            AccountDataBean account, QuoteDataBean quote, HoldingDataBean holding) {
+    public OrderDataBean(String orderType, String orderStatus, Date openDate, 
+            Date completionDate, double quantity, BigDecimal price, 
+            BigDecimal orderFee, AccountDataBean account, QuoteDataBean quote, 
+            HoldingDataBean holding) {
         setOrderType(orderType);
         setOrderStatus(orderStatus);
         setOpenDate(openDate);
@@ -150,23 +145,42 @@ public class OrderDataBean implements Serializable {
     }
 
     public static OrderDataBean getRandomInstance() {
-        return new OrderDataBean(new Integer(TradeConfig.rndInt(100000)), TradeConfig.rndBoolean() ? "buy" : "sell", "open", new java.util.Date(
-                TradeConfig.rndInt(Integer.MAX_VALUE)), new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)), TradeConfig.rndQuantity(),
-                TradeConfig.rndBigDecimal(1000.0f), TradeConfig.rndBigDecimal(1000.0f), TradeConfig.rndSymbol());
+        return new OrderDataBean(
+            Integer.valueOf(TradeConfig.rndInt(100000)), 
+            TradeConfig.rndBoolean() ? "buy" : "sell", 
+            "open", 
+            new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)), 
+            new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)), 
+            TradeConfig.rndQuantity(),
+            TradeConfig.rndBigDecimal(1000.0f), 
+            TradeConfig.rndBigDecimal(1000.0f), 
+            TradeConfig.rndSymbol()
+        );
     }
 
     @Override
     public String toString() {
-        return "Order " + getOrderID() + "\n\t      orderType: " + getOrderType() + "\n\t    orderStatus: " + getOrderStatus() + "\n\t       openDate: "
-                + getOpenDate() + "\n\t completionDate: " + getCompletionDate() + "\n\t       quantity: " + getQuantity() + "\n\t          price: "
-                + getPrice() + "\n\t       orderFee: " + getOrderFee() + "\n\t         symbol: " + getSymbol();
+        return "Order " + getOrderID() 
+            + "\n\t      orderType: " + getOrderType() 
+            + "\n\t    orderStatus: " + getOrderStatus() 
+            + "\n\t       openDate: " + getOpenDate() 
+            + "\n\t completionDate: " + getCompletionDate() 
+            + "\n\t       quantity: " + getQuantity() 
+            + "\n\t          price: " + getPrice() 
+            + "\n\t       orderFee: " + getOrderFee() 
+            + "\n\t         symbol: " + getSymbol();
     }
 
     public String toHTML() {
-        return "<BR>Order <B>" + getOrderID() + "</B>" + "<LI>      orderType: " + getOrderType() + "</LI>" + "<LI>    orderStatus: " + getOrderStatus()
-                + "</LI>" + "<LI>       openDate: " + getOpenDate() + "</LI>" + "<LI> completionDate: " + getCompletionDate() + "</LI>"
-                + "<LI>       quantity: " + getQuantity() + "</LI>" + "<LI>          price: " + getPrice() + "</LI>" + "<LI>       orderFee: " + getOrderFee()
-                + "</LI>" + "<LI>         symbol: " + getSymbol() + "</LI>";
+        return "<BR>Order <B>" + getOrderID() + "</B>" 
+            + "<LI>      orderType: " + getOrderType() + "</LI>" 
+            + "<LI>    orderStatus: " + getOrderStatus() + "</LI>" 
+            + "<LI>       openDate: " + getOpenDate() + "</LI>" 
+            + "<LI> completionDate: " + getCompletionDate() + "</LI>"
+            + "<LI>       quantity: " + getQuantity() + "</LI>" 
+            + "<LI>          price: " + getPrice() + "</LI>" 
+            + "<LI>       orderFee: " + getOrderFee() + "</LI>" 
+            + "<LI>         symbol: " + getSymbol() + "</LI>";
     }
 
     public void print() {
@@ -273,44 +287,23 @@ public class OrderDataBean implements Serializable {
     }
 
     public boolean isBuy() {
-        String orderType = getOrderType();
-        if (orderType.compareToIgnoreCase("buy") == 0) {
-            return true;
-        }
-        return false;
+        return "buy".equalsIgnoreCase(orderType);
     }
 
     public boolean isSell() {
-        String orderType = getOrderType();
-        if (orderType.compareToIgnoreCase("sell") == 0) {
-            return true;
-        }
-        return false;
+        return "sell".equalsIgnoreCase(orderType);
     }
 
     public boolean isOpen() {
-        String orderStatus = getOrderStatus();
-        if ((orderStatus.compareToIgnoreCase("open") == 0) || (orderStatus.compareToIgnoreCase("processing") == 0)) {
-            return true;
-        }
-        return false;
+        return "open".equalsIgnoreCase(orderStatus);
     }
 
     public boolean isCompleted() {
-        String orderStatus = getOrderStatus();
-        if ((orderStatus.compareToIgnoreCase("completed") == 0) || (orderStatus.compareToIgnoreCase("alertcompleted") == 0)
-                || (orderStatus.compareToIgnoreCase("cancelled") == 0)) {
-            return true;
-        }
-        return false;
+        return "completed".equalsIgnoreCase(orderStatus);
     }
 
     public boolean isCancelled() {
-        String orderStatus = getOrderStatus();
-        if (orderStatus.compareToIgnoreCase("cancelled") == 0) {
-            return true;
-        }
-        return false;
+        return "cancelled".equalsIgnoreCase(orderStatus);
     }
 
     public void cancel() {
@@ -326,7 +319,6 @@ public class OrderDataBean implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        
         if (!(object instanceof OrderDataBean)) {
             return false;
         }

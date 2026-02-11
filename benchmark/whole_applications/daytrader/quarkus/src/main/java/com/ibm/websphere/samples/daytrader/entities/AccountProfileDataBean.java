@@ -15,8 +15,7 @@
  */
 package com.ibm.websphere.samples.daytrader.entities;
 
-//import java.sql.Timestamp;
-
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,6 +26,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
@@ -34,42 +34,42 @@ import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 @Table(name = "accountprofileejb")
 public class AccountProfileDataBean implements java.io.Serializable {
 
-    /* Accessor methods for persistent fields */
-
     private static final long serialVersionUID = 2794584136675420624L;
 
     @Id
     @NotNull
     @Column(name = "USERID", nullable = false)
-    private String userID; /* userID */
+    private String userID;
 
     @Column(name = "PASSWD")
     @NotBlank
-    private String passwd; /* password */
+    private String passwd;
 
     @Column(name = "FULLNAME")
     @NotBlank
-    private String fullName; /* fullName */
+    private String fullName;
 
     @Column(name = "ADDRESS")
     @NotBlank
-    private String address; /* address */
+    private String address;
 
     @Column(name = "EMAIL")
     @Email(message = "Email should be valid")
-    private String email; /* email */
+    private String email;
 
     @Column(name = "CREDITCARD")
     @NotBlank
-    private String creditCard; /* creditCard */
+    private String creditCard;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "profile", fetch = FetchType.LAZY)
     private AccountDataBean account;
 
     public AccountProfileDataBean() {
     }
 
-    public AccountProfileDataBean(String userID, String password, String fullName, String address, String email, String creditCard) {
+    public AccountProfileDataBean(String userID, String password, String fullName, 
+            String address, String email, String creditCard) {
         setUserID(userID);
         setPassword(password);
         setFullName(fullName);
@@ -79,25 +79,33 @@ public class AccountProfileDataBean implements java.io.Serializable {
     }
 
     public static AccountProfileDataBean getRandomInstance() {
-        return new AccountProfileDataBean(TradeConfig.rndUserID(), // userID
-                TradeConfig.rndUserID(), // passwd
-                TradeConfig.rndFullName(), // fullname
-                TradeConfig.rndAddress(), // address
-                TradeConfig.rndEmail(TradeConfig.rndUserID()), // email
-                TradeConfig.rndCreditCard() // creditCard
+        return new AccountProfileDataBean(
+            TradeConfig.rndUserID(),
+            TradeConfig.rndUserID(),
+            TradeConfig.rndFullName(),
+            TradeConfig.rndAddress(),
+            TradeConfig.rndEmail(TradeConfig.rndUserID()),
+            TradeConfig.rndCreditCard()
         );
     }
 
     @Override
     public String toString() {
-        return "\n\tAccount Profile Data for userID:" + getUserID() + "\n\t\t   passwd:" + getPassword() + "\n\t\t   fullName:" + getFullName()
-                + "\n\t\t    address:" + getAddress() + "\n\t\t      email:" + getEmail() + "\n\t\t creditCard:" + getCreditCard();
+        return "\n\tAccount Profile Data for userID:" + getUserID() 
+            + "\n\t\t   passwd:" + getPassword() 
+            + "\n\t\t   fullName:" + getFullName()
+            + "\n\t\t    address:" + getAddress() 
+            + "\n\t\t      email:" + getEmail() 
+            + "\n\t\t creditCard:" + getCreditCard();
     }
 
     public String toHTML() {
-        return "<BR>Account Profile Data for userID: <B>" + getUserID() + "</B>" + "<LI>   passwd:" + getPassword() + "</LI>" + "<LI>   fullName:"
-                + getFullName() + "</LI>" + "<LI>    address:" + getAddress() + "</LI>" + "<LI>      email:" + getEmail() + "</LI>" + "<LI> creditCard:"
-                + getCreditCard() + "</LI>";
+        return "<BR>Account Profile Data for userID: <B>" + getUserID() + "</B>" 
+            + "<LI>   passwd:" + getPassword() + "</LI>" 
+            + "<LI>   fullName:" + getFullName() + "</LI>" 
+            + "<LI>    address:" + getAddress() + "</LI>" 
+            + "<LI>      email:" + getEmail() + "</LI>" 
+            + "<LI> creditCard:" + getCreditCard() + "</LI>";
     }
 
     public void print() {
@@ -169,16 +177,13 @@ public class AccountProfileDataBean implements java.io.Serializable {
 
     @Override
     public boolean equals(Object object) {
-       
         if (!(object instanceof AccountProfileDataBean)) {
             return false;
         }
         AccountProfileDataBean other = (AccountProfileDataBean) object;
-
         if (this.userID != other.userID && (this.userID == null || !this.userID.equals(other.userID))) {
             return false;
         }
-
         return true;
     }
 }

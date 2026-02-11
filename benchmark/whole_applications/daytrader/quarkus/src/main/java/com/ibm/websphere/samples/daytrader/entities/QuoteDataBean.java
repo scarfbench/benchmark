@@ -18,6 +18,7 @@ package com.ibm.websphere.samples.daytrader.entities;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -36,53 +37,56 @@ import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 @Entity(name = "quoteejb")
 @Table(name = "quoteejb")
 @NamedQueries({
-        @NamedQuery(name = "quoteejb.allQuotes", query = "SELECT q FROM quoteejb q")})
-@NamedNativeQueries({ @NamedNativeQuery(name = "quoteejb.quoteForUpdate", query = "select * from quoteejb q where q.symbol=? for update", resultClass = com.ibm.websphere.samples.daytrader.entities.QuoteDataBean.class) })
+    @NamedQuery(name = "quoteejb.allQuotes", query = "SELECT q FROM quoteejb q")
+})
+@NamedNativeQueries({
+    @NamedNativeQuery(name = "quoteejb.quoteForUpdate", 
+        query = "select * from quoteejb q where q.symbol=? for update", 
+        resultClass = QuoteDataBean.class)
+})
 public class QuoteDataBean implements Serializable {
-
-    /* Accessor methods for persistent fields */
 
     private static final long serialVersionUID = 1847932261895838791L;
 
     @Id
     @NotNull
     @Column(name = "SYMBOL", nullable = false)
-    private String symbol; /* symbol */
+    private String symbol;
 
     @Column(name = "COMPANYNAME")
     @NotBlank
-    private String companyName; /* companyName */
+    private String companyName;
 
     @NotNull
     @Column(name = "VOLUME", nullable = false)
-    private double volume; /* volume */
+    private double volume;
 
     @Column(name = "PRICE")
     @Positive
-    private BigDecimal price; /* price */
+    private BigDecimal price;
 
     @Column(name = "OPEN1")
     @Positive
-    private BigDecimal open1; /* open1 price */
+    private BigDecimal open1;
 
     @Column(name = "LOW")
     @Positive
-    private BigDecimal low; /* low price */
+    private BigDecimal low;
 
     @Column(name = "HIGH")
     @Positive
-    private BigDecimal high; /* high price */
+    private BigDecimal high;
 
     @NotNull
     @Column(name = "CHANGE1", nullable = false)
-    private double change1; /* price change */
-
-    /* Accessor methods for relationship fields are not kept in the DataBean */
+    private double change1;
 
     public QuoteDataBean() {
     }
 
-    public QuoteDataBean(String symbol, String companyName, double volume, BigDecimal price, BigDecimal open, BigDecimal low, BigDecimal high, double change) {
+    public QuoteDataBean(String symbol, String companyName, double volume, 
+            BigDecimal price, BigDecimal open, BigDecimal low, 
+            BigDecimal high, double change) {
         setSymbol(symbol);
         setCompanyName(companyName);
         setVolume(volume);
@@ -94,33 +98,43 @@ public class QuoteDataBean implements Serializable {
     }
 
     public static QuoteDataBean getRandomInstance() {
-        return new QuoteDataBean(TradeConfig.rndSymbol(), // symbol
-                TradeConfig.rndSymbol() + " Incorporated", // Company Name
-                TradeConfig.rndFloat(100000), // volume
-                TradeConfig.rndBigDecimal(1000.0f), // price
-                TradeConfig.rndBigDecimal(1000.0f), // open1
-                TradeConfig.rndBigDecimal(1000.0f), // low
-                TradeConfig.rndBigDecimal(1000.0f), // high
-                TradeConfig.rndFloat(100000) // volume
+        return new QuoteDataBean(
+            TradeConfig.rndSymbol(),
+            TradeConfig.rndSymbol() + " Incorporated",
+            TradeConfig.rndFloat(100000),
+            TradeConfig.rndBigDecimal(1000.0f),
+            TradeConfig.rndBigDecimal(1000.0f),
+            TradeConfig.rndBigDecimal(1000.0f),
+            TradeConfig.rndBigDecimal(1000.0f),
+            TradeConfig.rndFloat(100000)
         );
     }
 
-    // Create a "zero" value quoteDataBean for the given symbol
     public QuoteDataBean(String symbol) {
         setSymbol(symbol);
     }
 
     @Override
     public String toString() {
-        return "\n\tQuote Data for: " + getSymbol() + "\n\t\t companyName: " + getCompanyName() + "\n\t\t      volume: " + getVolume() + "\n\t\t       price: "
-                + getPrice() + "\n\t\t        open1: " + getOpen() + "\n\t\t         low: " + getLow() + "\n\t\t        high: " + getHigh()
-                + "\n\t\t      change1: " + getChange();
+        return "\n\tQuote Data for: " + getSymbol() 
+            + "\n\t\t companyName: " + getCompanyName() 
+            + "\n\t\t      volume: " + getVolume() 
+            + "\n\t\t       price: " + getPrice() 
+            + "\n\t\t        open1: " + getOpen() 
+            + "\n\t\t         low: " + getLow() 
+            + "\n\t\t        high: " + getHigh()
+            + "\n\t\t      change1: " + getChange();
     }
 
     public String toHTML() {
-        return "<BR>Quote Data for: " + getSymbol() + "<LI> companyName: " + getCompanyName() + "</LI>" + "<LI>      volume: " + getVolume() + "</LI>"
-                + "<LI>       price: " + getPrice() + "</LI>" + "<LI>        open1: " + getOpen() + "</LI>" + "<LI>         low: " + getLow() + "</LI>"
-                + "<LI>        high: " + getHigh() + "</LI>" + "<LI>      change1: " + getChange() + "</LI>";
+        return "<BR>Quote Data for: " + getSymbol() 
+            + "<LI> companyName: " + getCompanyName() + "</LI>" 
+            + "<LI>      volume: " + getVolume() + "</LI>"
+            + "<LI>       price: " + getPrice() + "</LI>" 
+            + "<LI>        open1: " + getOpen() + "</LI>" 
+            + "<LI>         low: " + getLow() + "</LI>"
+            + "<LI>        high: " + getHigh() + "</LI>" 
+            + "<LI>      change1: " + getChange() + "</LI>";
     }
 
     public void print() {
@@ -200,7 +214,6 @@ public class QuoteDataBean implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        
         if (!(object instanceof QuoteDataBean)) {
             return false;
         }

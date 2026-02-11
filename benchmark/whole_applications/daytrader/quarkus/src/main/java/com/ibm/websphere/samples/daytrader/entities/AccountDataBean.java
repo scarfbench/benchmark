@@ -17,13 +17,10 @@ package com.ibm.websphere.samples.daytrader.entities;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
 
-// import javax.ejb.EJBException;
-import jakarta.transaction.TransactionalException;
-
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -34,13 +31,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.TableGenerator;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.PositiveOrZero;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
@@ -51,61 +49,60 @@ public class AccountDataBean implements Serializable {
 
     private static final long serialVersionUID = 8437841265136840545L;
 
-    /* Accessor methods for persistent fields */
-    @TableGenerator(name = "accountIdGen", table = "KEYGENEJB", pkColumnName = "KEYNAME", valueColumnName = "KEYVAL", pkColumnValue = "account", allocationSize = 1000)
+    // MIGRATION: Simplified ID generation - Quarkus/Hibernate handles this better with IDENTITY
     @Id
-    @GeneratedValue(strategy = GenerationType.TABLE, generator = "accountIdGen")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ACCOUNTID", nullable = false)
-    private Integer accountID; /* accountID */
+    private Integer accountID;
 
     @NotNull
     @PositiveOrZero
     @Column(name = "LOGINCOUNT", nullable = false)
-    private int loginCount; /* loginCount */
+    private int loginCount;
 
     @NotNull
     @PositiveOrZero
     @Column(name = "LOGOUTCOUNT", nullable = false)
-    private int logoutCount; /* logoutCount */
+    private int logoutCount;
 
     @Column(name = "LASTLOGIN")
     @Temporal(TemporalType.TIMESTAMP)
     @PastOrPresent
-    private Date lastLogin; /* lastLogin Date */
+    private Date lastLogin;
 
     @Column(name = "CREATIONDATE")
     @Temporal(TemporalType.TIMESTAMP)
     @PastOrPresent
-    private Date creationDate; /* creationDate */
+    private Date creationDate;
 
     @Column(name = "BALANCE")
-    private BigDecimal balance; /* balance */
+    private BigDecimal balance;
 
     @Column(name = "OPENBALANCE")
-    private BigDecimal openBalance; /* open balance */
+    private BigDecimal openBalance;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private Collection<OrderDataBean> orders;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private Collection<HoldingDataBean> holdings;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "PROFILE_USERID")
     private AccountProfileDataBean profile;
 
-    /*
-     * Accessor methods for relationship fields are only included for the
-     * AccountProfile profileID
-     */
     @Transient
     private String profileID;
 
     public AccountDataBean() {
     }
 
-    public AccountDataBean(Integer accountID, int loginCount, int logoutCount, Date lastLogin, Date creationDate, BigDecimal balance, BigDecimal openBalance,
-            String profileID) {
+    public AccountDataBean(Integer accountID, int loginCount, int logoutCount, 
+            Date lastLogin, Date creationDate, BigDecimal balance, 
+            BigDecimal openBalance, String profileID) {
         setAccountID(accountID);
         setLoginCount(loginCount);
         setLogoutCount(logoutCount);
@@ -116,7 +113,9 @@ public class AccountDataBean implements Serializable {
         setProfileID(profileID);
     }
 
-    public AccountDataBean(int loginCount, int logoutCount, Date lastLogin, Date creationDate, BigDecimal balance, BigDecimal openBalance, String profileID) {
+    public AccountDataBean(int loginCount, int logoutCount, Date lastLogin, 
+            Date creationDate, BigDecimal balance, BigDecimal openBalance, 
+            String profileID) {
         setLoginCount(loginCount);
         setLogoutCount(logoutCount);
         setLastLogin(lastLogin);
@@ -126,36 +125,38 @@ public class AccountDataBean implements Serializable {
         setProfileID(profileID);
     }
 
-    public static AccountDataBean getRandomInstance() {
-        return new AccountDataBean(new Integer(TradeConfig.rndInt(100000)), // accountID
-                TradeConfig.rndInt(10000), // loginCount
-                TradeConfig.rndInt(10000), // logoutCount
-                new java.util.Date(), // lastLogin
-                new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)), // creationDate
-                TradeConfig.rndBigDecimal(1000000.0f), // balance
-                TradeConfig.rndBigDecimal(1000000.0f), // openBalance
-                TradeConfig.rndUserID() // profileID
-        );
+    public void login(String password) {
+        AccountProfileDataBean profile = getProfile();
+        if (profile == null) {
+            throw new RuntimeException("AccountDataBean:login -- Cannot find profile");
+        }
+        if (!password.equals(profile.getPassword())) {
+            throw new RuntimeException("AccountDataBean:login -- Password does not match");
+        }
+        setLoginCount(getLoginCount() + 1);
+        setLastLogin(new Date());
+    }
+
+    public void logout() {
+        setLogoutCount(getLogoutCount() + 1);
     }
 
     @Override
     public String toString() {
-        return "\n\tAccount Data for account: " + getAccountID() + "\n\t\t   loginCount:" + getLoginCount() + "\n\t\t  logoutCount:" + getLogoutCount()
-                + "\n\t\t    lastLogin:" + getLastLogin() + "\n\t\t creationDate:" + getCreationDate() + "\n\t\t      balance:" + getBalance()
-                + "\n\t\t  openBalance:" + getOpenBalance() + "\n\t\t    profileID:" + getProfileID();
+        return "AccountDataBean [accountID=" + accountID + ", loginCount=" + loginCount 
+            + ", logoutCount=" + logoutCount + ", lastLogin=" + lastLogin 
+            + ", creationDate=" + creationDate + ", balance=" + balance 
+            + ", openBalance=" + openBalance + "]";
     }
 
     public String toHTML() {
-        return "<BR>Account Data for account: <B>" + getAccountID() + "</B>" + "<LI>   loginCount:" + getLoginCount() + "</LI>" + "<LI>  logoutCount:"
-                + getLogoutCount() + "</LI>" + "<LI>    lastLogin:" + getLastLogin() + "</LI>" + "<LI> creationDate:" + getCreationDate() + "</LI>"
-                + "<LI>      balance:" + getBalance() + "</LI>" + "<LI>  openBalance:" + getOpenBalance() + "</LI>" + "<LI>    profileID:" + getProfileID()
-                + "</LI>";
+        return "<BR>AccountData [accountID=" + accountID + ", loginCount=" + loginCount
+            + ", logoutCount=" + logoutCount + ", lastLogin=" + lastLogin
+            + ", creationDate=" + creationDate + ", balance=" + balance
+            + ", openBalance=" + openBalance + "]";
     }
 
-    public void print() {
-        Log.log(this.toString());
-    }
-
+    // Getters and Setters
     public Integer getAccountID() {
         return accountID;
     }
@@ -212,18 +213,6 @@ public class AccountDataBean implements Serializable {
         this.openBalance = openBalance;
     }
 
-    public String getProfileID() {
-        return profileID;
-    }
-
-    public void setProfileID(String profileID) {
-        this.profileID = profileID;
-    }
-
-    /*
-     * Disabled for D185273 public String getUserID() { return getProfileID(); }
-     */
-
     public Collection<OrderDataBean> getOrders() {
         return orders;
     }
@@ -248,20 +237,12 @@ public class AccountDataBean implements Serializable {
         this.profile = profile;
     }
 
-    public void login(String password) {
-        AccountProfileDataBean profile = getProfile();
-        if ((profile == null) || (profile.getPassword().equals(password) == false)) {
-            String error = "AccountBean:Login failure for account: " + getAccountID()
-                    + ((profile == null) ? "null AccountProfile" : "\n\tIncorrect password-->" + profile.getUserID() + ":" + profile.getPassword());
-            throw new TransactionalException(error, null);
-        }
-
-        setLastLogin(new Timestamp(System.currentTimeMillis()));
-        setLoginCount(getLoginCount() + 1);
+    public String getProfileID() {
+        return profileID;
     }
 
-    public void logout() {
-        setLogoutCount(getLogoutCount() + 1);
+    public void setProfileID(String profileID) {
+        this.profileID = profileID;
     }
 
     @Override
@@ -273,16 +254,13 @@ public class AccountDataBean implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        
         if (!(object instanceof AccountDataBean)) {
             return false;
         }
         AccountDataBean other = (AccountDataBean) object;
-
-        if (this.accountID != other.accountID && (this.accountID == null || !this.accountID.equals(other.accountID))) {
+        if (this.accountID != null && !this.accountID.equals(other.accountID)) {
             return false;
         }
-
         return true;
     }
 }

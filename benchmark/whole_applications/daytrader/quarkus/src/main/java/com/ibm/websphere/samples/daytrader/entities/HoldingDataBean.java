@@ -19,6 +19,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
+// MIGRATION: javax.* -> jakarta.*
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -28,7 +29,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.TableGenerator;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
@@ -36,6 +36,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ibm.websphere.samples.daytrader.util.Log;
 import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
@@ -43,33 +44,32 @@ import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 @Table(name = "holdingejb")
 public class HoldingDataBean implements Serializable {
 
-    /* persistent/relationship fields */
-
     private static final long serialVersionUID = -2338411656251935480L;
 
+    // MIGRATION: Simplified ID generation for Quarkus
     @Id
-    @TableGenerator(name = "holdingIdGen", table = "KEYGENEJB", pkColumnName = "KEYNAME", valueColumnName = "KEYVAL", pkColumnValue = "holding", allocationSize = 1000)
-    @GeneratedValue(strategy = GenerationType.TABLE, generator = "holdingIdGen")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "HOLDINGID", nullable = false)
-    private Integer holdingID; /* holdingID */
+    private Integer holdingID;
 
     @NotNull
     @Positive
     @Column(name = "QUANTITY", nullable = false)
-    private double quantity; /* quantity */
+    private double quantity;
 
     @Column(name = "PURCHASEPRICE")
     @Positive
-    private BigDecimal purchasePrice; /* purchasePrice */
+    private BigDecimal purchasePrice;
 
     @Column(name = "PURCHASEDATE")
     @Temporal(TemporalType.TIMESTAMP)
     @PastOrPresent
-    private Date purchaseDate; /* purchaseDate */
+    private Date purchaseDate;
 
     @Transient
-    private String quoteID; /* Holding(*) ---> Quote(1) */
+    private String quoteID;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ACCOUNT_ACCOUNTID")
     private AccountDataBean account;
@@ -81,7 +81,8 @@ public class HoldingDataBean implements Serializable {
     public HoldingDataBean() {
     }
 
-    public HoldingDataBean(Integer holdingID, double quantity, BigDecimal purchasePrice, Date purchaseDate, String quoteID) {
+    public HoldingDataBean(Integer holdingID, double quantity, BigDecimal purchasePrice, 
+            Date purchaseDate, String quoteID) {
         setHoldingID(holdingID);
         setQuantity(quantity);
         setPurchasePrice(purchasePrice);
@@ -89,7 +90,8 @@ public class HoldingDataBean implements Serializable {
         setQuoteID(quoteID);
     }
 
-    public HoldingDataBean(double quantity, BigDecimal purchasePrice, Date purchaseDate, AccountDataBean account, QuoteDataBean quote) {
+    public HoldingDataBean(double quantity, BigDecimal purchasePrice, Date purchaseDate, 
+            AccountDataBean account, QuoteDataBean quote) {
         setQuantity(quantity);
         setPurchasePrice(purchasePrice);
         setPurchaseDate(purchaseDate);
@@ -98,23 +100,30 @@ public class HoldingDataBean implements Serializable {
     }
 
     public static HoldingDataBean getRandomInstance() {
-        return new HoldingDataBean(new Integer(TradeConfig.rndInt(100000)), // holdingID
-                TradeConfig.rndQuantity(), // quantity
-                TradeConfig.rndBigDecimal(1000.0f), // purchasePrice
-                new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)), // purchaseDate
-                TradeConfig.rndSymbol() // symbol
+        return new HoldingDataBean(
+            Integer.valueOf(TradeConfig.rndInt(100000)),
+            TradeConfig.rndQuantity(),
+            TradeConfig.rndBigDecimal(1000.0f),
+            new java.util.Date(TradeConfig.rndInt(Integer.MAX_VALUE)),
+            TradeConfig.rndSymbol()
         );
     }
 
     @Override
     public String toString() {
-        return "\n\tHolding Data for holding: " + getHoldingID() + "\n\t\t      quantity:" + getQuantity() + "\n\t\t purchasePrice:" + getPurchasePrice()
-                + "\n\t\t  purchaseDate:" + getPurchaseDate() + "\n\t\t       quoteID:" + getQuoteID();
+        return "\n\tHolding Data for holding: " + getHoldingID() 
+            + "\n\t\t      quantity:" + getQuantity() 
+            + "\n\t\t purchasePrice:" + getPurchasePrice()
+            + "\n\t\t  purchaseDate:" + getPurchaseDate() 
+            + "\n\t\t       quoteID:" + getQuoteID();
     }
 
     public String toHTML() {
-        return "<BR>Holding Data for holding: " + getHoldingID() + "</B>" + "<LI>      quantity:" + getQuantity() + "</LI>" + "<LI> purchasePrice:"
-                + getPurchasePrice() + "</LI>" + "<LI>  purchaseDate:" + getPurchaseDate() + "</LI>" + "<LI>       quoteID:" + getQuoteID() + "</LI>";
+        return "<BR>Holding Data for holding: " + getHoldingID() + "</B>" 
+            + "<LI>      quantity:" + getQuantity() + "</LI>" 
+            + "<LI> purchasePrice:" + getPurchasePrice() + "</LI>" 
+            + "<LI>  purchaseDate:" + getPurchaseDate() + "</LI>" 
+            + "<LI>       quoteID:" + getQuoteID() + "</LI>";
     }
 
     public void print() {
@@ -189,16 +198,13 @@ public class HoldingDataBean implements Serializable {
 
     @Override
     public boolean equals(Object object) {
-        
         if (!(object instanceof HoldingDataBean)) {
             return false;
         }
         HoldingDataBean other = (HoldingDataBean) object;
-
         if (this.holdingID != other.holdingID && (this.holdingID == null || !this.holdingID.equals(other.holdingID))) {
             return false;
         }
-
         return true;
     }
 }

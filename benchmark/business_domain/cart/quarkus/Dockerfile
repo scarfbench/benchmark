@@ -1,29 +1,27 @@
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
-RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1001 quarkus
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# set smoke test env variables
-ENV CART_BASE_URL=http://localhost:8080/cart/api/cart
+ENV PATH="/root/.local/bin:$PATH"
 
-USER quarkus
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 .mvn .mvn
-COPY --chown=1001:1001 mvnw .
-COPY --chown=1001:1001 smoke.py .
+# Copy all the assets
+COPY . .
 
-# Copy all module directories
-# This might be an issue since it's not guaranteed that we'll have the same names
-COPY --chown=1001:1001 cart-ejb cart-ejb
-COPY --chown=1001:1001 cart-web cart-web
+RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-RUN chmod +x mvnw
-
-EXPOSE 8080
-
-# Default command matches your local workflow, couldn't get it working with quarkus:run
-CMD ["sh", "-c", "./mvnw clean package && java -jar cart-web/target/quarkus-app/quarkus-run.jar"]
+CMD [ "mvn", "clean", "package", "quarkus:run" ]

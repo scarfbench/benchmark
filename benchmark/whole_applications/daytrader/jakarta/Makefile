@@ -1,8 +1,8 @@
-### DayTrader Justfile
-APP_NAME        := daytrader
-IMAGE_NAME      := daytrader:latest
-# Internal HTTP port
+APP_NAME        := "daytrader-jakarta"
+IMAGE_NAME      := "daytrader-jakarta:latest"
 APP_PORT        := 9080
+SUCCESS_PATTERN := CWWKF0011I
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException|NoSuchFieldError|Fatal error compiling|Could not find or load main class|ClassNotFoundException
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -13,36 +13,40 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
+
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
-	@echo "[INFO] Started $(APP_NAME) (internal port $(APP_PORT))..."
-	@echo "[INFO] Waiting for application to start..."
-	@until docker logs $(APP_NAME) 2>&1 | grep -q "CWWKF0011I"; do sleep 1; done
-	@echo "[INFO] Application started, port $(APP_PORT) is ready."
-	
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+		if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+			break; \
+		fi; \
+		sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+		echo "\[ERROR\] Build failed in container:"; \
+		docker logs $(APP_NAME) 2>&1; \
+		exit 1; \
+	fi
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Application started and ready."
+
 logs:
 	docker logs -f $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)
-	@echo "[INFO] Container $(APP_NAME) removed (if it existed)."
+	@echo "[INFO] Container removed (if it existed)"
 
-# Run Playwright-based smoke tests inside the running container
-# This does:
-#   cd smoke
-#   uv sync
-#   uv run playwright install chromium
-#   uv run smoke.py
-smoke: up
+test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
-test: smoke
-
-clean: down
-	docker rmi $(APP_NAME)
-	@echo "[INFO] Image removed (if it existed)"
-
-# Optional: run app locally without Docker, if you still want that path.
 local:
-	./mvnw clean package liberty:run
+	./mvnw clean liberty:run

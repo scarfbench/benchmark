@@ -1,33 +1,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.coffeeshop</groupId>
+    <artifactId>coffeeshop-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
   <artifactId>kitchen-service</artifactId>
   <name>kitchen-service</name>
   <packaging>jar</packaging>
 
-  <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
   <dependencies>
-    <!-- Common domain/value objects & JsonUtil -->
     <dependency>
       <groupId>com.coffeeshop</groupId>
       <artifactId>common</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <!-- Web (optional but handy for actuator/metrics) -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-
-    <!-- Kafka -->
     <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka</artifactId>
@@ -38,14 +34,10 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- Optional: actuator -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
-
-    <!-- Tests -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -55,7 +47,6 @@
 
   <build>
     <plugins>
-      <!-- Inherits pluginManagement from parent -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

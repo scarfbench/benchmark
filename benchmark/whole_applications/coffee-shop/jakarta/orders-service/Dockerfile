@@ -1,26 +1,27 @@
-# Base Liberty with Java 21
-FROM icr.io/appcafe/open-liberty:full-java21-openj9-ubi-minimal
+FROM maven:3.9.12-ibm-semeru-21-noble
 
-# Add PostgreSQL JDBC driver (used by orders-service)
-ARG PG_JDBC_VER=42.7.3
 USER root
-RUN mkdir -p /config/lib/global && \
-    curl -fsSL -o /config/lib/global/postgresql.jar \
-      "https://repo1.maven.org/maven2/org/postgresql/postgresql/${PG_JDBC_VER}/postgresql-${PG_JDBC_VER}.jar"
-USER 1001
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Liberty config (server.xml, etc.)
-COPY --chown=1001:0 src/main/liberty/config/ /config/
-RUN rm -f /config/server.env
+ENV PATH="/root/.local/bin:$PATH"
 
-# App (expects mvn package already ran)
-# COPY --chown=1001:0 target/orders-service.war /config/dropins/
-# >>> mount the app via server.xml at contextRoot="/"
-# (move from dropins to apps)
-COPY --chown=1001:0 target/orders-service.war /config/apps/orders-service.war
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
-# Optional: show default logs on container stdout
-ENV WLP_LOGGING_CONSOLE_FORMAT=JSON \
-    WLP_LOGGING_CONSOLE_LOGLEVEL=INFO \
-    WLP_LOGGING_CONSOLE_SOURCE=message,trace,accessLog,ffdc
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
+WORKDIR /app
+
+# Copy all the assets
+COPY . .
+
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+
+CMD [ "./mvnw", "clean", "liberty:run" ]

@@ -136,7 +136,7 @@
         <version.arquillian-glassfish-server-managed>1.4</version.arquillian-glassfish-server-managed>
 
         <!-- maven Plugin Versions -->
-        <version.org.projectlombok.lombok>1.18.24</version.org.projectlombok.lombok>
+        <version.org.projectlombok.lombok>1.18.38</version.org.projectlombok.lombok>
         <version.lombok-maven-plugin>1.18.20.0</version.lombok-maven-plugin>
         <version.cargo-maven3-plugin>1.10.4</version.cargo-maven3-plugin>
         <version.maven-compiler-plugin>3.10.1</version.maven-compiler-plugin>

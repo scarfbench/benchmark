@@ -1,71 +1,27 @@
-# --------------------------------------------------------------------
-# Base image: Maven + JDK (will download/manage application server)
-# --------------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-11
+FROM maven:3.9.12-ibm-semeru-21-noble
 
-# We'll work as root for package installs (this is the default in this image)
 USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# --------------------------------------------------------------------
-# System deps: Python, Chromium + driver, curl (for uv installer), and Playwright dependencies
-# --------------------------------------------------------------------
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3 python3-venv python3-pip \
-    curl \
-    chromium chromium-driver \
-    libglib2.0-0t64 \
-    libnspr4 \
-    libnss3 \
-    libatk1.0-0t64 \
-    libatk-bridge2.0-0t64 \
-    libcups2t64 \
-    libxcb1 \
-    libxkbcommon0 \
-    libatspi2.0-0t64 \
-    libx11-6 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libcairo2 \
-    libpango-1.0-0 \
-    libasound2t64 \
-    && rm -rf /var/lib/apt/lists/*
+ENV PATH="/root/.local/bin:$PATH"
 
-# --------------------------------------------------------------------
-# Install uv (Python package/project manager)
-# --------------------------------------------------------------------
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    ln -s /root/.cargo/bin/uv /usr/local/bin/uv
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
-# --------------------------------------------------------------------
-# App + smoke project
-# --------------------------------------------------------------------
-WORKDIR /workspace
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
-# Copy Maven project
-COPY pom.xml .
-COPY mvnw .
-COPY mvnw.cmd .
-COPY .mvn ./.mvn
-COPY src ./src
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
 
-# Copy smoke test project (assumed to be a uv project with pyproject.toml)
-COPY smoke ./smoke
+# Set working directory
+WORKDIR /app
 
-# Make mvnw executable (build will happen when container runs)
-RUN chmod +x ./mvnw
+# Copy all the assets
+COPY . .
 
-# Optionally pre-resolve Python deps so 'uv run' is fast later:
-# RUN cd smoke && uv sync
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-# --------------------------------------------------------------------
-# Default command: run the app via Maven with Liberty profile
-# The defaultGoal in pom.xml for liberty profile is "clean package liberty:dev"
-# You can then exec into the container to run:
-#   uv run pytest smoke/smoke.py
-# --------------------------------------------------------------------
-CMD ["./mvnw", "-Pliberty"]
+CMD [ "./mvnw", "clean", "liberty:run" ]

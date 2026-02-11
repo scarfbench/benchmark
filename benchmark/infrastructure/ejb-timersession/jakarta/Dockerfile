@@ -1,37 +1,27 @@
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install Python and needed tools (add python3-venv for virtual environment support)
-RUN apt-get update && apt-get install -y python3 python3-venv python3-pip curl && rm -rf /var/lib/apt/lists/*
+ENV PATH="/root/.local/bin:$PATH"
 
-# Create and activate virtual environment for Python dependencies (PEP 668 safe)
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
 # Shared browsers path so Chromium is cached once
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
-# Install Playwright and Chromium dependencies inside venv
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
- && pip install --no-cache-dir playwright==1.47.0 pytest \
- && playwright install --with-deps chromium
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
- RUN useradd -m -u 1001 liberty
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
 
-USER liberty
+# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 .mvn .mvn
-COPY --chown=1001:1001 mvnw .
-COPY --chown=1001:1001 src src
-COPY --chown=1001:1001 smoke.py .
+# Copy all the assets
+COPY . .
 
-RUN chmod +x mvnw
+RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-EXPOSE 9080
-
-# Default command matches your local workflow
-CMD ["./mvnw", "clean", "package", "liberty:run"]
+CMD [ "mvn", "clean", "package", "liberty:run" ]

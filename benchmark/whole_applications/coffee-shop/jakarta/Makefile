@@ -1,7 +1,8 @@
-### Coffee Shop Jakarta EE Justfile
 APP_NAME        := "coffeeshop-jakarta"
 IMAGE_NAME      := "coffeeshop-jakarta:latest"
-APP_PORT        := "9081"
+APP_PORT        := 9080
+SUCCESS_PATTERN := CWWKF0011I
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException|NoSuchFieldError|Fatal error compiling|Could not find or load main class|ClassNotFoundException
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -12,64 +13,40 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
-	docker run -d --name $(APP_NAME) -p $(APP_PORT):9080 $(IMAGE_NAME)
-	@echo "[INFO] Started $(APP_NAME) container..."
-	@echo "[INFO] Waiting for application to start (this may take several minutes for first build)..."
-	@bash -c '\
-			TIMEOUT=600; ELAPSED=0; \
-			while [ $$ELAPSED -lt $$TIMEOUT ]; do \
-					FULL_LOGS=$$(docker logs $(APP_NAME) 2>&1); \
-					RECENT_LOGS=$$(echo "$$FULL_LOGS" | tail -10); \
-					if echo "$$FULL_LOGS" | grep -q "CWWKF0011I"; then \
-							sleep 3; \
-							if echo "$$FULL_LOGS" | grep -qE "CWWKZ0001I.*orders-service|CWWKZ0003I.*orders-service"; then \
-									if echo "$$FULL_LOGS" | grep -qE "CWWKT0016I.*http://.*:9080/$$"; then \
-											echo "[INFO] Application is ready!"; \
-											exit 0; \
-									fi; \
-							fi; \
-					fi; \
-					if echo "$$FULL_LOGS" | grep -qiE "\(BUILD FAILURE\|Failed to execute\|MojoExecutionException\|Could not transfer artifact\|Premature end\)" \
-						&& ! echo "$$FULL_LOGS" | grep -qi "SLF4J\|StaticLoggerBinder"; then \
-							echo "[ERROR] Application startup error detected:"; \
-							docker logs $(APP_NAME) 2>&1 | tail -30; \
-							echo "[ERROR] Check full logs with \"just logs\""; \
-							exit 1; \
-					fi; \
-					sleep 3; \
-					ELAPSED=$$((ELAPSED + 3)); \
-					if [ $$((ELAPSED % 30)) -eq 0 ]; then \
-							echo "[INFO] Still waiting... ($$ELAPSED seconds elapsed)"; \
-							echo "[DEBUG] Recent logs:"; \
-							docker logs $(APP_NAME) 2>&1 | tail -3; \
-					fi; \
-			done; \
-			echo "[ERROR] Timeout waiting for application to start after $$TIMEOUT seconds."; \
-			echo "[ERROR] Check logs with \"just logs\""; \
-			exit 1;'
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
+
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+		if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+			break; \
+		fi; \
+		sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+		echo "\[ERROR\] Build failed in container:"; \
+		docker logs $(APP_NAME) 2>&1; \
+		exit 1; \
+	fi
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Application started and ready."
+
 logs:
 	docker logs -f $(APP_NAME)
 
 down:
-	- docker stop $(APP_NAME) 2>/dev/null || true
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
-	@echo "[INFO] Container $(APP_NAME) stopped and removed (if it existed)."
+	- docker rm -f $(APP_NAME)
+	@echo "[INFO] Container removed (if it existed)"
 
-# Run Playwright-based smoke tests inside the running container
-# This does:
-#   cd smoke
-#   uv sync
-#   uv run playwright install chromium --only-shell
-#   uv run playwright install-deps chromium
-#   uv run smoke.py
-smoke: up
+test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
-	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium --only-shell && uv run playwright install-deps chromium && uv run smoke.py"
+	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
-test: smoke
-
-# Optional: run app locally without Docker
 local:
-	./mvnw -pl orders-service liberty:dev
-	
+	./mvnw -pl orders-service -am clean liberty:run

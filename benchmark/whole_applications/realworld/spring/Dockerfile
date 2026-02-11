@@ -1,67 +1,27 @@
-# Multi-stage Dockerfile for Spring Boot Gradle application
+FROM maven:3.9.12-ibm-semeru-21-noble
 
-# Build stage
-FROM eclipse-temurin:11-jdk-jammy AS builder
+USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Set working directory
-WORKDIR /app
+ENV PATH="/root/.local/bin:$PATH"
 
-# Copy gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
-COPY test.gradle .
-COPY lombok.config .
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
-# Make gradlew executable
-RUN chmod +x gradlew
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
-# Copy source code
-COPY src src
-
-# Build the application (skip tests for faster build, you can remove --exclude-task test if you want to run tests)
-RUN ./gradlew build --exclude-task test --no-daemon
-
-# Runtime stage
-FROM eclipse-temurin:11-jre-jammy
-
-# Install curl for health checks (optional) and python
-RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
-
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Create a non-root user for security
-RUN groupadd -r spring && useradd -r -g spring spring
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
 
 # Set working directory
 WORKDIR /app
 
-# Copy the built jar from builder stage
-COPY --from=builder /app/build/libs/*.jar app.jar
+# Copy all the assets
+COPY . .
 
-# Copy smoke test project (uv project with pyproject.toml)
-COPY --chown=spring:spring smoke ./smoke
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-# Change ownership to spring user
-RUN chown spring:spring app.jar
-
-# Create home and cache directory
-RUN mkdir -p /home/spring/.cache \
-    && chown -R spring:spring /home/spring
-
-ENV HOME=/home/spring
-
-# Switch to non-root user
-USER spring
-
-# Expose the port the app runs on
-EXPOSE 8080
-
-# Add health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD [ "./mvnw", "clean", "spring-boot:run" ]

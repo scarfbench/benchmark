@@ -28,11 +28,20 @@ pub struct BenchTestArgs {
 }
 
 /// Create a container to hold command run result
+#[derive(Clone)]
 struct RunResult {
     dir: PathBuf,
     ok: bool,
     stdout: String,
     stderr: String,
+}
+impl RunResult {
+    fn stdout(&self) -> &String {
+        &self.stdout
+    }
+    fn stderr(&self) -> &String {
+        &self.stderr
+    }
 }
 
 /// Run the make -n test command on the makefile in the provided directory
@@ -152,13 +161,11 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         // Each worker does its job (i.e., run the makefile and return the result as RunResult)
         log::info!("Running makefile test in directory: {}", dir.display());
         let result = run_makefile(dir, args.dry_run);
-        let status = result
-            .as_ref()
-            .map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
         log::info!(
-            "Completed makefile test in directory: {}. Status: {}",
+            "Completed makefile test in directory: {}.\nStd out: {}\nStderr: {}",
             dir.display(),
-            status
+            result.as_ref().unwrap().stdout().to_string(),
+            result.as_ref().unwrap().stderr().to_string(),
         );
         // Now, clone into an owned directory (using to_path_buf) that each of the worker is
         // using and send that back to the receiver along with the ownership of the result.

@@ -1,31 +1,27 @@
 FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
-RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Create virtual environment
-RUN uv venv /venv
-ENV PATH="/venv/bin:$PATH"
+ENV PATH="/root/.local/bin:$PATH"
 
 # Shared browsers path so Chromium is cached once
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
-# Install Playwright and Chromium dependencies
-RUN uv pip install --no-cache-dir playwright==1.47.0 pytest && playwright install --with-deps chromium
 
-# set smoke test env variables
-ENV COUNTER_BASE_URL=http://localhost:8080
-ENV COUNTER_HOME_URI=/counter
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY --chown=1001:1001 . .
+# Copy all the assets
+COPY . .
 
-RUN chmod +x smoke.py
+RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-# Default command matches your local workflow
-CMD ["mvn", "clean", "package", "spring-boot:run"]
+CMD [ "mvn", "clean", "package", "spring-boot:run" ]

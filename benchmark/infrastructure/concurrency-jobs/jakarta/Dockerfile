@@ -1,22 +1,27 @@
-FROM eclipse-temurin:11-jdk
+FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
-RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lists/*
-RUN useradd -m -u 1001 liberty
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-USER liberty
+ENV PATH="/root/.local/bin:$PATH"
+
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 .mvn .mvn
-COPY --chown=1001:1001 mvnw .
-COPY --chown=1001:1001 src src
-COPY --chown=1001:1001 smoke.py .
+# Copy all the assets
+COPY . .
 
-RUN chmod +x mvnw
+RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-EXPOSE 9080
-
-# Default command matches your local workflow
-CMD ["./mvnw", "clean", "package", "liberty:run"]
+CMD [ "mvn", "clean", "package", "liberty:run" ]

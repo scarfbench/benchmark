@@ -1,43 +1,27 @@
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9.12-ibm-semeru-21-noble
 
-# Run everything as root (per request)
 USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install Python and needed tools (add python3-venv for virtual environment support)
-RUN apt-get update && apt-get install -y python3 python3-venv python3-pip curl && rm -rf /var/lib/apt/lists/*
+ENV PATH="/root/.local/bin:$PATH"
 
-# Create and activate virtual environment for Python dependencies (PEP 668 safe)
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
 # Shared browsers path so Chromium is cached once
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
-# Install Playwright and Chromium dependencies inside venv
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
- && pip install --no-cache-dir playwright==1.47.0 pytest \
- && playwright install --with-deps chromium
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
 
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper first (cache efficient)
-COPY .mvn .mvn
-COPY mvnw .
-RUN chmod +x mvnw
+# Copy all the assets
+COPY . .
 
-# Copy root pom and module poms for dependency layer caching
-COPY pom.xml ./
-COPY async-smtpd/pom.xml async-smtpd/pom.xml
-COPY async-service/pom.xml async-service/pom.xml
-RUN ./mvnw -DskipTests dependency:go-offline || true
+RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-# Copy full module sources
-COPY async-smtpd async-smtpd
-COPY async-service async-service
-
-# Copy unified smoke test (includes Playwright logic)
-COPY smoke.py .
-RUN chmod +x smoke.py
-
-EXPOSE 9080
-CMD ["./mvnw", "-q", "-pl", "async-service", "clean", "package", "spring-boot:run"]
+CMD [ "mvn", "clean", "package", "spring-boot:run" ]

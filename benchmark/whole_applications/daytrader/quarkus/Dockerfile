@@ -1,26 +1,27 @@
-# --------------------------------------------------------------------
-# DayTrader Quarkus - Development Mode
-# --------------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-21
+FROM maven:3.9.12-ibm-semeru-21-noble
 
+USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
+
+ENV PATH="/root/.local/bin:$PATH"
+
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (better layer caching)
-COPY pom.xml ./
-COPY mvnw ./
-COPY .mvn ./.mvn
+# Copy all the assets
+COPY . .
 
-# Make mvnw executable and download dependencies
-RUN chmod +x ./mvnw && ./mvnw dependency:go-offline -B
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-# Copy source code
-COPY src ./src
-
-# Expose the application port
-EXPOSE 8080
-
-# Set environment variables for Quarkus dev mode
-ENV QUARKUS_HTTP_HOST=0.0.0.0
-
-# Run Quarkus in dev mode
-CMD ["./mvnw", "quarkus:dev", "-Dquarkus.analytics.disabled=true"]
+CMD [ "./mvnw", "clean", "package", "quarkus:run" ]

@@ -1,7 +1,8 @@
-### Coffee Shop Spring Boot Justfile
 APP_NAME        := "coffeeshop-spring"
 IMAGE_NAME      := "coffeeshop-spring:latest"
-APP_PORT        := "8080"
+APP_PORT        := 8080
+SUCCESS_PATTERN := Started 
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|Could not find or load main class|ClassNotFoundException
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -12,55 +13,40 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
-	docker run -d --name $(APP_NAME) -p $(APP_PORT):$(APP_PORT) $(IMAGE_NAME)
-	@echo "[INFO] Started $(APP_NAME) container..."
-	@echo "[INFO] Waiting for application to start (this may take several minutes for first build)..."
-	@bash -c 'TIMEOUT=600; ELAPSED=0; while [ $$ELAPSED -lt $$TIMEOUT ]; do \
-	LOGS=$$(docker logs $(APP_NAME) 2>&1 | tail -5); \
-	if echo "$$LOGS" | grep -q "started in\|Started PetClinicApplication"; then \
-	echo "[INFO] Application is ready!"; \
-	exit 0; \
-	fi; \
-	if echo "$$LOGS" | grep -qiE "(Build failure|BuildException|ConfigurationException|ERROR \[|Exception:|Failed to|startup failed)"; then \
-	echo "[ERROR] Application startup error detected:"; \
-	docker logs $(APP_NAME) 2>&1 | tail -30; \
-	echo "[ERROR] Check full logs with \"just logs\""; \
-	exit 1; \
-	fi; \
-	sleep 3; \
-	ELAPSED=$$((ELAPSED + 3)); \
-	if [ $$((ELAPSED % 30)) -eq 0 ]; then \
-	echo "[INFO] Still waiting... ($$ELAPSED seconds elapsed)"; \
-	echo "[DEBUG] Recent logs:"; \
-	docker logs $(APP_NAME) 2>&1 | tail -3; \
-	fi; \
-	done; \
-	echo "[ERROR] Timeout waiting for application to start after $$TIMEOUT seconds."; \
-	echo "[ERROR] Check logs with \"just logs\""; \
-	exit 1;'
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+		echo "[INFO] Removing existing container"; \
+		docker rm -f $(APP_NAME) >/dev/null; \
+	fi
+
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+		if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+			break; \
+		fi; \
+		sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+		echo "\[ERROR\] Build failed in container:"; \
+		docker logs $(APP_NAME) 2>&1; \
+		exit 1; \
+	fi
+
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Application started and ready."
 
 logs:
 	docker logs -f $(APP_NAME)
 
 down:
-	- docker stop $(APP_NAME) 2>/dev/null || true
-	- docker rm -f $(APP_NAME) 2>/dev/null || true
-	@echo "[INFO] Container $(APP_NAME) stopped and removed (if it existed)."
+	- docker rm -f $(APP_NAME)
+	@echo "[INFO] Container removed (if it existed)"
 
-# Run Playwright-based smoke tests inside the running container
-# This does:
-#   cd smoke
-#   uv sync
-#   uv run playwright install chromium --only-shell
-#   uv run playwright install-deps chromium
-#   uv run smoke.py
-smoke: up
+test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
-	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium --only-shell && uv run smoke.py"
+	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
 
-test: smoke
-
-# Optional: run app locally without Docker
 local:
-	./mvnw -pl web-service spring-boot:run
+	./mvnw -pl web-service -am clean spring-boot:run

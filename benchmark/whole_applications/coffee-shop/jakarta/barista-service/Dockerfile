@@ -1,7 +1,27 @@
-FROM icr.io/appcafe/open-liberty:full-java21-openj9-ubi-minimal
-COPY --chown=1001:0 src/main/liberty/config/ /config/
-RUN rm -f /config/server.env
-COPY --chown=1001:0 target/barista-service.war /config/dropins/
-ENV WLP_LOGGING_CONSOLE_FORMAT=JSON \
-    WLP_LOGGING_CONSOLE_LOGLEVEL=INFO \
-    WLP_LOGGING_CONSOLE_SOURCE=message,trace,accessLog,ffdc
+FROM maven:3.9.12-ibm-semeru-21-noble
+
+USER root
+# install uv
+RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
+
+ENV PATH="/root/.local/bin:$PATH"
+
+# Shared browsers path so Chromium is cached once
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+
+# create venv and install
+RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+
+ENV PATH="/opt/venv/bin:$PATH"
+RUN playwright install --with-deps chromium
+
+# Set working directory
+WORKDIR /app
+
+# Copy all the assets
+COPY . .
+
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+
+CMD [ "./mvnw", "clean", "liberty:run" ]

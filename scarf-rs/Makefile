@@ -105,19 +105,17 @@ build: check-cargo
 	@echo "[INFO] cargo build"
 	@$(CARGO) build $(WORKSPACE) $(FEATURES)
 
-test: check-cargo ensure-nextest
-	@echo "[INFO] cargo nextest run"
-	@$(CARGO) nextest run $(WORKSPACE) $(FEATURES) $(NEXTTEST_ARGS)
-
 coverage: check-cargo ensure-llvm-cov ensure-nextest
 	@echo "[INFO] cargo llvm-cov nextest (minimum line coverage: $(COVERAGE_MIN)%)"
 	@$(CARGO) llvm-cov nextest $(WORKSPACE) $(FEATURES) $(LLVM_COV_ARGS)
-	@$(CARGO) llvm-cov nextest $(WORKSPACE) $(FEATURES) --html $(LLVM_COV_ARGS)
 	@echo "[OK] Coverage HTML report generated under target/llvm-cov/html/"
 
+# Alises
+test: coverage
+tests: test
 
-all: setup fmt clippy build test coverage
-	@echo "[OK] CI pipeline complete."
+all: setup fmt clippy build coverage
+	@echo "[OK] Cargo build pipeline complete."
 
 clean: check-cargo
 	@$(CARGO) clean

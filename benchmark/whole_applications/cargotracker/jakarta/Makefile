@@ -29,12 +29,6 @@ down:
 	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container $(APP_NAME) removed (if it existed)."
 
-# Run Playwright-based smoke tests inside the running container
-# This does:
-#   cd smoke
-#   uv sync
-#   uv run playwright install chromium
-#   uv run smoke.py
 smoke: up
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"

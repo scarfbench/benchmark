@@ -1,9 +1,7 @@
 # Run `make` to see available recipes
-
 APP_NAME       := "counter-spring"
 IMAGE_NAME   := $(APP_NAME):latest
-SERVER_PORT    := "8080"               # Application server internal HTTP
-HOST_PORT      := "10033"               # Host port to map to Application server's internal HTTP
+SUCCESS_PATTERN := Started CounterApplication
 
 # Set shell
 SHELL := /bin/bash
@@ -28,10 +26,32 @@ up: build
 	echo "[INFO] Removing existing container"; \
 	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run -d --name $(APP_NAME) -p $(HOST_PORT):$(SERVER_PORT) $(IMAGE_NAME)
+
+	### Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
-	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "Tomcat started on port $(SERVER_PORT)|Started .* in .* seconds"; do sleep 1; done
-	@echo "[INFO] Application server started, port $(HOST_PORT) is ready."
+
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+	break; \
+	fi; \
+	if ! docker inspect -f '{{.State.Running}}' $(APP_NAME) 2>/dev/null | grep -q true; then \
+	echo "[ERROR] Container exited before success:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi; \
+	sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Fq "BUILD FAILURE"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi
+
+	### Wait for success pattern
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Spring Boot application started and ready."
 
 # See the app logs
 logs:

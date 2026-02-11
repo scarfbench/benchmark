@@ -33,6 +33,32 @@ Before installing the SCARF CLI, ensure you have the following tools installed:
 - **Docker** ([Installation Guide](https://docs.docker.com/get-docker/)) - Runs benchmarks in isolated environments
 - **Make** - Builds and runs projects as specified in makefiles
 - **Git** - Clones repositories
+- **Python** - If you want to install `scarf` with pip (optional)
+
+### Clone the repository
+
+```bash
+git clone https://github.com/ibm/scarfbench.git
+cd scarfbench
+```
+
+### Install with `pip`
+
+You can install the SCARF CLI using `pip` for easier management:
+
+```bash
+pip install -U ./scarf
+```
+
+Note: Depending on your os, pip may be called `pip3`.
+
+### Install with `cargo`
+
+If you have `cargo`, you can install with 
+
+```bash
+cargo install --path ./scarf
+```
 
 ### Build from Source
 
@@ -65,10 +91,10 @@ After installation, you can use the SCARF CLI to interact with the SCARF Benchma
 ❯ ./target/release/scarf bench list --help
 List the application(s) in the benchmark.
 
-Usage: scarf bench list [OPTIONS] --root <ROOT>
+Usage: scarf bench list [OPTIONS] --benchmark-dir <ROOT>
 
 Options:
-      --root <ROOT>    Path to the root of the scarf repository.
+      --benchmark-dir <ROOT>    Path to the root of the scarf benchmark.
   -v, --verbose...     Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence.
       --layer <LAYER>  Application layer to list.
   -h, --help           Print help
@@ -76,7 +102,7 @@ Options:
 
 This should give you something like below
 ```bash
-❯ ./target/release/scarf bench list --root /home/rkrsn/workspace/scarfbench/ --layer business_domain
+❯ ./target/release/scarf bench list --benchmark-dir /home/rkrsn/workspace/scarfbench/benchmark --layer business_domain
 ┌─────────────────┬──────────────┬───────────┬─────────────────────────────────────────────────────────────────────────────────┐
 │ Layer           ┆ Application  ┆ Framework ┆ Path                                                                            │
 ╞═════════════════╪══════════════╪═══════════╪═════════════════════════════════════════════════════════════════════════════════╡
@@ -106,10 +132,10 @@ You can use the `scarf bench test` command to test specific benchmark layers or 
 ❯ ./target/release/scarf bench test --help
 Run regression tests (with `make test`) on the benchmark application(s).
 
-Usage: scarf bench test [OPTIONS] --root <ROOT>
+Usage: scarf bench test [OPTIONS] --benchmark-dir <ROOT>
 
 Options:
-      --root <ROOT>    Path to the root of the scarf repository.
+      --benchmark-dir <ROOT>    Path to the root of the scarf benchmark.
   -v, --verbose...     Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence.
       --layer <LAYER>  Application layer to test.
       --dry-run        Use dry run instead of full run.
@@ -119,7 +145,7 @@ Options:
 For example, to test the `persistence` layer:
 
 ```bash
-❯ ./target/release/scarf bench test --root /home/rkrsn/workspace/scarfbench/ --layer persistence
+❯ ./target/release/scarf bench test --benchmark-dir /home/rkrsn/workspace/scarfbench/benchmark --layer persistence
 ```
 
 This will run `make tests` in all the apps in `persistence` layer and provide a summary of the results.
@@ -145,7 +171,7 @@ This will run `make tests` in all the apps in `persistence` layer and provide a 
 
 ### Development Dependencies
 
-If you're contributing to the SCARF CLI, install these additional tools:
+Use `make setup` to install and verify tooling (`rustup`, `rustfmt`, `clippy`, `cargo-nextest`, `cargo-llvm-cov`). You can also install them manually:
 
 1. **Clippy** - Linting and code quality checks
    ```bash
@@ -173,17 +199,12 @@ If you're contributing to the SCARF CLI, install these additional tools:
 The project follows idiomatic Rust testing practices:
 
 - **Unit tests**: Located within each module under the `#[cfg(test)]` attribute
-- **Integration tests**: Located in the `tests/` directory at the project root for testing CLI commands
+- **Integration tests**: Place in `tests/` (not currently present) for CLI-level coverage. 
+  - For intergation tests, use descriptive names for test files, e.g., `cli_tests.rs`.
 
 ### Building and Testing
 
-A [Makefile](Makefile) is provided to streamline development tasks. Run `make help` to see available commands:
-
-```bash
-make help
-```
-
-**Available targets:**
+A [Makefile](Makefile) is provided to streamline development tasks. Run `make help` to see available commands. You can run `make help` to see all available targets:
 
 | Target     | Description                                                      |
 |------------|------------------------------------------------------------------|
@@ -197,9 +218,13 @@ make help
 | `clean`    | Run `cargo clean`                                                |
 | `help`     | Show help message                                                |
 
-
-Just run `make` to execute the full development pipeline:
+Run the full pipeline with:
 ```bash
-# Run the full development pipeline
 make
+```
+
+To build a release binary:
+```bash
+cargo build --release
+./target/release/scarf --help
 ```

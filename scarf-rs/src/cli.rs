@@ -1,14 +1,23 @@
-use clap::{Args, Parser, Subcommand};
+use crate::bench::BenchCmd;
+use crate::eval::EvalCmd;
+use crate::utils::logo;
+use clap::{Parser, Subcommand};
+use owo_colors::OwoColorize;
 
 #[derive(Parser, Debug)]
-#[command(name = "scarf", version, about = "ScarfBench CLI")]
+#[command(
+    name = "scarf",
+    version,
+    before_long_help=logo(),
+    about=format!("{}: {}", "ScarfBench CLI".bold().bright_red(), "The command line helper tool for scarf bench".bright_red()),
+)]
 pub struct Cli {
     #[arg(
         short,
         long,
         action = clap::ArgAction::Count,
         global = true,
-        help = "Increase verbosity (-v, -vv, -vvv). If RUST_LOG is set, it takes precedence."
+        help = "Increase verbosity (-v, -vv, -vvv)."
     )]
     pub verbose: u8,
 
@@ -25,38 +34,7 @@ pub enum Commands {
         about = "A series of subcommands to run on the benchmark applications."
     )]
     Bench(BenchCmd),
-}
 
-/// Again, enums work here because we choose one of the subcommands for bench.
-#[derive(Subcommand, Debug)]
-pub enum BenchCmd {
-    #[command(about = "List the application(s) in the benchmark.")]
-    List(BenchListArgs),
-    #[command(about = "Run regression tests (with `make test`) on the benchmark application(s).")]
-    Test(BenchTestArgs),
-}
-
-#[derive(Args, Debug)]
-pub struct BenchListArgs {
-    #[arg(long, help = "Path to the root of the scarf repository.")]
-    pub root: String,
-
-    #[arg(long, help = "Application layer to list.")]
-    pub layer: Option<String>,
-}
-
-#[derive(Args, Debug)]
-pub struct BenchTestArgs {
-    #[arg(long, help = "Path to the root of the scarf repository.")]
-    pub root: String,
-
-    #[arg(long, help = "Application layer to test.")]
-    pub layer: Option<String>,
-
-    #[arg(
-        long = "dry-run",
-        action = clap::ArgAction::SetTrue,
-        help = "Use dry run instead of full run."
-    )]
-    pub dry_run: bool,
+    #[command(subcommand, about = "Subcommands to run evaluation over the benchmark")]
+    Eval(EvalCmd),
 }

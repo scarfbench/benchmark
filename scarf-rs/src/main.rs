@@ -3,6 +3,8 @@ use clap::Parser;
 
 mod bench;
 mod cli;
+mod eval;
+mod utils;
 
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();
@@ -10,6 +12,7 @@ fn main() -> Result<()> {
 
     let code = match cli.command {
         cli::Commands::Bench(cmd) => bench::run(cmd)?,
+        cli::Commands::Eval(cmd) => eval::run(cmd)?,
     };
     std::process::exit(code);
 }

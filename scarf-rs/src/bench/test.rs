@@ -1,8 +1,24 @@
-use crate::cli::BenchTestArgs;
 use anyhow::{Context, Result};
+use clap::Args;
 use rayon::prelude::*;
 use std::{path::PathBuf, process::Command, sync::mpsc};
 use walkdir::WalkDir;
+
+#[derive(Args, Debug)]
+pub struct BenchTestArgs {
+    #[arg(long, help = "Path to the root of the scarf benchmark.")]
+    pub benchmark_dir: String,
+
+    #[arg(long, help = "Application layer to test.")]
+    pub layer: Option<String>,
+
+    #[arg(
+        long = "dry-run",
+        action = clap::ArgAction::SetTrue,
+        help = "Use dry run instead of full run."
+    )]
+    pub dry_run: bool,
+}
 
 /// Create a container to hold command run result
 struct RunResult {
@@ -44,9 +60,15 @@ fn run_makefile(path: &PathBuf, dry_run: bool) -> Result<RunResult> {
         ));
     }
 
-    let output = Command::new("make")
-        .arg(if dry_run { "-n" } else { "" })
-        .arg("test")
+    let mut cmd: Command = Command::new("make");
+
+    if dry_run {
+        cmd.arg("-n");
+    }
+
+    cmd.arg("test");
+
+    let output = cmd
         .current_dir(path)
         .output()
         .with_context(|| format!("Failed to execute 'make [-n] test' in {}", path.display()))?;
@@ -62,29 +84,38 @@ fn run_makefile(path: &PathBuf, dry_run: bool) -> Result<RunResult> {
 /// The test subcommand that runs make test on all the applications to ensure they work as expected
 pub fn run(args: BenchTestArgs) -> Result<i32> {
     log::info!("Running tests to ensure functionality of benchmark applications...");
-    // Get parse repository root
-    let repo_root = std::fs::canonicalize(PathBuf::from(args.root.as_str()))
-        .expect("Failed to canonicalize repository root path");
-    assert!(
-        repo_root.exists(),
-        "This provided repository root {} doesn't exist?",
-        repo_root.display()
-    );
-    log::info!("Repository root: {}", repo_root.display());
 
     // Obtain the benchmark root from the repository root
-    let bench_root = repo_root.join("benchmark");
-    assert!(
-        bench_root.exists(),
-        "The benchmark folder {} does not exist?",
-        bench_root.display()
-    );
-    log::info!("Benchmark directory: {}", bench_root.display());
+    let bench_root = std::fs::canonicalize(PathBuf::from(args.benchmark_dir.as_str()))
+        .context(format!(
+            "Failed to canonicalize the benchmark root path: {}",
+            args.benchmark_dir
+        ))
+        .unwrap();
+
+    if bench_root.exists() {
+        log::debug!("Benchmark directory: {}", bench_root.display());
+    } else {
+        anyhow::bail!(
+            "The benchmark directory {} does not exist?",
+            bench_root.display()
+        );
+    }
 
     let base = match &args.layer {
         Some(layer) => bench_root.join(layer),
         None => bench_root.clone(),
     };
+
+    if base.exists() {
+        log::debug!("Base directory: {}", base.display());
+    } else {
+        anyhow::bail!(
+            "The specified layer {} does not exist under base directory {}?",
+            args.layer.as_deref().unwrap_or(""),
+            base.display()
+        );
+    }
 
     log::info!("Base directory: {}", base.display());
 
@@ -103,9 +134,13 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         // Each worker does its job (i.e., run the makefile and return the result as RunResult)
         log::info!("Running makefile test in directory: {}", dir.display());
         let result = run_makefile(dir, args.dry_run);
-        let status = result.as_ref().map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
+        let status = result
+            .as_ref()
+            .map_or("Error", |r| if r.ok { "Success" } else { "Failure" });
         log::info!(
-            "Completed makefile test in directory: {}. Status: {}", dir.display(), status
+            "Completed makefile test in directory: {}. Status: {}",
+            dir.display(),
+            status
         );
         // Now, clone into an owned directory (using to_path_buf) that each of the worker is
         // using and send that back to the receiver along with the ownership of the result.

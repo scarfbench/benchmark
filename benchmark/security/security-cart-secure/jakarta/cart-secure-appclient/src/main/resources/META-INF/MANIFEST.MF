@@ -1,3 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: jakarta.tutorial.cartsecure.client.CartClient
-Class-Path: cart-secure-ejb.jar

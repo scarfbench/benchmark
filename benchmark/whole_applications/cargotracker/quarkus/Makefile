@@ -37,7 +37,7 @@ up: build
 	@echo "[INFO] Application started and ready."
 
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)

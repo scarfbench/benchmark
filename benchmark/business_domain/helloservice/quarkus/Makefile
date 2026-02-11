@@ -51,7 +51,7 @@ up: build
 
 # See the app logs
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 # Stop the app
 down:

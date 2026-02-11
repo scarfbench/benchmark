@@ -41,7 +41,7 @@ up: build
 	@echo "[INFO] Spring Boot application started and ready."
 
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)

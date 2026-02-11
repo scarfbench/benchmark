@@ -1,7 +1,7 @@
 ### Spring Boot Justfile
 APP_NAME       := "guessnumber-cdi-spring"
 IMAGE_NAME     := "guessnumber-cdi-spring:latest"
-SUCCESS_PATTERN := Started 
+SUCCESS_PATTERN := Started
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException
 APP_READY_URL := http://localhost:8080/guessnumber
 
@@ -44,7 +44,7 @@ up: build
 	@echo "[INFO] Spring Boot application started and ready."
 
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)

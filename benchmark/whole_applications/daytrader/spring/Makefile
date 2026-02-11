@@ -1,7 +1,7 @@
 APP_NAME        := "daytrader-spring"
 IMAGE_NAME      := "daytrader-spring:latest"
 APP_PORT        := 9080
-SUCCESS_PATTERN := Started 
+SUCCESS_PATTERN := Started
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|Could not find or load main class|ClassNotFoundException
 
 build:
@@ -37,7 +37,7 @@ up: build
 	@echo "[INFO] Application started and ready."
 
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)

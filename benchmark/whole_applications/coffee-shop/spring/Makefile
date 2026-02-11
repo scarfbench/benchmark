@@ -1,7 +1,7 @@
 APP_NAME        := "coffeeshop-spring"
 IMAGE_NAME      := "coffeeshop-spring:latest"
 APP_PORT        := 8080
-SUCCESS_PATTERN := Started 
+SUCCESS_PATTERN := Started
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|Could not find or load main class|ClassNotFoundException
 
 build:
@@ -37,16 +37,25 @@ up: build
 	@echo "[INFO] Application started and ready."
 
 logs:
-	docker logs -f $(APP_NAME)
+	docker logs $(APP_NAME)
 
 down:
 	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
+clean: down
+	- docker rmi $(IMAGE_NAME)
+	- docker image prune -f
+	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+
 test: up
 	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
-	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
+	@status=0; \
+	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py" || status=$$?; \
+	$(MAKE) clean; \
+	exit $$status
 
 local:
-	./mvnw -pl web-service -am clean spring-boot:run
+	./mvnw -pl web-service -am clean install -DskipTests
+	./mvnw -f web-service/pom.xml spring-boot:run

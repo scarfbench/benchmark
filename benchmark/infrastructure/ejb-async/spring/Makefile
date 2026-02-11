@@ -1,37 +1,55 @@
-### TaskCreator (Liberty-only) Justfile
-APP_NAME       := "async-spring"
-LIBERTY_IMAGE   := "async-spring:latest"
-LIBERTY_PORT    := "9080"               # Liberty internal HTTP
-HOST_PORT      := "10011"               # Host port to map to Liberty internal HTTP
+### Spring Boot Justfile
+APP_NAME        := "async-spring"
+IMAGE_NAME      := "async-spring:latest"
+APP_PORT        := 9080
+SUCCESS_PATTERN := Started
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|\[FAIL\]
 
 build:
-	docker build -f Dockerfile -t $(LIBERTY_IMAGE) .
-	@echo "[INFO] Built image: $(LIBERTY_IMAGE)"
+	docker build -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Built image: $(IMAGE_NAME)"
 
 rebuild:
-	docker build --no-cache -f Dockerfile -t $(LIBERTY_IMAGE) .
-	@echo "[INFO] Rebuilt image (no cache): $(LIBERTY_IMAGE)"
+	docker build --no-cache -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	@if docker ps --all --quiet --filter name=^/async-spring | grep -q .; then \
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
 	echo "[INFO] Removing existing container"; \
-	docker rm -f async-spring >/dev/null; \
+	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run --name async-spring -p $(HOST_PORT):$(LIBERTY_PORT) $(LIBERTY_IMAGE)
+
+	### Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+	break; \
+	fi; \
+	sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi
+
+	### Wait for success pattern
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Spring Boot application started and ready."
 
 logs:
-	docker logs -f async-spring
+	docker logs -f $(APP_NAME)
 
 down:
-	- docker rm -f async-spring
+	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
-# Clean up
-clean: down
-	docker rmi $(APP_NAME)
-	@echo "[INFO] Image removed (if it existed)"
-
 test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
+	@docker exec $(APP_NAME) sh -c 'SKIP_START_APP=1 python3 /app/smoke.py'
 
 local:
 	./mvnw -pl async-service clean package spring-boot:run

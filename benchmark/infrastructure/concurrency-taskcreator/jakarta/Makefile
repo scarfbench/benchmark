@@ -1,40 +1,53 @@
-### TaskCreator (Liberty-only) Justfile
-APP_NAME       := "taskcreator-liberty"
-LIBERTY_IMAGE   := "taskcreator-liberty:latest"
-LIBERTY_PORT    := "9080"               # Liberty internal HTTP
-HOST_PORT      := "10021"               # Host port to map to Liberty internal HTTP
+APP_NAME        := "taskcreator-liberty"
+IMAGE_NAME      := "taskcreator-liberty:latest"
+APP_PORT        := 9080
+SUCCESS_PATTERN := CWWKF0011I
+FAILURE_PATTERN := BUILD FAILURE|\\[ERROR\\] \\[ERROR\\] Some problems were encountered while processing the POMs:|\\[ERROR\\] The build could not read [0-9]+ projects|\\[FATAL\\]|Malformed POM|ProjectBuildingException|ModelParseException
 
 build:
-	docker build -f Dockerfile -t $(LIBERTY_IMAGE) .
-	@echo "[INFO] Built image: $(LIBERTY_IMAGE)"
+	docker build -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Built image: $(IMAGE_NAME)"
 
 rebuild:
-	docker build --no-cache -f Dockerfile -t $(LIBERTY_IMAGE) .
-	@echo "[INFO] Rebuilt image (no cache): $(LIBERTY_IMAGE)"
+	docker build --no-cache -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	@if docker ps --all --quiet --filter name=^/taskcreator-liberty$ | grep -q .; then \
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
 	echo "[INFO] Removing existing container"; \
-	docker rm -f taskcreator-liberty >/dev/null; \
+	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run -d --name taskcreator-liberty -p $(HOST_PORT):$(LIBERTY_PORT) $(LIBERTY_IMAGE)
-	@echo "[INFO] Started taskcreator-liberty, waiting for app to start..."
-	@until docker logs taskcreator-liberty 2>&1 | grep -q "CWWKF0011I"; do sleep 1; done
-	@echo "[INFO] Liberty app started, port $(HOST_PORT) is ready."
+
+	### Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+	break; \
+	fi; \
+	sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi
+
+	### Wait for success pattern
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] OpenLiberty application started and ready."
 
 logs:
-	docker logs -f taskcreator-liberty
+	docker logs -f $(APP_NAME)
 
 down:
-	- docker rm -f taskcreator-liberty
+	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
-# Clean up
-clean: down
-	docker rmi $(APP_NAME)
-	@echo "[INFO] Image removed (if it existed)"
-
 test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
 
 local:

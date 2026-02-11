@@ -40,4 +40,4 @@ COPY smoke.py .
 RUN chmod +x smoke.py
 
 EXPOSE 9080
-CMD ["python3", "smoke.py"]
+CMD ["./mvnw", "-q", "-pl", "async-service", "clean", "package", "spring-boot:run"]

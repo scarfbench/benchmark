@@ -1,20 +1,27 @@
 use anyhow::{Context, Result};
-use clap::Args;
+use clap::{ArgAction, Args};
 use rayon::prelude::*;
 use std::{path::PathBuf, process::Command, sync::mpsc};
 use walkdir::WalkDir;
 
 #[derive(Args, Debug)]
 pub struct BenchTestArgs {
-    #[arg(long, help = "Path to the root of the scarf benchmark.")]
+    #[arg(
+        long,
+        help = "Path to the root of the scarf benchmark.",
+        value_name = "DIRECTORY"
+    )]
     pub benchmark_dir: PathBuf,
 
-    #[arg(long, help = "Application layer to test.")]
-    pub layer: Option<String>,
+    #[arg(long, help = "Application layer to test.", action=ArgAction::Append, value_name="LAYER")]
+    pub layer: Vec<String>,
+
+    #[arg(long, help = "Application to run the test on.", action = ArgAction::Append, value_name="APPLICATION")]
+    pub app: Vec<String>,
 
     #[arg(
         long = "dry-run",
-        action = clap::ArgAction::SetTrue,
+        action = ArgAction::SetTrue,
         help = "Use dry run instead of full run."
     )]
     pub dry_run: bool,
@@ -26,28 +33,6 @@ struct RunResult {
     ok: bool,
     stdout: String,
     stderr: String,
-}
-
-/// Discover all the directories that contain the makefiles in the
-/// benchmark folder
-fn find_app_dirs(base_dir: &PathBuf) -> Result<Vec<PathBuf>> {
-    // Initialize rows vector
-    let mut rows: Vec<PathBuf> = Vec::new();
-
-    // Iterate through the files in the base dir and find the directories that contain Makefiles
-    for entry in WalkDir::new(base_dir) {
-        let entry = entry?;
-        if entry.file_type().is_file() && entry.file_name() == "Makefile" {
-            let leaf = entry
-                .path()
-                .parent()
-                .context("Makefile had no parent directory")
-                .unwrap()
-                .to_path_buf();
-            rows.push(leaf);
-        }
-    }
-    Ok(rows)
 }
 
 /// Run the make -n test command on the makefile in the provided directory
@@ -109,24 +94,50 @@ pub fn run(args: BenchTestArgs) -> Result<i32> {
         );
     }
 
-    let base = match &args.layer {
-        Some(layer) => bench_root.join(layer),
-        None => bench_root.clone(),
-    };
-
-    if base.exists() {
-        log::debug!("Base directory: {}", base.display());
+    // Iterate over all the selected layers and pick the apps chosen by the user
+    // if not all apps will be chosen.
+    let app_dirs: Vec<_> = (if !args.layer.is_empty() {
+        args.layer.clone()
     } else {
+        WalkDir::new(&args.benchmark_dir)
+            .min_depth(1)
+            .max_depth(1)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_dir())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect()
+    })
+    .iter()
+    .flat_map(|layer| {
+        WalkDir::new(args.benchmark_dir.join(layer))
+            .min_depth(2)
+            .max_depth(2)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_dir())
+            .filter(|e| {
+                if args.app.is_empty() {
+                    true
+                } else {
+                    e.path()
+                        .parent()
+                        .and_then(|f| f.file_name())
+                        .map(|os| os.to_string_lossy().into_owned())
+                        .map(|n| args.app.iter().any(|a| a.to_string() == n))
+                        .unwrap_or(false)
+                }
+            })
+            .map(|e| e.path().to_path_buf())
+    })
+    .collect();
+
+    // If the user provided some --app(s) but they weren't any of the layer(s) the user provided then...
+    if app_dirs.is_empty() {
         anyhow::bail!(
-            "The specified layer {} does not exist under base directory {}?",
-            args.layer.as_deref().unwrap_or(""),
-            base.display()
+            "The app(s) provided with the --app flag were not found for the specified --layer(s)."
         );
     }
-
-    log::info!("Base directory: {}", base.display());
-
-    let app_dirs = find_app_dirs(&base).expect("Failed to find application directories");
 
     // Let's obtain a multi-provider (tx) single channel (rx) to collect results
     let (tx, rx) = mpsc::channel::<(PathBuf, anyhow::Result<RunResult>)>();
@@ -213,22 +224,6 @@ mod tests {
         let makefile_path = dir.join("Makefile");
         fs::write(makefile_path, "test:\n\techo Hello World\n")?;
         Ok(())
-    }
-
-    #[test]
-    pub fn test_find_app_dirs() {
-        let bench_root = tempfile::tempdir()
-            .unwrap()
-            .path()
-            .join("benchmark/layer/app/framework");
-
-        // Create a makefile in the temporary directory
-        _touch_makefile(&bench_root).expect("Failed to create Makefile in benchmark root");
-
-        let makefiles = find_app_dirs(&bench_root).expect("Failed to find application directories");
-
-        assert_eq!(makefiles.len(), 1);
-        assert_eq!(makefiles[0], bench_root);
     }
 
     #[test]

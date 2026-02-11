@@ -15,8 +15,8 @@ RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
 
 # Install Playwright and Chromium dependencies inside venv
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
- && pip install --no-cache-dir playwright==1.47.0 pytest \
- && playwright install --with-deps chromium
+    && pip install --no-cache-dir playwright==1.47.0 pytest \
+    && playwright install --with-deps chromium
 
 WORKDIR /app
 
@@ -40,4 +40,4 @@ COPY smoke.py .
 RUN chmod +x smoke.py
 
 EXPOSE 9080
-CMD ["python3", "smoke.py"]
+CMD ["./mvnw", "-q", "-pl", "async-service", "clean", "package", "quarkus:run"]

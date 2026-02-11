@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""
-"""
+""" """
+
 from __future__ import annotations
 
 import os
 import re
-import sys
-import time
-import signal
 import socket
-import threading
 import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 RECIPIENT = os.getenv("RECIPIENT", "someone@email.com")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:9080/async-war/")
@@ -30,6 +29,7 @@ EXPECT_SUBSTRINGS = [
 
 SMTP_LISTEN_MARKER = "[Test SMTP server listening on port 3025]"
 SMTP_CLIENT_MARKER = "[Client connected]"
+
 
 class ProcWrapper:
     def __init__(self, name: str, args: List[str]):
@@ -59,7 +59,7 @@ class ProcWrapper:
             with self._lock:
                 self.lines.append(line.rstrip("\n"))
             # Optional: echo for visibility
-            print(f"[{self.name}] {line.rstrip()}" )
+            print(f"[{self.name}] {line.rstrip()}")
 
     def stop(self):
         if self.proc and self.proc.poll() is None:
@@ -95,11 +95,13 @@ def wait_for_http(host: str, port: int, timeout: int):
                 return True
         except OSError:
             return False
+
     wait_for(_try, timeout=timeout, desc=f"HTTP port {port}")
 
 
 def run_playwright(recipient: str):
     from playwright.sync_api import sync_playwright
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         page = browser.new_page()
@@ -136,11 +138,20 @@ def main():
     rc = 0
     try:
         if start_smtp:
-            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "compile", "exec:java"])
+            smtp_proc = ProcWrapper(
+                "async-smtpd",
+                [MVNW, "-q", "-pl", "async-smtpd", "compile", "exec:java"],
+            )
             smtp_proc.start()
-            wait_for(lambda: smtp_proc.grep(re.escape(SMTP_LISTEN_MARKER)), START_TIMEOUT, desc="SMTP listen")
+            wait_for(
+                lambda: smtp_proc.grep(re.escape(SMTP_LISTEN_MARKER)),
+                START_TIMEOUT,
+                desc="SMTP listen",
+            )
         if start_app:
-            app_proc = ProcWrapper("async-war", [MVNW, "-q", "-pl", "async-war", "liberty:run"])
+            app_proc = ProcWrapper(
+                "async-war", [MVNW, "-q", "-pl", "async-war", "liberty:run"]
+            )
             app_proc.start()
             # Wait for port 9080 instead of parsing logs for robustness
             wait_for_http("localhost", 9080, START_TIMEOUT)
@@ -152,15 +163,25 @@ def main():
             # was over-escaped (started with \\[]) so it never matched and timed out.
             delivery_pattern = re.escape("[Delivering message...]")
             try:
-                wait_for(lambda: smtp_proc.grep(delivery_pattern), SEND_TIMEOUT, desc="SMTP delivery")
+                wait_for(
+                    lambda: smtp_proc.grep(delivery_pattern),
+                    SEND_TIMEOUT,
+                    desc="SMTP delivery",
+                )
             except TimeoutError:
                 # Augment the exception with recent SMTP log lines for easier debugging
                 recent = "\n".join(smtp_proc.snapshot().splitlines()[-25:])
-                raise TimeoutError(f"Timed out waiting for SMTP delivery after {SEND_TIMEOUT}s. Recent SMTP log:\n{recent}")
+                raise TimeoutError(
+                    f"Timed out waiting for SMTP delivery after {SEND_TIMEOUT}s. Recent SMTP log:\n{recent}"
+                )
             output = smtp_proc.snapshot()
             missing = [s for s in EXPECT_SUBSTRINGS if s not in output]
             if missing:
-                print("[ERROR] Missing expected substrings in SMTP output:", missing, file=sys.stderr)
+                print(
+                    "[ERROR] Missing expected substrings in SMTP output:",
+                    missing,
+                    file=sys.stderr,
+                )
                 print(output)
                 rc = 2
             else:

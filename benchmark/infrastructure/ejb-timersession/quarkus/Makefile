@@ -1,40 +1,54 @@
-### TaskCreator (Quarkus-only) Justfile
-APP_NAME       := "timersession-quarkus"
-QUARKUS_IMAGE   := "timersession-quarkus:latest"
-QUARKUS_PORT    := "9080"               # Quarkus internal HTTP
-HOST_PORT      := "10052"               # Host port to map to Quarkus internal HTTP
+### Quarkus Justfile
+APP_NAME        := "timersession-quarkus"
+IMAGE_NAME      := "timersession-quarkus:latest"
+APP_PORT        := 9080
+SUCCESS_PATTERN := Listening on:
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:
 
 build:
-	docker build -f Dockerfile -t $(QUARKUS_IMAGE) .
-	@echo "[INFO] Built image: $(QUARKUS_IMAGE)"
+	docker build -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Built image: $(IMAGE_NAME)"
 
 rebuild:
-	docker build --no-cache -f Dockerfile -t $(QUARKUS_IMAGE) .
-	@echo "[INFO] Rebuilt image (no cache): $(QUARKUS_IMAGE)"
+	docker build --no-cache -f Dockerfile -t $(IMAGE_NAME) .
+	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	@if docker ps --all --quiet --filter name=^/timersession-quarkus$ | grep -q .; then \
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
 	echo "[INFO] Removing existing container"; \
-	docker rm -f timersession-quarkus >/dev/null; \
+	docker rm -f $(APP_NAME) >/dev/null; \
 	fi
-	docker run -d --name timersession-quarkus -p $(HOST_PORT):$(QUARKUS_PORT) $(QUARKUS_IMAGE)
-	@echo "[INFO] Started timersession-quarkus, waiting for app to start..."
-	@until docker logs $(APP_NAME) 2>&1 | grep -q '[io.quarkus].*started in .*Listening on:'; do sleep 1; done
-	@echo "[INFO] Quarkus app started, port $(HOST_PORT) is ready."
+
+	### Run the container in detached mode
+	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
+
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
+	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then \
+	break; \
+	fi; \
+	sleep 1; \
+	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then \
+	echo "[ERROR] Build failed in container:"; \
+	docker logs $(APP_NAME) 2>&1; \
+	exit 1; \
+	fi
+
+	### Wait for success pattern
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Quarkus application started and ready."
 
 logs:
-	docker logs -f timersession-quarkus
+	docker logs -f $(APP_NAME)
 
 down:
-	- docker rm -f timersession-quarkus
+	- docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
-# Clean up
-clean: down
-	docker rmi $(APP_NAME)
-	@echo "[INFO] Image removed (if it existed)"
-
 test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
 
 local:

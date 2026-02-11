@@ -252,7 +252,7 @@ def build_project(project, conversions_dir):
                 status, error_msg = run_command([
                     "mvn", "clean", "package", "-Dmaven.test.skip=true"
                 ], cwd=build_dir)
-        else:  
+        else:
             print(f"[Thread] Building Gradle project: {build_dir}")
             gradle_cmd = ["./gradlew", "build", "--exclude-task", "test"] if os.path.isfile(os.path.join(build_dir, "gradlew")) \
                          else ["gradle", "build", "--exclude-task", "test"]
@@ -260,6 +260,31 @@ def build_project(project, conversions_dir):
     except Exception as e:
         error_msg = f"Exception during build: {str(e)}"
         status = 1
+
+    if status != 0 and error_msg:
+        build_path = Path(build_dir)
+        conversions_path = Path(conversions_dir)
+        
+        try:
+            rel_path = build_path.relative_to(conversions_path)
+            
+            eval_outputs_dir = Path("evaluation-outputs") / rel_path
+            eval_outputs_dir.mkdir(parents=True, exist_ok=True)
+            
+            error_file = "mvn_error.txt" if build_sys == "Maven" else "gradle_error.txt"
+            error_path = eval_outputs_dir / error_file
+            
+            with open(error_path, 'w', encoding='utf-8') as f:
+                f.write(f"Build System: {build_sys}\n")
+                f.write(f"Build Directory: {build_dir}\n")
+                f.write(f"Status: Failed\n")
+                f.write("=" * 80 + "\n")
+                f.write("Error Output:\n")
+                f.write("=" * 80 + "\n")
+                f.write(error_msg)
+            print(f"[Thread] Saved error output to: {error_path}")
+        except Exception as e:
+            print(f"[Thread] Warning: Could not save error output: {str(e)}")
 
     result_text = "Success" if status == 0 else "Failure"
     return [build_dir, build_sys, result_text, error_msg if error_msg else "No error"]

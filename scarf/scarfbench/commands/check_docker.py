@@ -197,7 +197,7 @@ def create_dockerfile(base_dockerfile: Path, build_system: str, java_version: in
 
 
 def get_output_dir(cli_tool: str, layer: str, app: str, conversion: str, run_num: int, base_dir: Path) -> Path:
-    return base_dir / "evaluation-outputs" / cli_tool / layer / f"{app}-{conversion}" / f"run_{run_num}"
+    return Path("evaluation-outputs") / cli_tool / layer / f"{app}-{conversion}" / f"run_{run_num}"
 
 
 def build_docker_image(run_dir: Path, conversion: str, run_num: int, output_dir: Optional[Path], timeout: int) -> Tuple[bool, str]:

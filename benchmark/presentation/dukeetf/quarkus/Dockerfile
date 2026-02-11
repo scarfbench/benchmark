@@ -5,8 +5,11 @@ RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lis
 
 WORKDIR /app
 
-COPY --chown=1001:1001 pom.xml .
-COPY --chown=1001:1001 src src
-COPY --chown=1001:1001 smoke.py .
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+RUN chmod +x mvnw
+COPY src src
+COPY smoke.py .
 
-CMD ["mvn", "clean", "package", "quarkus:run"]
+CMD ["./mvnw", "clean", "package", "quarkus:run"]

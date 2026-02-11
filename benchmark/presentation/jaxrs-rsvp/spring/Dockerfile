@@ -6,7 +6,10 @@ RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lis
 WORKDIR /app
 
 COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+RUN chmod +x mvnw
 COPY src src
 COPY smoke.py .
 
-CMD ["mvn", "clean", "package", "spring-boot:run"]
+CMD ["./mvnw", "clean", "package", "spring-boot:run"]

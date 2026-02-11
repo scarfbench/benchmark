@@ -6,7 +6,10 @@ RUN apt-get update && apt-get install -y python3 curl && rm -rf /var/lib/apt/lis
 WORKDIR /app
 
 COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+RUN chmod +x mvnw
 COPY src src
 COPY smoke.py .
 
-CMD ["mvn", "clean", "package", "quarkus:run"]
+CMD ["./mvnw", "clean", "package", "quarkus:run"]

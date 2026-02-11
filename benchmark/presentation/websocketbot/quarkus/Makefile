@@ -1,6 +1,9 @@
-# WebSocket Bot (Quarkus) Makefile
-APP_NAME       = websocketbot-quarkus
-IMAGE_NAME     = websocketbot-quarkus:latest
+### Quarkus Justfile
+APP_NAME        := "websocketbot-quarkus"
+IMAGE_NAME      := "websocketbot-quarkus:latest"
+APP_PORT        := 8080
+SUCCESS_PATTERN := Listening on:
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -11,19 +14,19 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	# The below section will look for existing containers and if so, remove them.
-	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
-		echo "[INFO] Removing existing container"; \
-		docker rm -f $(APP_NAME) >/dev/null; \
-	fi
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then 	echo "[INFO] Removing existing container"; 	docker rm -f $(APP_NAME) >/dev/null; 	fi
 
-	# Run the container in detached mode
+	### Run the container in detached mode
 	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
 
-	# Look for framework-specific startup pattern in logs and wait until found
-	@until docker logs $(APP_NAME) 2>&1 | grep -qE 'started in .*Listening on:'; do sleep 1; done
-	@echo "[INFO] App started and ready."
+	### Check for build failure
+	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do 	if docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; then 	break; 	fi; 	sleep 1; 	done
+	@if docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; then 	echo "[ERROR] Build failed in container:"; 	docker logs $(APP_NAME) 2>&1; 	exit 1; 	fi
+
+	### Wait for success pattern
+	@until docker logs $(APP_NAME) 2>&1 | grep -Fq "$(SUCCESS_PATTERN)"; do sleep 1; done
+	@echo "[INFO] Quarkus application started and ready."
 
 logs:
 	docker logs -f $(APP_NAME)
@@ -33,6 +36,7 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 test: up
+	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
 
 local:

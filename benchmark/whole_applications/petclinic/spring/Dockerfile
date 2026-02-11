@@ -51,24 +51,18 @@ WORKDIR /workspace
 
 # Copy Maven project
 COPY pom.xml ./
-COPY mvnw ./
-COPY mvnw.cmd ./
-COPY .mvn ./.mvn
 COPY src ./src
 
 # Copy smoke test project (assumed to be a uv project with pyproject.toml)
 COPY smoke ./smoke
 
-# Pre-download Maven deps and build once to warm the cache
-RUN chmod +x ./mvnw && \
-    ./mvnw -B -DskipTests package
 
 # Optionally pre-resolve Python deps so 'uv run' is fast later:
 # RUN cd smoke && uv sync
+# Build the Spring app once during image build
+#RUN mvn -B -DskipTests package
 
 # --------------------------------------------------------------------
-# Default command: run the Spring Boot app via Maven
-# You can then exec into the container to run:
-#   cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py
+# Default command: run the spring-boot app via Maven
 # --------------------------------------------------------------------
-CMD ["./mvnw", "spring-boot:run"]
+CMD ["mvn", "clean", "package", "spring-boot:run"]

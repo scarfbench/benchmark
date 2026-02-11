@@ -49,29 +49,18 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 # --------------------------------------------------------------------
 WORKDIR /workspace
 
-# Copy Maven project (multi-module)
+# Copy Maven project
 COPY pom.xml ./
-COPY mvnw ./
-COPY mvnw.cmd ./
-COPY .mvn ./.mvn
-COPY common ./common
-COPY web-service ./web-service
-COPY counter-service ./counter-service
-COPY barista-service ./barista-service
-COPY kitchen-service ./kitchen-service
+COPY src ./src
 
-# Copy smoke test project (uv project with pyproject.toml)
+# Copy smoke test project (assumed to be a uv project with pyproject.toml)
 COPY smoke ./smoke
+
 
 # Optionally pre-resolve Python deps so 'uv run' is fast later:
 # RUN cd smoke && uv sync
 
 # --------------------------------------------------------------------
-# Default command: run the Spring Boot web-service via Maven
-# Note: This is a multi-service application, typically run via docker-compose
-# The build will happen at runtime when the container starts
-# We need to install the common module first before running web-service
-# You can then exec into the container to run:
-#   cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py
+# Default command: run the spring-boot app via Maven
 # --------------------------------------------------------------------
-CMD ["sh", "-c", "./mvnw install -N && ./mvnw -pl common install && ./mvnw -pl web-service spring-boot:run"]
+CMD ["mvn", "clean", "package", "spring-boot:run"]

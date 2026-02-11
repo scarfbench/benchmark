@@ -19,7 +19,28 @@ up: build
 	docker run -d --name $(APP_NAME) -p 8080:8080 $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME) container..."
 	@echo "[INFO] Waiting for application to start (this may take several minutes for first build)..."
-	@bash -c 'TIMEOUT=600; ELAPSED=0; while [ $ELAPSED -lt $TIMEOUT ]; do if docker logs $(APP_NAME) 2>&1 | grep -q "CWWKF0011I"; then echo "[INFO] Liberty server is ready!"; sleep 3; if docker logs $(APP_NAME) 2>&1 | grep -q "CWWKT0016I\|CWWKZ0001I\|Application.*started\|started in"; then echo "[INFO] Application is ready!"; exit 0; fi; fi; sleep 3; ELAPSED=$((ELAPSED + 3)); if [ $((ELAPSED % 30)) -eq 0 ]; then echo "[INFO] Still waiting... ($ELAPSED seconds elapsed)"; fi; done; echo "[ERROR] Timeout waiting for application to start after $TIMEOUT seconds."; echo "[ERROR] Check logs with \"just logs\""; exit 1;'
+	@bash -c '\
+			TIMEOUT=600; \
+			ELAPSED=0; \
+			while [ $$ELAPSED -lt $$TIMEOUT ]; do \
+					if docker logs $(APP_NAME) 2>&1 | grep -q "CWWKF0011I"; then \
+							echo "[INFO] Liberty server is ready!"; \
+							sleep 3; \
+							if docker logs $(APP_NAME) 2>&1 | grep -q "CWWKT0016I\|CWWKZ0001I\|Application.*started\|started in"; then \
+									echo "[INFO] Application is ready!"; \
+									exit 0; \
+							fi; \
+					fi; \
+					sleep 3; \
+					ELAPSED=$$((ELAPSED + 3)); \
+					if [ $$((ELAPSED % 30)) -eq 0 ]; then \
+							echo "[INFO] Still waiting... ($$ELAPSED seconds elapsed)"; \
+					fi; \
+			done; \
+			echo "[ERROR] Timeout waiting for application to start after $$TIMEOUT seconds."; \
+			echo "[ERROR] Check logs with \"just logs\""; \
+			exit 1; \
+	'
 
 logs:
 	docker logs -f $(APP_NAME)

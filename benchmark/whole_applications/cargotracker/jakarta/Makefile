@@ -55,4 +55,4 @@ test: up
 	$(MAKE) clean
 
 local:
-	./mvnw clean liberty:run
+	./mvnw clean -Popenliberty liberty:run

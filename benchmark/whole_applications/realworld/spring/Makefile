@@ -1,8 +1,10 @@
-APP_NAME        := "realworld-spring"
-IMAGE_NAME      := "realworld-spring:latest"
+APP_NAME        := realworld-spring
+IMAGE_NAME      := realworld-spring:latest
 APP_PORT        := 8080
 SUCCESS_PATTERN := Started
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|Could not find or load main class|ClassNotFoundException
+
+.PHONY: build rebuild up logs down clean test local
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .
@@ -13,7 +15,7 @@ rebuild:
 	@echo "[INFO] Rebuilt image (no cache): $(IMAGE_NAME)"
 
 up: build
-	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$ | grep -q .; then \
+	@if docker ps --all --quiet --filter name=^/$(APP_NAME)$$ | grep -q .; then \
 		echo "[INFO] Removing existing container"; \
 		docker rm -f $(APP_NAME) >/dev/null; \
 	fi

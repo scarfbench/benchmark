@@ -28,8 +28,9 @@ The simplest steps are the following (no IDE required):
 * Get the project source code.
 * Ensure you are running Java SE 8, Java SE 11 or Java SE 17.
 * Make sure JAVA_HOME is set.
-* As long as you have Maven set up properly, navigate to the project source root and
-  type: `mvn clean package cargo:run`
+* As long as you have Maven set up properly, navigate to the project source root.
+* To run on Payara, type: `mvn clean package cargo:run`
+* To run on Open Liberty, type: `mvn clean -Popenliberty liberty:run`
 * Go to http://localhost:8080/cargo-tracker
 
 To set up in the Eclipse IDE, follow these steps:

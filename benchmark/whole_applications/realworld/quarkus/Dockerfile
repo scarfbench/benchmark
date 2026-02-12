@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "package", "quarkus:run" ]
+CMD [ "mvn", "clean", "package", "-DskipTests", "quarkus:run" ]

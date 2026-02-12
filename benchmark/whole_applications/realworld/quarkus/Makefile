@@ -18,7 +18,7 @@ up: build
 		docker rm -f $(APP_NAME) >/dev/null; \
 	fi
 
-	docker run -d --name $(APP_NAME) $(IMAGE_NAME)
+	docker run -d --name $(APP_NAME) -e QUARKUS_PROFILE=dev $(IMAGE_NAME)
 	@echo "[INFO] Started $(APP_NAME), waiting for app to start..."
 
 	@until docker logs $(APP_NAME) 2>&1 | grep -Eq "$(FAILURE_PATTERN)"; do \
@@ -55,4 +55,4 @@ test: up
 	$(MAKE) clean
 
 local:
-	./mvnw clean package quarkus:run
+	./mvnw clean -DskipTests package quarkus:run

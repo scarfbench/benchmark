@@ -49,9 +49,14 @@ clean: down
 	@echo "[INFO] Removed app image and pruned dangling Docker layers"
 
 test: up
-	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
+	@docker exec $(APP_NAME) sh -c 'for i in $$(seq 1 120); do \
+		curl -fsS "http://localhost:$(APP_PORT)" >/dev/null && exit 0; \
+		sleep 1; \
+	done; \
+	echo "[ERROR] App did not become reachable on localhost:$(APP_PORT) within 120s"; \
+	exit 1'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
-	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
+	docker exec $(APP_NAME) bash -lc "cd smoke && pytest -v smoke.py"
 	$(MAKE) clean
 
 local:

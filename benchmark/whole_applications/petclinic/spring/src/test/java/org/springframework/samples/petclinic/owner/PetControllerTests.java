@@ -27,7 +27,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.samples.petclinic.owner.PetTypeRepository;
 import org.springframework.samples.petclinic.owner.OwnerRepository;
 import org.springframework.test.context.aot.DisabledInAotMode;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -60,10 +60,10 @@ class PetControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockitoBean
+	@MockBean
 	private OwnerRepository owners;
 
-	@MockitoBean
+	@MockBean
 	private PetTypeRepository types;
 
 	@BeforeEach

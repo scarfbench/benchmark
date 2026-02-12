@@ -25,7 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.aot.DisabledInAotMode;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
@@ -65,7 +65,7 @@ class OwnerControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@MockitoBean
+	@MockBean
 	private OwnerRepository owners;
 
 	private Owner george() {

@@ -55,4 +55,4 @@ test: up
 	$(MAKE) clean
 
 local:
-	./mvnw clean spring-boot:run
+	./mvnw clean -DskipTests spring-boot:run

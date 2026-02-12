@@ -8,7 +8,7 @@ use owo_colors::OwoColorize;
 #[command(
     name = "scarf",
     version,
-    before_long_help=logo(),
+    before_help=logo(),
     about=format!("{}: {}", "ScarfBench CLI".bold().bright_red(), "The command line helper tool for scarf bench".bright_red()),
 )]
 pub struct Cli {

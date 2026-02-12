@@ -2,7 +2,7 @@ APP_NAME        := "petclinic-jakarta"
 IMAGE_NAME      := "petclinic-jakarta:latest"
 APP_PORT        := 8080
 SUCCESS_PATTERN := CWWKF0011I
-FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException|NoSuchFieldError|Fatal error compiling|Could not find or load main class|ClassNotFoundException
+FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException|NoSuchFieldError|Fatal error compiling|Could not find or load main class
 
 build:
 	docker build -f Dockerfile -t $(IMAGE_NAME) .

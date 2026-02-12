@@ -1,8 +1,11 @@
-FROM maven:3.9.12-ibm-semeru-21-noble
+FROM gradle:6.8.3-jdk11
 
 USER root
-# install uv
-RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
+# install uv and python tooling for smoke tests
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl python3 python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -22,6 +25,6 @@ WORKDIR /app
 # Copy all the assets
 COPY . .
 
-RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+RUN if [ -f gradlew ]; then chmod +x gradlew; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "spring-boot:run" ]
+CMD [ "./gradlew", "clean", "bootRun" ]

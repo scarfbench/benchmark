@@ -6,7 +6,7 @@ if [ -f pom.xml ]; then
 fi
 
 if [ -x ./gradlew ]; then
-  exec ./gradlew clean bootRun
+  exec ./gradlew "$@"
 fi
 
 echo "[ERROR] Neither pom.xml nor gradlew is available" >&2

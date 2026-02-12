@@ -19,7 +19,7 @@ import javax.ejb.TransactionManagementType;
 @TransactionManagement(TransactionManagementType.BEAN) // Batch steps manage their own transactions.
 public class UploadDirectoryScanner {
 
-  @Schedule(minute = "*/2", hour = "*") // In production, run every fifteen minutes
+  @Schedule(minute = "*/2", hour = "*", persistent = false) // In production, run every fifteen minutes
   public void processFiles() {
     JobOperator jobOperator = BatchRuntime.getJobOperator();
     jobOperator.start("EventFilesProcessorJob", null);

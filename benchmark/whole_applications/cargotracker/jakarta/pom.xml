@@ -114,7 +114,7 @@
       <properties>
         <webapp.graphTraversalUrl>http://localhost:8080/cargo-tracker/rest/graph-traversal/shortest-path</webapp.graphTraversalUrl>
         <db.driverClass>org.h2.jdbcx.JdbcDataSource</db.driverClass>
-        <db.jdbcUrl>jdbc:h2:file:./cargo-tracker-data/cargo-tracker-database;create=true</db.jdbcUrl>
+        <db.jdbcUrl>jdbc:h2:file:./cargo-tracker-data/cargo-tracker-database</db.jdbcUrl>
         <db.user />
         <db.password />
       </properties>
@@ -141,6 +141,15 @@
             <configuration>
               <serverName>cargo-tracker</serverName>
               <looseApplication>true</looseApplication>
+              <copyDependencies>
+                <dependencyGroup>
+                  <location>lib/global/jdbc</location>
+                  <dependency>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
+                  </dependency>
+                </dependencyGroup>
+              </copyDependencies>
             </configuration>
           </plugin>
         </plugins>

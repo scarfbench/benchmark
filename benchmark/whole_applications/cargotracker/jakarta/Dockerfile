@@ -1,27 +1,64 @@
 FROM maven:3.9.12-ibm-semeru-21-noble
 
+# We’ll work as root for package installs (this is the default in this image)
 USER root
-# install uv
-RUN apt-get update && apt-get install -y --no-install-recommends curl python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-ENV PATH="/root/.local/bin:$PATH"
+# --------------------------------------------------------------------
+# System deps: Python, Chromium + driver, curl (for uv installer), and Playwright dependencies
+# --------------------------------------------------------------------
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3 python3-venv python3-pip \
+    curl \
+    chromium chromium-driver \
+    libglib2.0-0t64 \
+    libnspr4 \
+    libnss3 \
+    libatk1.0-0t64 \
+    libatk-bridge2.0-0t64 \
+    libcups2t64 \
+    libxcb1 \
+    libxkbcommon0 \
+    libatspi2.0-0t64 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libasound2t64 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Shared browsers path so Chromium is cached once
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN mkdir -p /ms-playwright && chmod 755 /ms-playwright
+# --------------------------------------------------------------------
+# Install uv (Python package/project manager)
+# --------------------------------------------------------------------
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    ln -s /root/.cargo/bin/uv /usr/local/bin/uv
 
-# create venv and install
-RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwright==1.47.0 pytest
+# --------------------------------------------------------------------
+# App + smoke project
+# --------------------------------------------------------------------
+WORKDIR /workspace
 
-ENV PATH="/opt/venv/bin:$PATH"
-RUN playwright install --with-deps chromium
+# Copy Maven project
+COPY pom.xml .
+COPY src ./src
 
-# Set working directory
-WORKDIR /app
+# Copy smoke test project (assumed to be a uv project with pyproject.toml)
+COPY smoke ./smoke
 
-# Copy all the assets
-COPY . .
+# Pre-download Maven deps and build once to warm the cache
+RUN mvn -B -DskipTests package
 
-RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+# Optionally pre-resolve Python deps so 'uv run' is fast later:
+# RUN cd smoke && uv sync
 
-CMD [ "mvn", "clean", "-Popenliberty", "liberty:run" ]
+# --------------------------------------------------------------------
+# Default command: run the app via Maven Cargo
+# You can then exec into the container to run:
+#   uv run smoke/smoke.py
+# --------------------------------------------------------------------
+CMD ["mvn", "cargo:run"]

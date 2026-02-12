@@ -52,14 +52,14 @@
     <welcome-file>index.xhtml</welcome-file>
     <welcome-file>index.html</welcome-file>
   </welcome-file-list>
-  <!-- Application resource dependencies like JMS queues and data sources are still 
+  <!-- Application resource dependencies like JMS queues and data sources are still
     good candidates for XML, as is application configuration. -->
   <env-entry>
     <env-entry-name>java:app/configuration/GraphTraversalUrl</env-entry-name>
     <env-entry-type>java.lang.String</env-entry-type>
     <env-entry-value>${webapp.graphTraversalUrl}</env-entry-value>
   </env-entry>
-  <!-- Defining these at the application server level instead of here can be more 
+  <!-- Defining these at the application server level instead of here can be more
     operations friendly and help make deployment even faster. -->
   <data-source>
     <name>java:app/jdbc/CargoTrackerDatabase</name>

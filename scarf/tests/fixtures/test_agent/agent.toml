@@ -1,3 +1,0 @@
-name        = "test-agent"
-description = "A test agent that is used to test if scarf eval run command correctly works."
-entrypoint  = "run.sh"  # <-- Relative to the current directory.

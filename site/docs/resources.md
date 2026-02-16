@@ -1,4 +1,0 @@
-# Resources
-
-[Placeholder: Resources content]
-

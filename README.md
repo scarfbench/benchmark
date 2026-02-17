@@ -32,7 +32,7 @@ This benchmark suite comes with most things needed to run the benchmark applicat
 Each application comes with:
 
 - **Dockerfile** - Pre-configured container with all dependencies installed
-- **justfile** - Simple commands to build and run everything
+- **Makefile** - Simple commands to build and run everything
 - **smoke.py or smoke/** - Automated tests to verify the application works
 
 You don't need to install Maven, Java, or any dependencies. Docker handles it all!
@@ -42,7 +42,7 @@ You don't need to install Maven, Java, or any dependencies. Docker handles it al
 You only need:
 
 - Docker installed on your machine
-- Just command runner (you can install it via Cargo or your package manager)
+- make command runner (you can install it via Cargo or your package manager)
 
 ### Running an Application
 
@@ -65,10 +65,10 @@ cd business_domain/counter/spring
 #### Step 3: Run It!
 
 ```bash
-just up
+make up
 ```
 
-That's it! The `just up` command will:
+That's it! The `make up` command will:
 1. Build your application
 2. Build the Docker container
 3. Start everything up
@@ -76,39 +76,33 @@ That's it! The `just up` command will:
 #### Step 4: Check the Logs
 
 ```bash
-just logs
+make logs
 ```
 
 #### Step 5: Stop When Done
 
 ```bash
-just down
+make down
 ```
 
 ### Common Commands
 
-Every application supports these commands (via the `justfile`):
+Every application supports these commands (via the `Makefile`):
 
-| Command | What it does |
-|---------|-------------|
-| `just` | Shows all available commands |
-| `just up` | Builds and starts the application |
-| `just down` | Stops the application |
-| `just logs` | Shows application logs |
-| `just build` | Builds the application (Maven) |
-| `just docker-build` | Builds the Docker image |
-| `just clean` | Removes build artifacts |
+|    Command   |            What it does            |
+|--------------|------------------------------------|
+| `make help`  | Shows all available commands       |
+| `make up`    | Builds and starts the application  |
+| `make logs`  | Shows application logs             |
+| `make test`  | Runs everything and the smoke tests|
+| `make clean` | Removes build artifacts            |
 
 ### Running Smoke Tests
 
-Most applications include automated tests. To run them:
+Most applications include automated tests. To run, just use `make test`:
 
 ```bash
-# If smoke.py exists
-python3 smoke.py
-
-# If smoke/ folder exists
-cd smoke && ./verify-all.sh
+make test
 ```
 
 ### Framework Variations
@@ -125,21 +119,19 @@ Pick whichever framework you want to test!
 
 **Port already in use?**
 ```bash
-just down
-# Wait a few seconds
-just up
+make rebuild
 ```
 
 **Want to rebuild from scratch?**
 ```bash
-just clean
-just docker-build
-just up
+make clean
+make rebuild
+make up
 ```
 
 **Need to see what's happening?**
 ```bash
-just logs
+make logs
 ```
 
 ---
@@ -227,34 +219,6 @@ Medium.com clone (Conduit) implementing the RealWorld specification with full CR
 
 ---
 
-## Roadmap
-
-ScarfBench is actively maintained and continuously evolving to support the research community. We are committed to expanding the benchmark's capabilities and improving its utility for evaluating AI-driven application transformation. Here's what's coming:
-
-### Comprehensive Smoke Tests
-
-We are developing an extensive suite of automated smoke tests to validate functional equivalence across framework migrations. These tests will ensure that transformed applications maintain their original behavior, catching subtle regressions and framework-specific issues that may arise during migration.
-
-### Dynamic Leaderboard
-
-A live leaderboard will track and compare the performance of different AI agents and transformation tools across the benchmark suite. This will provide transparent, reproducible metrics for the research community and help identify best practices in automated application migration.
-
-The leaderboard will provide:
-- **Performance Metrics**: Track success rates, compilation success, test pass rates, and functional equivalence scores
-- **Agent Comparison**: Side-by-side comparison of different AI agents and transformation tools
-- **Framework-Specific Results**: Detailed breakdown of performance across Jakarta EE, Quarkus, and Spring migrations
-- **Application Categories**: Results organized by focused examples vs. whole applications
-- **Transparency**: Reproducible metrics and open evaluation methodology
-- **Community Contributions**: Submit your own agent results for inclusion
-
-### Rich Taxonomy of Errors
-
-We are building a comprehensive taxonomy that categorizes transformation errors, anti-patterns, and common pitfalls. This taxonomy will help researchers understand where current approaches struggle and guide development of more robust transformation strategies.
-
-ScarfBench will continue to receive regular updates with new applications, enhanced documentation, and improved tooling. We welcome community contributions and feedback to make this benchmark more valuable for advancing the state of automated application transformation.
-
----
-
 ## Contact
 
 For any questions, feedback, or suggestions, or to submit your own agent results for the leaderboard, please contact the authors:
@@ -279,7 +243,3 @@ If you use this benchmark in your research, please cite our paper:
 ## License
 
 See [LICENSE](LICENSE) file for details.
-
-
-
-

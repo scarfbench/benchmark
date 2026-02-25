@@ -1,0 +1,90 @@
+---
+title: "Leaderboard"
+tableOfContents: false
+---
+
+<style>{`
+  body:has(.sb-leaderboard-shell) nav.sidebar {
+    display: none;
+  }
+
+  body:has(.sb-leaderboard-shell) .main-frame {
+    padding-inline-start: 0;
+  }
+
+  body:has(.sb-leaderboard-shell) .main-pane {
+    --sl-sidebar-width: 0px;
+  }
+
+  body:has(.sb-leaderboard-shell) .content-panel {
+    padding-inline: 0;
+  }
+
+  body:has(.sb-leaderboard-shell) .content-panel .sl-container {
+    max-width: none;
+    width: 100%;
+  }
+
+  body:has(.sb-leaderboard-shell) .content-panel:first-of-type {
+    display: none;
+  }
+
+  .sb-leaderboard-shell {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .sb-leaderboard-banner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--sl-color-hairline);
+    background: var(--sl-color-bg);
+  }
+
+  .sb-leaderboard-banner h1 {
+    margin: 0;
+    font-size: var(--sl-text-h4);
+    color: var(--sl-color-text);
+  }
+
+  .sb-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    background: var(--sl-color-bg-inline-code);
+    color: var(--sl-color-text);
+    text-decoration: none;
+    font-size: var(--sl-text-sm);
+    line-height: 1;
+  }
+
+  .sb-back-button:hover {
+    border-color: var(--sl-color-accent);
+    color: var(--sl-color-text-accent);
+  }
+
+  .sb-leaderboard-shell iframe {
+    display: block;
+    width: 100vw;
+    min-height: 90vh;
+    border: 0;
+  }
+`}</style>
+
+<div class="sb-leaderboard-shell">
+  <div class="sb-leaderboard-banner">
+    <a class="sb-back-button" href="/scarfbench/">← Home</a>
+    <h1>🧣 ScarfBench Leaderboard</h1>
+  </div>
+  <iframe
+    src="/scarfbench/leaderboard-embed/index.html?embed=1"
+    loading="lazy"
+  />
+</div>

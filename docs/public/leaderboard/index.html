@@ -1,0 +1,2311 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+    <link rel="icon"
+          type="image/png"
+          href="scarf-light.png" />
+    <link rel="stylesheet"
+          href="../assets/css/theme.css" />
+    <script>
+        // Auto-switch colors to match MkDocs Material (default/slate) based on OS preference.
+        (function () {
+            const searchParams = new URLSearchParams(window.location.search);
+            const embedded = searchParams.get("embed") === "1";
+            if (embedded) {
+                document.documentElement.classList.add("lb-embedded");
+            }
+
+            const mql = window.matchMedia("(prefers-color-scheme: dark)");
+            function applyScheme(forceDark) {
+                const useDark = typeof forceDark === "boolean" ? forceDark : mql.matches;
+                document.documentElement.setAttribute("data-md-color-scheme", useDark ? "slate" : "default");
+            }
+
+            if (embedded && window.parent && window.parent !== window) {
+                try {
+                    const parentRoot = window.parent.document.documentElement;
+                    const getParentDarkMode = () => {
+                        const theme = (parentRoot.getAttribute("data-theme") || "").toLowerCase();
+                        const colorMode = (parentRoot.getAttribute("data-md-color-scheme") || "").toLowerCase();
+                        return theme.includes("dark") || colorMode.includes("slate") || colorMode.includes("dark");
+                    };
+
+                    applyScheme(getParentDarkMode());
+
+                    const observer = new MutationObserver(() => {
+                        applyScheme(getParentDarkMode());
+                    });
+                    observer.observe(parentRoot, {
+                        attributes: true,
+                        attributeFilter: ["data-theme", "data-md-color-scheme", "class"]
+                    });
+                } catch {
+                    applyScheme();
+                }
+            } else {
+                applyScheme();
+                if (typeof mql.addEventListener === "function") {
+                    mql.addEventListener("change", () => applyScheme());
+                } else if (typeof mql.addListener === "function") {
+                    // Safari < 14
+                    mql.addListener(() => applyScheme());
+                }
+            }
+        })();
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: light;
+
+            --lb-primary-rgb: 15, 98, 254;
+            --lb-surface: var(--md-code-bg-color--light);
+            --lb-surface-weak: var(--md-default-bg-color--lightest);
+            --lb-border: var(--md-default-fg-color--lightest);
+            --lb-border-strong: var(--md-default-fg-color--lighter);
+            --lb-shadow: rgba(0, 0, 0, 0.45);
+        }
+
+        [data-md-color-scheme="default"] {
+            color-scheme: light;
+            --md-primary-fg-color: #0f62fe;
+            --md-primary-fg-color--dark: #452485;
+            --md-primary-fg-color--light: #d4e3ff;
+
+            --md-typeset-a-color: #0f62fe;
+
+            --md-default-fg-color: #000000;
+            --md-default-fg-color--light: rgba(0, 0, 0, 0.85);
+            --md-default-fg-color--lighter: rgba(0, 0, 0, 0.65);
+            --md-default-fg-color--lightest: rgba(0, 0, 0, 0.12);
+            --md-default-bg-color: #ffffff;
+            --md-default-bg-color--light: rgba(255, 255, 255, 0.7);
+            --md-default-bg-color--lighter: rgba(0, 0, 0, 0.04);
+            --md-default-bg-color--lightest: rgba(0, 0, 0, 0.02);
+
+            --md-code-fg-color: rgba(0, 0, 0, 0.87);
+            --md-code-bg-color: rgba(0, 0, 0, 0.06);
+            --md-code-bg-color--light: rgba(0, 0, 0, 0.04);
+
+            --md-footer-bg-color--dark: #f6f7fb;
+
+            --md-mg-positive-color: #008e10;
+            --md-mg-negative-color: #ac0000;
+            --md-mg-insertion-color: #3e57d3;
+
+            --lb-positive-rgb: 0, 142, 16;
+            --lb-negative-rgb: 172, 0, 0;
+            --lb-insertion-rgb: 62, 87, 211;
+            --lb-shadow: rgba(0, 0, 0, 0.15);
+        }
+
+        /* Dark scheme fallbacks (Material slate + IBM branding), matches docs/assets/css/theme.css. */
+        [data-md-color-scheme="slate"] {
+            color-scheme: dark;
+            --md-primary-fg-color: #0f62fe;
+            --md-primary-fg-color--dark: #332362;
+            --md-primary-fg-color--light: #835dcd;
+
+            --md-typeset-a-color: #5f72ff;
+
+            --md-hue: 216;
+            --md-default-fg-color: hsla(var(--md-hue), 25%, 95%, 1);
+            --md-default-fg-color--light: hsla(var(--md-hue), 25%, 90%, 0.62);
+            --md-default-fg-color--lighter: hsla(var(--md-hue), 25%, 90%, 0.32);
+            --md-default-fg-color--lightest: hsla(var(--md-hue), 25%, 90%, 0.12);
+            --md-default-bg-color: hsla(var(--md-hue), 7%, 13%, 1);
+            --md-default-bg-color--light: hsla(var(--md-hue), 7%, 13%, 0.54);
+            --md-default-bg-color--lighter: hsla(var(--md-hue), 7%, 13%, 0.26);
+            --md-default-bg-color--lightest: hsla(var(--md-hue), 7%, 13%, 0.07);
+
+            --md-code-fg-color: hsla(var(--md-hue), 7%, 90%, 1);
+            --md-code-bg-color: hsla(var(--md-hue), 7%, 17%, 1);
+            --md-code-bg-color--light: hsla(var(--md-hue), 7%, 17%, 0.75);
+
+            --md-footer-bg-color--dark: hsla(var(--md-hue), 7%, 8%, 1);
+
+            --md-mg-positive-color: #b6ffc4;
+            --md-mg-negative-color: #ffbcbf;
+            --md-mg-insertion-color: #948aff;
+
+            --lb-positive-rgb: 182, 255, 196;
+            --lb-negative-rgb: 255, 188, 191;
+            --lb-insertion-rgb: 148, 138, 255;
+            --lb-shadow: rgba(0, 0, 0, 0.45);
+        }
+
+        html,
+        body {
+            background: transparent !important;
+        }
+
+        body {
+            font-family:
+                "IBM Plex Sans",
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                "Roboto",
+                "Oxygen",
+                "Ubuntu",
+                "Cantarell",
+                sans-serif;
+            color: var(--md-default-fg-color);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .sweglue-logo-link {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        .sweglue-logo-link:hover {
+            opacity: 0.8;
+        }
+
+        .sweglue-logo {
+            height: 60px;
+            width: auto;
+            display: block;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .lb-embedded .md-header {
+            display: none;
+        }
+
+        .lb-embedded body {
+            padding-top: 20px;
+        }
+
+        /* Minimal MkDocs Material-like header (standalone page, so we style it here). */
+        .md-header {
+            position: sticky;
+            top: 0;
+            z-index: 300;
+            margin: -40px -20px 32px;
+            background: rgba(var(--lb-primary-rgb), 0.08);
+            border-bottom: 1px solid var(--lb-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .md-header__inner {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .md-header__button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            color: var(--md-default-fg-color);
+            text-decoration: none;
+            border: 1px solid transparent;
+            background: transparent;
+            transition:
+                background 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .md-header__button:hover {
+            background: rgba(var(--lb-primary-rgb), 0.14);
+            border-color: rgba(var(--lb-primary-rgb), 0.35);
+        }
+
+        .md-header__button svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .md-header__title {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .md-header__ellipsis {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .md-ellipsis {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .lb-header-product {
+            font-weight: 700;
+            letter-spacing: -0.2px;
+        }
+
+        .lb-header-page {
+            color: var(--md-default-fg-color--light);
+            font-weight: 500;
+        }
+
+        .lb-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lb-header-source {
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid var(--lb-border);
+            background: var(--lb-surface-weak);
+            color: var(--md-default-fg-color);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            height: 40px;
+            transition:
+                background 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .lb-header-source:hover {
+            background: rgba(var(--lb-primary-rgb), 0.14);
+            border-color: rgba(var(--lb-primary-rgb), 0.35);
+        }
+
+        .md-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .md-source__icon {
+            margin-right: 10px;
+            color: var(--md-default-fg-color);
+        }
+
+        .md-source__icon svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .md-source__repository {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .md-source__facts {
+            list-style: none;
+            display: inline-flex;
+            gap: 10px;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--md-default-fg-color--light);
+        }
+
+        .lb-header-action {
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1px solid var(--lb-border);
+            background: var(--lb-surface-weak);
+            color: var(--md-default-fg-color);
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition:
+                background 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .lb-header-action:hover {
+            background: rgba(var(--lb-primary-rgb), 0.14);
+            border-color: rgba(var(--lb-primary-rgb), 0.35);
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .scarf-logo {
+            height: 80px;
+            width: auto;
+            animation: fadeIn 1s ease;
+            margin-right: -15px;
+            z-index: 1;
+        }
+
+        .title-text {
+            z-index: 2;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5em;
+            font-weight: 800;
+            color: var(--md-primary-fg-color);
+            background: none;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: currentColor;
+            background-clip: text;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--md-default-fg-color--light);
+            font-size: 1.1em;
+            font-weight: 300;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            animation: fadeIn 1s ease;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px 20px;
+            background: var(--lb-surface);
+            border: 1px solid var(--lb-border);
+            border-radius: 12px;
+            color: var(--md-default-fg-color);
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: rgba(var(--lb-primary-rgb), 0.75);
+            background: var(--md-code-bg-color);
+            box-shadow: 0 0 20px rgba(var(--lb-primary-rgb), 0.22);
+        }
+
+        .search-box::placeholder {
+            color: var(--md-default-fg-color--lighter);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-label {
+            color: var(--md-default-fg-color--light);
+            font-size: 0.9em;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-btn {
+            padding: 12px 20px;
+            background: var(--lb-surface);
+            border: 1px solid var(--lb-border);
+            border-radius: 12px;
+            color: var(--md-default-fg-color);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-btn:hover {
+            background: rgba(var(--lb-primary-rgb), 0.16);
+            border-color: rgba(var(--lb-primary-rgb), 0.55);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: var(--md-primary-fg-color);
+            border-color: rgba(var(--lb-primary-rgb), 0.85);
+            box-shadow: 0 4px 15px rgba(var(--lb-primary-rgb), 0.25);
+            color: #ffffff;
+        }
+
+        .score-toggle-btn {
+            padding: 12px 24px;
+            background: var(--lb-surface);
+            border: 1px solid var(--lb-border);
+            border-radius: 12px;
+            color: var(--md-default-fg-color);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-toggle-btn:hover {
+            background: rgba(var(--lb-primary-rgb), 0.16);
+            border-color: rgba(var(--lb-primary-rgb), 0.55);
+            transform: translateY(-2px);
+        }
+
+        .score-toggle-btn.active {
+            background: var(--md-primary-fg-color);
+            border-color: rgba(var(--lb-primary-rgb), 0.85);
+            box-shadow: 0 4px 15px rgba(var(--lb-primary-rgb), 0.25);
+            color: #ffffff;
+        }
+
+        .filter-select {
+            padding: 12px 20px;
+            background: var(--lb-surface);
+            border: 1px solid var(--lb-border);
+            border-radius: 12px;
+            color: var(--md-default-fg-color);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            outline: none;
+        }
+
+        .filter-select:hover {
+            background: rgba(var(--lb-primary-rgb), 0.16);
+            border-color: rgba(var(--lb-primary-rgb), 0.55);
+        }
+
+        .filter-select option {
+            background: var(--md-default-bg-color);
+            color: var(--md-default-fg-color);
+        }
+
+        .table-wrapper {
+            background: transparent;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--lb-border-strong);
+            animation: fadeInUp 1s ease;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1400px;
+        }
+
+        thead {
+            background: transparent;
+        }
+
+        th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--md-default-fg-color--light);
+            border-left: none;
+            border-right: 1px solid var(--lb-border);
+            border-bottom: 1px solid var(--lb-border-strong);
+            position: sticky;
+            top: 0;
+            background: transparent;
+            z-index: 10;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .header-num {
+            text-align: right;
+        }
+
+        .header-link {
+            text-align: center;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        th:focus {
+            outline: none;
+        }
+
+        .main-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+        }
+
+        .main-header:hover {
+            color: var(--md-primary-fg-color);
+            background: transparent;
+        }
+
+        .main-header::after {
+            content: "⇅";
+            opacity: 0.3;
+            margin-left: 6px;
+            font-size: 0.9em;
+        }
+
+        .main-header.sort-asc::after {
+            content: "↑";
+            opacity: 1;
+            color: var(--md-primary-fg-color);
+        }
+
+        .main-header.sort-desc::after {
+            content: "↓";
+            opacity: 1;
+            color: var(--md-primary-fg-color);
+        }
+
+        .category-header {
+            background: transparent;
+            color: var(--md-typeset-a-color);
+            font-size: 0.8em;
+            font-weight: 700;
+            text-align: center;
+            border-left: none;
+        }
+
+        .header-select {
+            padding: 8px 12px;
+            background: var(--md-default-bg-color--lighter);
+            border: 1px solid var(--lb-border-strong);
+            border-radius: 6px;
+            color: var(--md-default-fg-color);
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s;
+            outline: none;
+            margin-top: 5px;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .header-select:hover {
+            background: rgba(var(--lb-primary-rgb), 0.2);
+            border-color: rgba(var(--lb-primary-rgb), 0.6);
+        }
+
+        .header-select:focus {
+            outline: none;
+            border-color: rgba(var(--lb-primary-rgb), 0.75);
+        }
+
+        .header-select option {
+            background: var(--md-default-bg-color);
+            color: var(--md-default-fg-color);
+        }
+
+        .sub-header {
+            background: transparent;
+            font-size: 0.7em;
+            text-align: center;
+            color: var(--md-default-fg-color--light);
+            border-left: none;
+        }
+
+        .framework-filter-btn {
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            transition: all 0.3s;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .framework-filter-btn:hover {
+            color: var(--md-primary-fg-color);
+            background: rgba(var(--lb-primary-rgb), 0.1);
+        }
+
+        .framework-filter-btn:active {
+            background: rgba(var(--lb-primary-rgb), 0.14);
+        }
+
+        .framework-filter-btn.active {
+            background: rgba(var(--lb-primary-rgb), 0.18) !important;
+            color: var(--md-typeset-a-color) !important;
+        }
+
+        .framework-filter-btn:focus {
+            outline: none;
+        }
+
+        .framework-filter-btn.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Different colors for FROM filters */
+        .framework-filter-from:hover {
+            color: var(--md-mg-positive-color);
+            background: rgba(var(--lb-positive-rgb), 0.12);
+        }
+
+        .framework-filter-from.active {
+            background: rgba(var(--lb-positive-rgb), 0.18) !important;
+            color: var(--md-mg-positive-color) !important;
+        }
+
+        /* Different colors for TO filters */
+        .framework-filter-to:hover {
+            color: var(--md-mg-insertion-color);
+            background: rgba(var(--lb-insertion-rgb), 0.12);
+        }
+
+        .framework-filter-to.active {
+            background: rgba(var(--lb-insertion-rgb), 0.18) !important;
+            color: var(--md-mg-insertion-color) !important;
+        }
+
+        .sortable-metric {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+        }
+
+        .sortable-metric:hover {
+            color: var(--md-primary-fg-color);
+            background: transparent;
+        }
+
+        .sortable-metric::after {
+            content: "⇅";
+            opacity: 0.3;
+            margin-left: 4px;
+            font-size: 0.8em;
+        }
+
+        .sortable-metric.sort-asc::after {
+            content: "↑";
+            opacity: 1;
+            color: var(--md-primary-fg-color);
+        }
+
+        .sortable-metric.sort-desc::after {
+            content: "↓";
+            opacity: 1;
+            color: var(--md-primary-fg-color);
+        }
+
+        .framework-cell {
+            font-size: 0.85em;
+            color: var(--md-typeset-a-color);
+            text-align: center;
+        }
+
+        .layer-cell {
+            font-size: 0.8em;
+            color: var(--md-mg-insertion-color);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .expand-icon {
+            cursor: pointer;
+            user-select: none;
+            margin-right: 6px;
+            display: inline-block;
+            transition: transform 0.3s;
+            font-size: 0.9em;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .expandable-cell {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expandable-cell:hover {
+            background: transparent;
+        }
+
+        .child-row {
+            display: none;
+            background: transparent;
+        }
+
+        .child-row.visible {
+            display: table-row;
+        }
+
+        .child-row td {
+            padding-left: 40px;
+            font-size: 0.9em;
+            opacity: 0.95;
+        }
+
+        .child-row .rank,
+        .child-row .model-name {
+            padding-left: 24px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--lb-border);
+            transition: all 0.3s;
+        }
+
+        tbody tr:hover {
+            background: transparent;
+        }
+
+        td {
+            padding: 16px 12px;
+            color: var(--md-default-fg-color);
+            font-size: 0.9em;
+            border-left: 1px solid var(--lb-border);
+            text-align: left;
+        }
+
+        .rank {
+            color: var(--md-primary-fg-color);
+            background: none;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: currentColor;
+            background-clip: text;
+            text-align: right;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: var(--md-default-fg-color);
+            min-width: 150px;
+        }
+
+        .date-cell {
+            font-family: "Courier New", monospace;
+            color: var(--md-default-fg-color--light);
+            font-size: 0.9em;
+            text-align: right;
+        }
+
+        .site-cell {
+            color: var(--md-typeset-a-color);
+            font-size: 0.85em;
+            font-style: italic;
+        }
+
+        .score-cell {
+            text-align: right;
+            font-weight: 600;
+            font-family: "Courier New", monospace;
+        }
+
+        .score-high {
+            color: var(--md-mg-positive-color);
+        }
+
+        .score-medium {
+            color: var(--md-mg-insertion-color);
+        }
+
+        .score-low {
+            color: var(--md-mg-negative-color);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .badge.verified {
+            background: rgba(var(--lb-positive-rgb), 0.14);
+            color: var(--md-mg-positive-color);
+            border: 1px solid rgba(var(--lb-positive-rgb), 0.22);
+        }
+
+        .badge.submitted {
+            background: rgba(var(--lb-insertion-rgb), 0.14);
+            color: var(--md-mg-insertion-color);
+            border: 1px solid rgba(var(--lb-insertion-rgb), 0.22);
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .submission-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: rgba(var(--lb-primary-rgb), 0.16);
+            border: 1px solid rgba(var(--lb-primary-rgb), 0.28);
+            border-radius: 8px;
+            color: var(--md-typeset-a-color);
+            font-size: 18px;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .submission-link:hover {
+            background: rgba(var(--lb-primary-rgb), 0.28);
+            border-color: rgba(var(--lb-primary-rgb), 0.65);
+            color: var(--md-default-fg-color);
+        }
+
+        .score-group {
+            transition:
+                opacity 0.3s ease,
+                transform 0.3s ease;
+        }
+
+        .score-group.hidden {
+            display: none;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 500;
+            transition: all 0.3s;
+            background: var(--lb-surface);
+            color: var(--md-default-fg-color);
+            border: 1px solid var(--lb-border);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(var(--lb-primary-rgb), 0.16);
+            border-color: rgba(var(--lb-primary-rgb), 0.55);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            color: var(--md-default-fg-color--light);
+            font-size: 1.1em;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            animation: fadeIn 1.2s ease;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+            background: var(--lb-surface);
+            border: 1px solid var(--lb-border);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
+            color: var(--md-default-fg-color--light);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--md-primary-fg-color);
+            background: none;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: currentColor;
+            background-clip: text;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--lb-surface);
+            border-radius: 12px;
+            border: 1px solid var(--lb-border);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: var(--md-default-fg-color--light);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--md-default-bg-color--lighter);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(var(--lb-primary-rgb), 0.45);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(var(--lb-primary-rgb), 0.65);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5em;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .md-header__inner {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .lb-header-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .title-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .logo {
+                height: 60px;
+            }
+        }
+    </style>
+    <!-- Papa Parse library for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+    <script>
+        // Header search button: focuses the existing search box in the controls.
+        (function () {
+            function focusSearch() {
+                const searchInput = document.querySelector(".search-box");
+                if (!searchInput) return;
+                searchInput.scrollIntoView({ block: "center", behavior: "smooth" });
+                searchInput.focus({ preventScroll: true });
+                searchInput.select?.();
+            }
+
+            const button = document.getElementById("lbHeaderSearchBtn");
+            if (button) button.addEventListener("click", focusSearch);
+        })();
+    </script>
+
+    <header class="md-header"
+            aria-label="Header">
+        <nav class="md-header__inner md-grid"
+             aria-label="Header">
+            <a href="../"
+               title="ScarfBench"
+               class="md-header__button md-logo"
+               aria-label="ScarfBench">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 24 24">
+                    <path
+                          d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54">
+                    </path>
+                </svg>
+            </a>
+
+            <div class="md-header__title">
+                <div class="md-header__ellipsis">
+                    <span class="md-ellipsis lb-header-product">ScarfBench</span>
+                    <span class="md-ellipsis lb-header-page">Leaderboard</span>
+                </div>
+            </div>
+
+            <div class="lb-header-actions">
+                <button type="button"
+                        class="md-header__button md-icon"
+                        id="lbHeaderSearchBtn"
+                        aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         viewBox="0 0 24 24">
+                        <path
+                              d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5">
+                        </path>
+                    </svg>
+                </button>
+                <a href="../"
+                   class="lb-header-action"
+                   aria-label="Back to Home">← Back</a>
+                <a href="https://github.com/ibm/scarfbench"
+                   class="lb-header-source"
+                   target="_blank"
+                   rel="noopener"
+                   title="Go to repository">
+                    <div class="md-source__icon md-icon"
+                         aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 448 512">
+                            <path
+                                  d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="md-source__repository md-source__repository--active">
+                        ScarfBench
+                        <ul class="md-source__facts">
+                            <li class="md-source__fact md-source__fact--stars">3</li>
+                            <li class="md-source__fact md-source__fact--forks">0</li>
+                        </ul>
+                    </div>
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <span class="control-label">From:</span>
+                <select id="frameworkFrom"
+                        class="filter-select"
+                        onchange="filterFrameworks()">
+                    <option value="all">All</option>
+                    <option value="jakarta">Jakarta</option>
+                    <option value="quarkus">Quarkus</option>
+                    <option value="spring">Spring</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">To:</span>
+                <select id="frameworkTo"
+                        class="filter-select"
+                        onchange="filterFrameworks()">
+                    <option value="all">All</option>
+                    <option value="jakarta">Jakarta</option>
+                    <option value="quarkus">Quarkus</option>
+                    <option value="spring">Spring</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Layers:</span>
+                <select id="layerFilter"
+                        class="filter-select"
+                        onchange="filterLayers()">
+                    <option value="wholeapp"
+                            selected="">Whole App</option>
+                    <option value="all"
+                            disabled="">All Layers</option>
+                    <option value="business"
+                            disabled="">Business Domain Layer</option>
+                    <option value="dependency"
+                            disabled="">Dependency Injection Layer</option>
+                    <option value="infrastructure"
+                            disabled="">Infrastructure Layer</option>
+                    <option value="integration"
+                            disabled="">Integration Layer</option>
+                    <option value="persistence"
+                            disabled="">Persistence Layer</option>
+                    <option value="presentation"
+                            disabled="">Presentation Layer</option>
+                    <option value="security"
+                            disabled="">Security Layer</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">Score Type:</span>
+                <button class="score-toggle-btn active"
+                        onclick="toggleScoreView('overall')">Overall</button>
+                <button class="score-toggle-btn"
+                        onclick="toggleScoreView('wholeapps')">Whole Apps</button>
+                <button class="score-toggle-btn"
+                        onclick="toggleScoreView('layers')">Layers</button>
+            </div>
+
+            <input type="text"
+                   class="search-box"
+                   id="searchInput"
+                   placeholder="Search by solution or date..." />
+        </div>
+
+        <div class="table-wrapper">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th class="main-header header-num"
+                            onclick="sortTable(0)">Rank</th>
+                        <th class="main-header"
+                            onclick="sortTable(1)">Solution</th>
+                        <th class="main-header header-num"
+                            onclick="sortTable(2)">Date</th>
+                        <th class="sub-header sortable-metric header-num"
+                            onclick="sortByMetric('overall', 0)"
+                            colspan="3">Compile %</th>
+                        <th class="sub-header sortable-metric header-num"
+                            onclick="sortByMetric('overall', 1)"
+                            colspan="3">Run %</th>
+                        <th class="sub-header sortable-metric header-num"
+                            onclick="sortByMetric('overall', 2)"
+                            colspan="3">Pass %</th>
+                        <th class="header-link">Submission</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr data-solution="gemini-2.5-pro">
+                        <td class="rank">#1</td>
+                        <td class="model-name">gemini-2.5-pro</td>
+                        <td class="date-cell">2025-12-17</td>
+                        <td class="score-cell score-group overall-score score-medium"
+                            colspan="3"
+                            data-score="66.7"
+                            data-wa-score="66.7"
+                            data-l-score="0.0">66.7</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="34.4"
+                            data-wa-score="34.4"
+                            data-l-score="0.0">34.4</td>
+                        <td class="score-cell score-group overall-score"
+                            colspan="3"
+                            data-score="-"
+                            data-wa-score="-"
+                            data-l-score="0.0">-</td>
+                        <td class="actions">
+                            <a href="https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf"
+                               target="_blank"
+                               class="submission-link"
+                               title="https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-2-5-Pro-Model-Card.pdf">🔗</a>
+                        </td>
+                    </tr>
+                    <tr data-solution="claude-sonnet-4.5">
+                        <td class="rank">#2</td>
+                        <td class="model-name">claude-sonnet-4.5</td>
+                        <td class="date-cell">2025-12-17</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="53.4"
+                            data-wa-score="53.4"
+                            data-l-score="0.0">53.4</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="21.1"
+                            data-wa-score="21.1"
+                            data-l-score="0.0">21.1</td>
+                        <td class="score-cell score-group overall-score"
+                            colspan="3"
+                            data-score="-"
+                            data-wa-score="-"
+                            data-l-score="0.0">-</td>
+                        <td class="actions">
+                            <a href="https://www.anthropic.com/news/claude-sonnet-4-5"
+                               target="_blank"
+                               class="submission-link"
+                               title="https://www.anthropic.com/news/claude-sonnet-4-5">🔗</a>
+                        </td>
+                    </tr>
+                    <tr data-solution="gpt-5">
+                        <td class="rank">#3</td>
+                        <td class="model-name">gpt-5</td>
+                        <td class="date-cell">2025-12-17</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="42.2"
+                            data-wa-score="42.2"
+                            data-l-score="0.0">42.2</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="18.9"
+                            data-wa-score="18.9"
+                            data-l-score="0.0">18.9</td>
+                        <td class="score-cell score-group overall-score"
+                            colspan="3"
+                            data-score="-"
+                            data-wa-score="-"
+                            data-l-score="0.0">-</td>
+                        <td class="actions">
+                            <a href="https://openai.com/gpt-5/"
+                               target="_blank"
+                               class="submission-link"
+                               title="https://openai.com/gpt-5/">🔗</a>
+                        </td>
+                    </tr>
+                    <tr data-solution="qwen3-coder-480b">
+                        <td class="rank">#4</td>
+                        <td class="model-name">qwen3-coder-480b</td>
+                        <td class="date-cell">2025-12-17</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="10.0"
+                            data-wa-score="10.0"
+                            data-l-score="0.0">10.0</td>
+                        <td class="score-cell score-group overall-score score-low"
+                            colspan="3"
+                            data-score="4.5"
+                            data-wa-score="4.5"
+                            data-l-score="0.0">4.5</td>
+                        <td class="score-cell score-group overall-score"
+                            colspan="3"
+                            data-score="-"
+                            data-wa-score="-"
+                            data-l-score="0.0">-</td>
+                        <td class="actions">
+                            <a href="https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct"
+                               target="_blank"
+                               class="submission-link"
+                               title="https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct">🔗</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to store loaded data
+        let solutionData = {};
+
+        // Function to load and parse CSV data
+        async function loadCSVData() {
+            try {
+                // Load whole apps data only
+                const wholeAppsResponse = await fetch("whole_apps_initial_results.csv");
+                const wholeAppsText = await wholeAppsResponse.text();
+
+                return new Promise((resolve, reject) => {
+                    // Parse whole apps data
+                    Papa.parse(wholeAppsText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function (wholeAppsResults) {
+                            const transformedData = transformCSVData(wholeAppsResults.data);
+                            resolve(transformedData);
+                        },
+                        error: function (error) {
+                            reject(error);
+                        },
+                    });
+                });
+            } catch (error) {
+                console.error("Error loading CSV:", error);
+                return {};
+            }
+        }
+
+        // Function to transform CSV data into the required format
+        function transformCSVData(csvData) {
+            const data = {};
+            const solutionInfo = {};
+
+            // First pass: collect all data points
+            csvData.forEach((row) => {
+                if (!row.solution) return; // Skip empty rows
+
+                const solutionKey = row.solution.toLowerCase().replace(/\s+/g, "-");
+                const org = row.org || "Unknown"; // Handle empty org
+
+                // Initialize solution if not exists
+                if (!data[solutionKey]) {
+                    data[solutionKey] = {
+                        name: row.solution,
+                        org: org,
+                        date: row.date,
+                        status: row.status,
+                        link: row.link || "#",
+                        combinations: {},
+                        wholeAppCombinations: {}, // Store whole app entries separately
+                        layerCombinations: {}, // Store layer entries separately
+                    };
+                    solutionInfo[solutionKey] = {
+                        name: row.solution,
+                        org: org,
+                        date: row.date,
+                        status: row.status,
+                        link: row.link || "#",
+                    };
+                }
+
+                // Normalize layer value (handle empty layer for Llama)
+                const layer = (row.layer || "whole app").toLowerCase().replace(/\s+/g, "-").replace("whole-app", "wholeapp");
+                const from = row.from.toLowerCase();
+                const to = row.to.toLowerCase();
+                const key = `${layer}-${from}-${to}`;
+
+                const scores = {
+                    compile: parseFloat(row.compile),
+                    run: parseFloat(row.run),
+                    translate: row.translate === "-" ? "-" : parseFloat(row.translate),
+                };
+
+                // Store in appropriate category
+                if (layer === "wholeapp") {
+                    data[solutionKey].wholeAppCombinations[key] = scores;
+                } else {
+                    data[solutionKey].layerCombinations[key] = scores;
+                }
+
+                // Store the combination data
+                data[solutionKey].combinations[key] = scores;
+            });
+
+            // Second pass: calculate aggregates
+            Object.keys(data).forEach((solutionKey) => {
+                const solution = data[solutionKey];
+                calculateAggregates(solution);
+            });
+
+            return data;
+        }
+
+        // Function to calculate aggregate scores for "all" combinations
+        function calculateAggregates(solution) {
+            const combinations = solution.combinations;
+            const wholeAppCombinations = solution.wholeAppCombinations;
+            const layerCombinations = solution.layerCombinations;
+            const layers = ["wholeapp", "business", "persistence", "security", "presentation", "integration", "infrastructure", "dependency"];
+            const nonWholeAppLayers = ["business", "persistence", "security", "presentation", "integration", "infrastructure", "dependency"];
+            const frameworks = ["jakarta", "spring", "quarkus"];
+
+            // Calculate all-all-all (average of everything for overall, whole apps only for wa_, layers only for l_)
+            const allScores = Object.values(combinations);
+            const wholeAppScores = Object.values(wholeAppCombinations);
+            const layerScores = Object.values(layerCombinations);
+
+            if (allScores.length > 0) {
+                const allTranslateValues = allScores.map((s) => s.translate);
+                const allTranslateAreDash = allTranslateValues.every((v) => v === "-");
+
+                combinations["all-all-all"] = {
+                    // Overall: average of everything
+                    compile: average(allScores.map((s) => s.compile).filter((v) => typeof v === "number")),
+                    run: average(allScores.map((s) => s.run).filter((v) => typeof v === "number")),
+                    translate: allTranslateAreDash ? "-" : average(allScores.map((s) => s.translate).filter((v) => typeof v === "number")),
+                    // Whole Apps: average of whole app entries only (or '-' if all are '-')
+                    wa_compile: wholeAppScores.length > 0 ? average(wholeAppScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                    wa_run: wholeAppScores.length > 0 ? average(wholeAppScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                    wa_translate:
+                        wholeAppScores.length > 0 && wholeAppScores.every((s) => s.translate === "-")
+                            ? "-"
+                            : wholeAppScores.length > 0
+                                ? average(wholeAppScores.map((s) => s.translate).filter((v) => typeof v === "number"))
+                                : "-",
+                    // Layers: average of layer entries only (excluding whole app)
+                    l_compile: layerScores.length > 0 ? average(layerScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                    l_run: layerScores.length > 0 ? average(layerScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                    l_translate: layerScores.length > 0 ? average(layerScores.map((s) => s.translate).filter((v) => typeof v === "number")) : 0,
+                };
+            }
+
+            // Calculate layer-all-all (average across all frameworks for each layer)
+            layers.forEach((layer) => {
+                const layerSpecificScores = [];
+                frameworks.forEach((from) => {
+                    frameworks.forEach((to) => {
+                        const key = `${layer}-${from}-${to}`;
+                        if (combinations[key]) {
+                            layerSpecificScores.push(combinations[key]);
+                        }
+                    });
+                });
+
+                if (layerSpecificScores.length > 0) {
+                    const isWholeApp = layer === "wholeapp";
+                    const hasTranslateDash = isWholeApp && layerSpecificScores.every((s) => s.translate === "-");
+                    combinations[`${layer}-all-all`] = {
+                        compile: average(layerSpecificScores.map((s) => s.compile).filter((v) => typeof v === "number")),
+                        run: average(layerSpecificScores.map((s) => s.run).filter((v) => typeof v === "number")),
+                        translate: hasTranslateDash ? "-" : average(layerSpecificScores.map((s) => s.translate).filter((v) => typeof v === "number")),
+                        wa_compile: isWholeApp ? average(layerSpecificScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                        wa_run: isWholeApp ? average(layerSpecificScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                        wa_translate:
+                            isWholeApp && hasTranslateDash ? "-" : isWholeApp ? average(layerSpecificScores.map((s) => s.translate).filter((v) => typeof v === "number")) : 0,
+                        l_compile: !isWholeApp ? average(layerSpecificScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                        l_run: !isWholeApp ? average(layerSpecificScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                        l_translate: !isWholeApp ? average(layerSpecificScores.map((s) => s.translate).filter((v) => typeof v === "number")) : 0,
+                    };
+                }
+            });
+
+            // Calculate all-from-to (average across all layers for specific framework combinations)
+            frameworks.forEach((from) => {
+                frameworks.forEach((to) => {
+                    const frameworkScores = [];
+                    const frameworkWholeAppScores = [];
+                    const frameworkLayerScores = [];
+
+                    layers.forEach((layer) => {
+                        const key = `${layer}-${from}-${to}`;
+                        if (combinations[key]) {
+                            frameworkScores.push(combinations[key]);
+                            if (layer === "wholeapp") {
+                                frameworkWholeAppScores.push(combinations[key]);
+                            } else {
+                                frameworkLayerScores.push(combinations[key]);
+                            }
+                        }
+                    });
+
+                    if (frameworkScores.length > 0) {
+                        const wholeAppHasDash = frameworkWholeAppScores.length > 0 && frameworkWholeAppScores.every((s) => s.translate === "-");
+                        combinations[`all-${from}-${to}`] = {
+                            compile: average(frameworkScores.map((s) => s.compile).filter((v) => typeof v === "number")),
+                            run: average(frameworkScores.map((s) => s.run).filter((v) => typeof v === "number")),
+                            translate: average(frameworkScores.map((s) => s.translate).filter((v) => typeof v === "number")),
+                            wa_compile: frameworkWholeAppScores.length > 0 ? average(frameworkWholeAppScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                            wa_run: frameworkWholeAppScores.length > 0 ? average(frameworkWholeAppScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                            wa_translate: wholeAppHasDash
+                                ? "-"
+                                : frameworkWholeAppScores.length > 0
+                                    ? average(frameworkWholeAppScores.map((s) => s.translate).filter((v) => typeof v === "number"))
+                                    : 0,
+                            l_compile: frameworkLayerScores.length > 0 ? average(frameworkLayerScores.map((s) => s.compile).filter((v) => typeof v === "number")) : 0,
+                            l_run: frameworkLayerScores.length > 0 ? average(frameworkLayerScores.map((s) => s.run).filter((v) => typeof v === "number")) : 0,
+                            l_translate: frameworkLayerScores.length > 0 ? average(frameworkLayerScores.map((s) => s.translate).filter((v) => typeof v === "number")) : 0,
+                        };
+                    }
+                });
+            });
+        }
+
+        // Helper function to calculate average
+        function average(numbers) {
+            if (numbers.length === 0) return 0;
+            const sum = numbers.reduce((a, b) => a + b, 0);
+            return sum / numbers.length;
+        }
+
+        // Function to get data key from filter values
+        function getDataKey(layer, from, to) {
+            return `${layer}-${from}-${to}`;
+        }
+
+        // Function to get color class for score
+        function getColorClass(score) {
+            if (score >= 80) return "score-high";
+            if (score >= 60) return "score-medium";
+            return "score-low";
+        }
+
+        // Toggle expand/collapse for All options
+        function toggleExpand(icon, expandType) {
+            const parentRow = icon.closest("tr");
+            const isExpanded = icon.classList.contains("expanded");
+
+            if (isExpanded) {
+                // Collapse - remove child rows
+                icon.classList.remove("expanded");
+                let nextRow = parentRow.nextElementSibling;
+                while (nextRow && nextRow.classList.contains("child-row")) {
+                    const toRemove = nextRow;
+                    nextRow = nextRow.nextElementSibling;
+                    toRemove.remove();
+                }
+            } else {
+                // Expand - create and insert child rows
+                icon.classList.add("expanded");
+
+                const solutionKey = parentRow.getAttribute("data-solution");
+                const currentLayer = document.getElementById("layerFilter").value;
+                const currentFrom = document.getElementById("frameworkFrom").value;
+                const currentTo = document.getElementById("frameworkTo").value;
+
+                let childRows = [];
+
+                if (expandType === "layer") {
+                    // Expand layers
+                    const layers = [
+                        { key: "business", name: "Business Domain" },
+                        { key: "dependency", name: "Dependency Injection" },
+                        { key: "infrastructure", name: "Infrastructure" },
+                        { key: "integration", name: "Integration" },
+                        { key: "persistence", name: "Persistence" },
+                        { key: "presentation", name: "Presentation" },
+                        { key: "security", name: "Security" },
+                    ];
+
+                    layers.forEach((layer) => {
+                        const childRow = createChildRow(parentRow, solutionKey, layer.key, currentFrom, currentTo);
+                        if (childRow) childRows.push(childRow);
+                    });
+                } else if (expandType === "from") {
+                    // Expand From frameworks
+                    const frameworks = [
+                        { key: "jakarta", name: "Jakarta" },
+                        { key: "quarkus", name: "Quarkus" },
+                        { key: "spring", name: "Spring" },
+                    ];
+
+                    frameworks.forEach((fw) => {
+                        const childRow = createChildRow(parentRow, solutionKey, currentLayer, fw.key, currentTo);
+                        if (childRow) childRows.push(childRow);
+                    });
+                } else if (expandType === "to") {
+                    // Expand To frameworks
+                    const frameworks = [
+                        { key: "jakarta", name: "Jakarta" },
+                        { key: "quarkus", name: "Quarkus" },
+                        { key: "spring", name: "Spring" },
+                    ];
+
+                    frameworks.forEach((fw) => {
+                        const childRow = createChildRow(parentRow, solutionKey, currentLayer, currentFrom, fw.key);
+                        if (childRow) childRows.push(childRow);
+                    });
+                }
+
+                // Insert child rows after parent
+                let insertAfter = parentRow;
+                childRows.forEach((childRow) => {
+                    insertAfter.insertAdjacentElement("afterend", childRow);
+                    insertAfter = childRow;
+                });
+            }
+
+            updateStats();
+        }
+
+        // Event delegation for expand icons
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("tableBody").addEventListener("click", function (e) {
+                if (e.target.classList.contains("expand-icon")) {
+                    e.stopPropagation();
+                    const expandType = e.target.getAttribute("data-expand-type");
+                    toggleExpand(e.target, expandType);
+                }
+            });
+        });
+
+        // Create a child row
+        function createChildRow(parentRow, solutionKey, layer, from, to) {
+            const data = solutionData[solutionKey];
+            if (!data) return null;
+
+            const dataKey = getDataKey(layer, from, to);
+            let rowData = data.combinations[dataKey];
+
+            if (!rowData) {
+                rowData = data.combinations["all-all-all"];
+            }
+
+            if (!rowData) return null;
+
+            // Clone parent row
+            const childRow = parentRow.cloneNode(true);
+            childRow.classList.add("child-row", "visible");
+            childRow.removeAttribute("data-solution"); // Child rows don't have solution key
+
+            // Remove expand icons from child rows
+            const expandIcons = childRow.querySelectorAll(".expand-icon");
+            expandIcons.forEach((icon) => icon.remove());
+
+            // Update layer cell
+            const layerCell = childRow.querySelector("[data-layer]");
+            const layerNames = {
+                all: "All Layers",
+                wholeapp: "Whole App",
+                business: "Business Domain",
+                persistence: "Persistence",
+                security: "Security",
+                presentation: "Presentation",
+                integration: "Integration",
+                infrastructure: "Infrastructure",
+                dependency: "Dependency Injection",
+            };
+            if (layerCell) {
+                layerCell.textContent = layerNames[layer] || "All Layers";
+                layerCell.setAttribute("data-layer", layer);
+            }
+
+            // Update framework combo cell (F→T)
+            const comboCell = childRow.querySelector(".framework-combo");
+            const frameworkInitials = {
+                all: "A",
+                jakarta: "J",
+                spring: "S",
+                quarkus: "Q",
+            };
+            if (comboCell) {
+                const fromInitial = frameworkInitials[from] || "A";
+                const toInitial = frameworkInitials[to] || "A";
+                comboCell.textContent = `${fromInitial}→${toInitial}`;
+                comboCell.setAttribute("data-framework-from", from);
+                comboCell.setAttribute("data-framework-to", to);
+            }
+
+            // Update scores
+            const scoreCells = childRow.querySelectorAll(".score-cell");
+
+            // Set data attributes for all three score types
+            if (scoreCells.length >= 3) {
+                // Compile
+                scoreCells[0].setAttribute("data-score", rowData.compile !== undefined ? rowData.compile.toFixed(1) : "0.0");
+                scoreCells[0].setAttribute("data-wa-score", rowData.wa_compile !== undefined ? rowData.wa_compile.toFixed(1) : "0.0");
+                scoreCells[0].setAttribute("data-l-score", rowData.l_compile !== undefined ? rowData.l_compile.toFixed(1) : "0.0");
+
+                // Run
+                scoreCells[1].setAttribute("data-score", rowData.run !== undefined ? rowData.run.toFixed(1) : "0.0");
+                scoreCells[1].setAttribute("data-wa-score", rowData.wa_run !== undefined ? rowData.wa_run.toFixed(1) : "0.0");
+                scoreCells[1].setAttribute("data-l-score", rowData.l_run !== undefined ? rowData.l_run.toFixed(1) : "0.0");
+
+                // Translate
+                const translateScore = rowData.translate === "-" ? "-" : rowData.translate !== undefined ? rowData.translate.toFixed(1) : "0.0";
+                const waTranslateScore = rowData.wa_translate === "-" ? "-" : rowData.wa_translate !== undefined ? rowData.wa_translate.toFixed(1) : "0.0";
+                const lTranslateScore = rowData.l_translate === "-" ? "-" : rowData.l_translate !== undefined ? rowData.l_translate.toFixed(1) : "0.0";
+
+                scoreCells[2].setAttribute("data-score", translateScore);
+                scoreCells[2].setAttribute("data-wa-score", waTranslateScore);
+                scoreCells[2].setAttribute("data-l-score", lTranslateScore);
+
+                // Display based on current score view
+                scoreCells.forEach((cell, idx) => {
+                    let displayScore;
+                    if (currentScoreView === "overall") {
+                        displayScore = cell.getAttribute("data-score");
+                    } else if (currentScoreView === "wholeapps") {
+                        displayScore = cell.getAttribute("data-wa-score");
+                    } else {
+                        displayScore = cell.getAttribute("data-l-score");
+                    }
+
+                    cell.textContent = displayScore;
+                    cell.classList.remove("score-high", "score-medium", "score-low");
+                    if (displayScore !== "-") {
+                        cell.classList.add(getColorClass(parseFloat(displayScore)));
+                    }
+                });
+            }
+
+            return childRow;
+        }
+
+        // Function to update row data based on filters
+        function updateRowData(row, solutionKey, layer, from, to) {
+            const data = solutionData[solutionKey];
+            if (!data) return;
+
+            const dataKey = getDataKey(layer, from, to);
+            let rowData = data.combinations[dataKey];
+
+            // Fallback to all-all-all if specific combination doesn't exist
+            if (!rowData) {
+                rowData = data.combinations["all-all-all"];
+            }
+
+            if (!rowData) return;
+
+            // Update layer cell
+            const layerCell = row.querySelector("[data-layer]");
+            const layerNames = {
+                all: "All Layers",
+                wholeapp: "Whole App",
+                business: "Business Domain",
+                persistence: "Persistence",
+                security: "Security",
+                presentation: "Presentation",
+                integration: "Integration",
+                infrastructure: "Infrastructure",
+                dependency: "Dependency Injection",
+            };
+            if (layerCell) {
+                layerCell.textContent = layerNames[layer] || "All Layers";
+                layerCell.setAttribute("data-layer", layer);
+            }
+
+            // Update framework combo cell (F→T)
+            const comboCell = row.querySelector(".framework-combo");
+            const frameworkInitials = {
+                all: "A",
+                jakarta: "J",
+                spring: "S",
+                quarkus: "Q",
+            };
+            if (comboCell) {
+                const fromInitial = frameworkInitials[from] || "A";
+                const toInitial = frameworkInitials[to] || "A";
+                comboCell.textContent = `${fromInitial}→${toInitial}`;
+                comboCell.setAttribute("data-framework-from", from);
+                comboCell.setAttribute("data-framework-to", to);
+            }
+
+            // Update score cells
+            const scoreCells = row.querySelectorAll(".score-cell");
+
+            if (scoreCells.length >= 3) {
+                // Compile
+                scoreCells[0].setAttribute("data-score", rowData.compile !== undefined ? rowData.compile.toFixed(1) : "0.0");
+                scoreCells[0].setAttribute("data-wa-score", rowData.wa_compile !== undefined ? rowData.wa_compile.toFixed(1) : "0.0");
+                scoreCells[0].setAttribute("data-l-score", rowData.l_compile !== undefined ? rowData.l_compile.toFixed(1) : "0.0");
+
+                // Run
+                scoreCells[1].setAttribute("data-score", rowData.run !== undefined ? rowData.run.toFixed(1) : "0.0");
+                scoreCells[1].setAttribute("data-wa-score", rowData.wa_run !== undefined ? rowData.wa_run.toFixed(1) : "0.0");
+                scoreCells[1].setAttribute("data-l-score", rowData.l_run !== undefined ? rowData.l_run.toFixed(1) : "0.0");
+
+                // Translate
+                const translateScore = rowData.translate === "-" ? "-" : rowData.translate !== undefined ? rowData.translate.toFixed(1) : "0.0";
+                const waTranslateScore = rowData.wa_translate === "-" ? "-" : rowData.wa_translate !== undefined ? rowData.wa_translate.toFixed(1) : "0.0";
+                const lTranslateScore = rowData.l_translate === "-" ? "-" : rowData.l_translate !== undefined ? rowData.l_translate.toFixed(1) : "0.0";
+
+                scoreCells[2].setAttribute("data-score", translateScore);
+                scoreCells[2].setAttribute("data-wa-score", waTranslateScore);
+                scoreCells[2].setAttribute("data-l-score", lTranslateScore);
+
+                // Display based on current score view
+                scoreCells.forEach((cell, idx) => {
+                    let displayScore;
+                    if (currentScoreView === "overall") {
+                        displayScore = cell.getAttribute("data-score");
+                    } else if (currentScoreView === "wholeapps") {
+                        displayScore = cell.getAttribute("data-wa-score");
+                    } else {
+                        displayScore = cell.getAttribute("data-l-score");
+                    }
+
+                    cell.textContent = displayScore;
+                    cell.classList.remove("score-high", "score-medium", "score-low");
+                    if (displayScore !== "-") {
+                        cell.classList.add(getColorClass(parseFloat(displayScore)));
+                    }
+                });
+            }
+        }
+
+        // Toggle score view
+        let currentScoreView = "overall";
+        let metricSortState = {};
+
+        function toggleScoreView(scoreType) {
+            currentScoreView = scoreType;
+
+            // Update button states
+            const buttons = document.querySelectorAll(".score-toggle-btn");
+            buttons.forEach((btn) => btn.classList.remove("active"));
+            event.target.classList.add("active");
+
+            // Update all score cells to show the appropriate score
+            const scoreCells = document.querySelectorAll(".score-cell");
+            scoreCells.forEach((cell) => {
+                let score, colorClass;
+
+                if (scoreType === "overall") {
+                    score = cell.getAttribute("data-score");
+                } else if (scoreType === "wholeapps") {
+                    score = cell.getAttribute("data-wa-score");
+                } else if (scoreType === "layers") {
+                    score = cell.getAttribute("data-l-score");
+                }
+
+                // Update cell content
+                cell.textContent = score;
+
+                // Update color class
+                cell.classList.remove("score-high", "score-medium", "score-low");
+                if (score !== "-" && score !== null) {
+                    const numScore = parseFloat(score);
+                    cell.classList.add(getColorClass(numScore));
+                }
+            });
+        }
+
+        // Sort by specific metric
+        function sortByMetric(scoreType, metricIndex) {
+            const tbody = document.getElementById("tableBody");
+            const rows = Array.from(tbody.getElementsByTagName("tr")).filter((row) => row.style.display !== "none" && row.id !== "noResults");
+
+            const sortKey = `${scoreType}-${metricIndex}`;
+            const direction = metricSortState[sortKey] === "asc" ? "desc" : "asc";
+            metricSortState = {};
+            metricSortState[sortKey] = direction;
+
+            // Clear all sort indicators
+            document.querySelectorAll(".sortable-metric").forEach((h) => {
+                h.classList.remove("sort-asc", "sort-desc");
+            });
+
+            // Set sort indicator on clicked header
+            event.target.classList.add(direction === "asc" ? "sort-asc" : "sort-desc");
+
+            // Calculate column offset
+            // Columns: Rank, Solution, Date = 3 columns before scores
+            const columnIndex = 3 + metricIndex;
+
+            rows.sort((a, b) => {
+                const aCells = a.getElementsByTagName("td");
+                const bCells = b.getElementsByTagName("td");
+
+                const aValue = parseFloat(aCells[columnIndex].getAttribute("data-score") || aCells[columnIndex].textContent);
+                const bValue = parseFloat(bCells[columnIndex].getAttribute("data-score") || bCells[columnIndex].textContent);
+
+                return direction === "asc" ? aValue - bValue : bValue - aValue;
+            });
+
+            rows.forEach((row) => tbody.appendChild(row));
+        }
+
+        // Filter by FROM framework
+        function filterFromFramework(framework) {
+            // Update active state for FROM filters only
+            const fromHeaders = document.querySelectorAll(".framework-filter-from");
+            fromHeaders.forEach((header) => {
+                header.classList.remove("active");
+            });
+            event.target.classList.add("active");
+
+            // Update the hidden select for compatibility
+            document.getElementById("frameworkFrom").value = framework;
+
+            // Update disabled state for TO filters
+            updateFrameworkDisabledStates();
+
+            applyAllFilters();
+        }
+
+        // Filter by TO framework
+        function filterToFramework(framework) {
+            // Update active state for TO filters only
+            const toHeaders = document.querySelectorAll(".framework-filter-to");
+            toHeaders.forEach((header) => {
+                header.classList.remove("active");
+            });
+            event.target.classList.add("active");
+
+            // Update the hidden select for compatibility
+            document.getElementById("frameworkTo").value = framework;
+
+            // Update disabled state for FROM filters
+            updateFrameworkDisabledStates();
+
+            applyAllFilters();
+        }
+
+        // Update disabled states for framework filters
+        function updateFrameworkDisabledStates() {
+            const fromValue = document.getElementById("frameworkFrom").value;
+            const toValue = document.getElementById("frameworkTo").value;
+
+            // Get all framework filter buttons
+            const fromHeaders = document.querySelectorAll(".framework-filter-from");
+            const toHeaders = document.querySelectorAll(".framework-filter-to");
+
+            // Enable all buttons first
+            fromHeaders.forEach((header) => header.classList.remove("disabled"));
+            toHeaders.forEach((header) => header.classList.remove("disabled"));
+
+            // Disable matching frameworks (except 'all')
+            if (fromValue !== "all") {
+                toHeaders.forEach((header) => {
+                    const onclick = header.getAttribute("onclick");
+                    if (onclick && onclick.includes(`'${fromValue}'`)) {
+                        header.classList.add("disabled");
+                    }
+                });
+            }
+
+            if (toValue !== "all") {
+                fromHeaders.forEach((header) => {
+                    const onclick = header.getAttribute("onclick");
+                    if (onclick && onclick.includes(`'${toValue}'`)) {
+                        header.classList.add("disabled");
+                    }
+                });
+            }
+        }
+
+        // Filter by frameworks (keep for backward compatibility)
+        function filterFrameworks() {
+            applyAllFilters();
+        }
+
+        // Filter by layers
+        function filterLayers() {
+            // Sync the header filter with the control filter
+            const headerFilter = document.getElementById("layerHeaderFilter");
+            const controlFilter = document.getElementById("layerFilter");
+
+            if (headerFilter && controlFilter) {
+                // If called from header, update control
+                if (event && event.target === headerFilter) {
+                    controlFilter.value = headerFilter.value;
+                } else if (event && event.target === controlFilter) {
+                    // If called from control, update header
+                    headerFilter.value = controlFilter.value;
+                }
+            }
+
+            applyAllFilters();
+        }
+
+        // Apply all filters together
+        function applyAllFilters() {
+            const fromValue = document.getElementById("frameworkFrom").value;
+            const toValue = document.getElementById("frameworkTo").value;
+            const layerValue = document.getElementById("layerHeaderFilter")?.value || document.getElementById("layerFilter")?.value || "wholeapp";
+            const searchValue = document.getElementById("searchInput").value.toLowerCase();
+
+            // Get active status filter
+            const activeStatusBtn = document.querySelector(".filter-btn.active");
+            const statusValue = activeStatusBtn ? activeStatusBtn.textContent.toLowerCase() : "all";
+
+            const tableBody = document.getElementById("tableBody");
+            const rows = tableBody.getElementsByTagName("tr");
+            let visibleCount = 0;
+
+            // Collapse any expanded rows when filters change
+            const expandedIcons = document.querySelectorAll(".expand-icon.expanded");
+            expandedIcons.forEach((icon) => {
+                icon.classList.remove("expanded");
+            });
+
+            // Remove all child rows
+            const childRows = Array.from(document.querySelectorAll(".child-row"));
+            childRows.forEach((row) => row.remove());
+
+            for (let row of rows) {
+                if (row.id === "noResults" || row.classList.contains("child-row")) continue;
+
+                const solutionKey = row.getAttribute("data-solution");
+                const badge = row.querySelector(".badge");
+
+                // Update row data to match current filters
+                if (solutionKey) {
+                    updateRowData(row, solutionKey, layerValue, fromValue, toValue);
+                }
+
+                // Check status filter
+                const statusMatch = statusValue === "all" || (badge && badge.textContent.toLowerCase() === statusValue);
+
+                // Check search filter
+                const searchMatch = searchValue === "" || row.textContent.toLowerCase().includes(searchValue);
+
+                // Show row if it matches status and search
+                if (statusMatch && searchMatch) {
+                    row.style.display = "";
+                    visibleCount++;
+                } else {
+                    row.style.display = "none";
+                }
+            }
+
+            updateStats();
+            showNoResults(visibleCount === 0);
+        }
+
+        // Search functionality
+        document.getElementById("searchInput").addEventListener("keyup", function () {
+            applyAllFilters();
+        });
+
+        // Filter by status
+        function filterStatus(status) {
+            const buttons = document.querySelectorAll(".filter-btn");
+            buttons.forEach((btn) => btn.classList.remove("active"));
+            event.target.classList.add("active");
+            applyAllFilters();
+        }
+
+        // Sort table
+        let sortDirection = {};
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById("dataTable");
+            const tbody = document.getElementById("tableBody");
+            const rows = Array.from(tbody.getElementsByTagName("tr")).filter((row) => row.style.display !== "none" && row.id !== "noResults");
+
+            const direction = sortDirection[columnIndex] === "asc" ? "desc" : "asc";
+            sortDirection = {};
+            sortDirection[columnIndex] = direction;
+
+            const headers = table.querySelectorAll(".main-header");
+            headers.forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
+            headers[columnIndex].classList.add(direction === "asc" ? "sort-asc" : "sort-desc");
+
+            rows.sort((a, b) => {
+                let aValue = a.getElementsByTagName("td")[columnIndex].textContent.trim();
+                let bValue = b.getElementsByTagName("td")[columnIndex].textContent.trim();
+
+                // Handle rank column
+                if (columnIndex === 0) {
+                    aValue = parseInt(aValue.replace("#", ""));
+                    bValue = parseInt(bValue.replace("#", ""));
+                    return direction === "asc" ? aValue - bValue : bValue - aValue;
+                }
+
+                // Handle date column
+                if (columnIndex === 2) {
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                    return direction === "asc" ? aValue - bValue : bValue - aValue;
+                }
+
+                // String comparison for other columns
+                return direction === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+            });
+
+            rows.forEach((row) => tbody.appendChild(row));
+        }
+
+        // Show/hide no results message
+        function showNoResults(show) {
+            const tbody = document.getElementById("tableBody");
+            let noResults = document.getElementById("noResults");
+
+            if (show && !noResults) {
+                noResults = document.createElement("tr");
+                noResults.id = "noResults";
+                noResults.innerHTML = '<td colspan="13" class="no-results">No submissions found matching your criteria</td>';
+                tbody.appendChild(noResults);
+            } else if (!show && noResults) {
+                noResults.remove();
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const tableBody = document.getElementById("tableBody");
+            const rows = Array.from(tableBody.getElementsByTagName("tr")).filter((row) => row.style.display !== "none" && row.id !== "noResults");
+
+            const totalModels = rows.length;
+
+            if (rows.length > 0) {
+                const compileScores = rows.map((row) => {
+                    const scoreCells = row.querySelectorAll(".score-cell");
+                    return parseFloat(scoreCells[0]?.getAttribute("data-score") || scoreCells[0]?.textContent || 0);
+                });
+
+                // Calculate average Pass %
+                const passScores = rows.map((row) => {
+                    const scoreCells = row.querySelectorAll(".score-cell");
+                    const score = scoreCells[2]?.getAttribute("data-score") || scoreCells[2]?.textContent || "0";
+                    return score === "-" ? 0 : parseFloat(score);
+                });
+
+                const topScore = Math.max(...compileScores).toFixed(1);
+                const avgPass = (passScores.reduce((a, b) => a + b, 0) / passScores.length).toFixed(1);
+
+                document.getElementById("totalModels").textContent = totalModels;
+                document.getElementById("topScore").textContent = topScore;
+                document.getElementById("avgCompile").textContent = avgPass;
+            } else {
+                document.getElementById("totalModels").textContent = "0";
+                document.getElementById("topScore").textContent = "0";
+                document.getElementById("avgCompile").textContent = "0";
+            }
+        }
+
+        // View details - removed since we now only have link icons
+
+        // Initialize - Load CSV data and populate table
+        async function initializePage() {
+            // Show loading message
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 40px;">Loading data...</td></tr>';
+
+            // Load CSV data
+            solutionData = await loadCSVData();
+
+            // Populate initial table rows
+            populateTableFromData();
+
+            // Update statistics
+            updateStats();
+
+            // Initialize framework disabled states
+            updateFrameworkDisabledStates();
+
+            // Apply initial filters to show wholeapp data
+            applyAllFilters();
+        }
+
+        // Function to populate table from loaded data
+        function populateTableFromData() {
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = ""; // Clear loading message
+
+            // Get unique solutions and sort by overall score
+            const solutions = Object.keys(solutionData)
+                .map((key) => ({
+                    key: key,
+                    ...solutionData[key],
+                    overallScore: solutionData[key].combinations["all-all-all"]?.compile || 0,
+                }))
+                .sort((a, b) => b.overallScore - a.overallScore);
+
+            // Create table rows
+            solutions.forEach((solution, index) => {
+                const data = solutionData[solution.key];
+                const allData = data.combinations["all-all-all"] || {
+                    compile: 0,
+                    run: 0,
+                    translate: 0,
+                    wa_compile: 0,
+                    wa_run: 0,
+                    wa_translate: 0,
+                    l_compile: 0,
+                    l_run: 0,
+                    l_translate: 0,
+                };
+
+                const row = document.createElement("tr");
+                row.setAttribute("data-solution", solution.key);
+
+                row.innerHTML = `
+                    <td class="rank">#${index + 1}</td>
+                    <td class="model-name">${data.name}</td>
+                    <td class="date-cell">${formatDate(data.date)}</td>
+                    <td class="score-cell ${getColorClass(allData.compile)} score-group overall-score" colspan="3" data-score="${allData.compile.toFixed(1)}" data-wa-score="${allData.wa_compile.toFixed(1)}" data-l-score="${allData.l_compile.toFixed(1)}">${allData.compile.toFixed(1)}</td>
+                    <td class="score-cell ${getColorClass(allData.run)} score-group overall-score" colspan="3" data-score="${allData.run.toFixed(1)}" data-wa-score="${allData.wa_run.toFixed(1)}" data-l-score="${allData.l_run.toFixed(1)}">${allData.run.toFixed(1)}</td>
+                    <td class="score-cell ${allData.translate === "-" ? "" : getColorClass(allData.translate)} score-group overall-score" colspan="3" data-score="${allData.translate === "-" ? "-" : allData.translate.toFixed(1)}" data-wa-score="${allData.wa_translate === "-" ? "-" : allData.wa_translate.toFixed(1)}" data-l-score="${allData.l_translate === "-" ? "-" : allData.l_translate.toFixed(1)}">${allData.translate === "-" ? "-" : allData.translate.toFixed(1)}</td>
+                    <td class="actions">
+                        <a href="${data.link}" target="_blank" class="submission-link" title="${data.link}">🔗</a>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Helper function to format date
+        function formatDate(dateStr) {
+            if (!dateStr) return "";
+            // Convert MM/DD/YY to YYYY-MM-DD format
+            const parts = dateStr.split("/");
+            if (parts.length === 3) {
+                const month = parts[0].padStart(2, "0");
+                const day = parts[1].padStart(2, "0");
+                const year = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+                return `${year}-${month}-${day}`;
+            }
+            return dateStr;
+        }
+
+        // Initialize page when DOM is loaded
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializePage);
+        } else {
+            initializePage();
+        }
+    </script>
+</body>
+
+</html>

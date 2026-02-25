@@ -1,1 +1,0 @@
- psql -h localhost -U petclinic_jakartaee petclinic_jakartaee_payara < data.sql

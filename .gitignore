@@ -1,5 +1,8 @@
 # Build output
 dist/
+docs/dist/
+docs/.astro/
+docs/node_modules/
 site/site/
 *.pyc
 __pycache__/

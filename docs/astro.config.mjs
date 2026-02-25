@@ -2,8 +2,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 export default defineConfig({
-  site: 'https://ibm.github.io/',
-  base: '/scarfbench/',
+  site: 'https://scarfbench.github.io/',
+  base: '/benchmark',
   integrations: [
     starlight({
       title: '🧣 ScarfBench',

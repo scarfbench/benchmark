@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://ibm.github.io/scarfbench/assets/images/scarf-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="https://ibm.github.io/scarfbench/assets/images/scarf-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://scarfbench.github.io/benchmark/assets/images/scarf-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="https://scarfbench.github.io/benchmark/assets/images/scarf-light.png">
   <img alt="Logo">
 </picture>
 

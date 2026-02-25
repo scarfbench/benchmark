@@ -32,8 +32,8 @@ Optional (only for running local smoke scripts outside containers):
 ## Get the repository
 
 ```bash
-git clone https://github.com/ibm/scarfbench
-cd scarfbench
+git clone https://github.com/scarfbench/benchmark
+cd benchmark
 ```
 
 ## Run an application

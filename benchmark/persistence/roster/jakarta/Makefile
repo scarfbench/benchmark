@@ -1,6 +1,6 @@
-### OpenLiberty (Jakarta) Justfile
-APP_NAME       := "roster-jakarta"
-IMAGE_NAME     := "roster-jakarta:latest"
+### OpenLiberty (Jakarta) Makefile
+APP_NAME       := roster-jakarta
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := CWWKF0011I
 
 .ONESHELL:

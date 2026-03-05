@@ -1,6 +1,6 @@
-### Quarkus Justfile
-APP_NAME       := "address-book-quarkus"
-IMAGE_NAME     := "address-book-quarkus:latest"
+### Quarkus Makefile
+APP_NAME       := address-book-quarkus
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Listening on: http://0.0.0.0:8080
 
 build:

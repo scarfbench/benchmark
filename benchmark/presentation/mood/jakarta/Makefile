@@ -1,5 +1,5 @@
-APP_NAME        := "mood-jakarta"
-IMAGE_NAME      := "mood-jakarta:latest"
+APP_NAME        := mood-jakarta
+IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 9080
 SUCCESS_PATTERN := CWWKZ0001I
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException

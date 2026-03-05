@@ -38,7 +38,7 @@ cd benchmark
 
 ## Run an application
 
-Each benchmark app directory contains a `justfile` and a `Dockerfile`.
+Each benchmark app directory contains a `Makefile` and a `Dockerfile`.
 
 Example:
 

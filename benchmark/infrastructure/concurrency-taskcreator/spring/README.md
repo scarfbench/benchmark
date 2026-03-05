@@ -40,23 +40,23 @@ mvn -f quarkus/concurrency-taskcreator/pom.xml -Dnative clean package
 
 ### Build Image
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile build-image
+just -f quarkus/concurrency-taskcreator/Makefile build-image
 ```
 
 ### Run Container
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile run
+just -f quarkus/concurrency-taskcreator/Makefile run
 ```
 Visit: http://localhost:8080/
 
 ### Smoke Test (after container starts)
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile smoke
+just -f quarkus/concurrency-taskcreator/Makefile smoke
 ```
 
 Verbose smoke test:
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile smoke-v
+just -f quarkus/concurrency-taskcreator/Makefile smoke-v
 ```
 
 ### Direct Docker (without just)
@@ -69,11 +69,10 @@ sleep 5
 
 ### Stopping
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile stop
+just -f quarkus/concurrency-taskcreator/Makefile stop
 ```
 
 ### Cleaning
 ```bash
-just -f quarkus/concurrency-taskcreator/justfile clean
+just -f quarkus/concurrency-taskcreator/Makefile clean
 ```
-

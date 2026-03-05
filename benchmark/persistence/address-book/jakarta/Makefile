@@ -1,6 +1,6 @@
-### OpenLiberty (Jakarta) Justfile
-APP_NAME       := "address-book-jakarta"
-IMAGE_NAME     := "address-book-jakarta:latest"
+### OpenLiberty (Jakarta) Makefile
+APP_NAME       := address-book-jakarta
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := CWWKF0011I
 
 build:

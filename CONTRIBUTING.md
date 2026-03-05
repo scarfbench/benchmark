@@ -9,7 +9,7 @@ This guide explains how to contribute a new application to the SCARFBench benchm
 - [Overview](#overview)
 - [Required Files](#required-files)
 - [1. Dockerfile](#1-dockerfile)
-- [2. Justfile](#2-justfile)
+- [2. Makefile](#2-Makefile)
 - [3. Smoke Test (smoke.py)](#3-smoke-test-smokepy)
 - [Standard Patterns](#standard-patterns)
 - [Checklist](#checklist)
@@ -21,7 +21,7 @@ This guide explains how to contribute a new application to the SCARFBench benchm
 Before contributing, ensure you have:
 - **Git** installed
 - **Docker** installed and running
-- **just** command runner installed ([justfile.guide](https://just.systems/))
+- **make**Makefile build tool
 - Basic familiarity with the three frameworks (Jakarta EE, Quarkus, Spring Boot)
 
 ### Forking the Repository
@@ -69,7 +69,7 @@ mkdir -p benchmark/<category>/<your-app-name>/{jakarta,quarkus,spring}
 For each framework (Jakarta, Quarkus, Spring):
 1. Implement the application using framework-specific patterns
 2. Create `Dockerfile` (see [Dockerfile section](#1-dockerfile))
-3. Create `justfile` (see [Justfile section](#2-justfile))
+3. Create `Makefile` (see [Makefile section](#2-Makefile))
 4. Create smoke tests - either `smoke.py` or `smoke/` folder (see [Smoke Test section](#3-smoke-test-smokepy))
 
 ### 4. Verify All Implementations
@@ -142,10 +142,10 @@ Each benchmark application in SCARFBench should support three frameworks:
 
 In addition to the source application files, each framework implementation requires three standard files:
 1. `Dockerfile` - Container definition
-2. `justfile` - Build and run automation
+2. `Makefile` - Build and run automation
 3. `smoke.py` - Automated smoke tests
 
-**Note on Technology Choices**: This guide demonstrates examples using **Python**, **uv**, and **Playwright** for smoke tests. However, these are not strict requirements. You are free to implement smoke tests in any language (Shell, JavaScript, Go, Java, etc.) as long as your Dockerfile and justfile's `test` target work correctly. See [Alternative Smoke Test Implementations](#alternative-smoke-test-implementations) for examples in other languages.
+**Note on Technology Choices**: This guide demonstrates examples using **Python**, **uv**, and **Playwright** for smoke tests. However, these are not strict requirements. You are free to implement smoke tests in any language (Shell, JavaScript, Go, Java, etc.) as long as your Dockerfile and Makefile's `test` target work correctly. See [Alternative Smoke Test Implementations](#alternative-smoke-test-implementations) for examples in other languages.
 
 This guide uses the following applications as reference standards: 
 
@@ -259,14 +259,14 @@ CMD ["mvn", "clean", "package", "<framework-specific-goal>"]
 9. **Layer Caching**: For Playwright pattern, copy pom.xml files first to cache dependencies separately from source code
 10. **Browser Path**: Set `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` to share browser binaries across builds
 
-### 2. Justfile
+### 2. Makefile
 
-The justfile provides standard commands for building, running, testing, and managing your application.
+The Makefile provides standard commands for building, running, testing, and managing your application.
 
 #### Standard Structure
 
 ```just
-### <Application Name> (<Framework>) Justfile
+### <Application Name> (<Framework>) Makefile
 APP_NAME       := "<app-name>-<framework>"
 IMAGE_NAME     := "<app-name>-<framework>:latest"
 SUCCESS_PATTERN := "<framework-specific-pattern>"
@@ -349,11 +349,11 @@ The `up` target uses two separate checks:
 
 #### Port Notes
 
-Applications bind to internal ports (usually `9080` or `8080`) for communication within the container. Since tests run internally via `docker exec`, **no port mapping to the host is needed**. The justfile does not expose ports, and containers run without `-p` flags.
+Applications bind to internal ports (usually `9080` or `8080`) for communication within the container. Since tests run internally via `docker exec`, **no port mapping to the host is needed**. The Makefile does not expose ports, and containers run without `-p` flags.
 
 #### Required Targets
 
-All justfiles must include these standard targets:
+All Makefiles must include these standard targets:
 
 - `build`: Build the Docker image
 - `rebuild`: Rebuild without cache (for troubleshooting)
@@ -368,7 +368,7 @@ All justfiles must include these standard targets:
 The smoke test validates your application's core functionality. While examples below use Python, **you are free to write smoke tests in any language** - the only requirements are:
 
 1. **Dockerfile** must exist and be able to run the tests
-2. **justfile** must have a `test` target that executes the tests
+2. **Makefile** must have a `test` target that executes the tests
 3. Tests must exit with code `0` on success, non-zero on failure
 
 This allows flexibility to use:
@@ -776,9 +776,9 @@ COPY smoke smoke
 CMD ["./mvnw", "clean", "package", "<framework-specific-goal>"]
 ```
 
-**justfile Integration** (using `uv` with Playwright - recommended for complex apps):
+**Makefile Integration** (using `uv` with Playwright - recommended for complex apps):
 ```just
-### <Application Name> (<Framework>) Justfile
+### <Application Name> (<Framework>) Makefile
 APP_NAME        := "<app-name>-<framework>"
 IMAGE_NAME      := "<app-name>-<framework>:latest"
 APP_PORT        := "9080"
@@ -889,7 +889,7 @@ describe('Smoke Tests', () => {
 });
 ```
 
-**justfile Integration** (shell script example):
+**Makefile Integration** (shell script example):
 ```just
 smoke: up
 	@echo "[INFO] Running smoke tests..."
@@ -900,7 +900,7 @@ test: smoke
 
 **Key Point**: The implementation language doesn't matter, as long as:
 - The Dockerfile includes necessary runtime and dependencies
-- The `test` target in justfile successfully runs the tests within the container
+- The `test` target in Makefile successfully runs the tests within the container
 - Tests exit with appropriate exit codes (0 = success)
 
 ## Standard Patterns
@@ -912,7 +912,7 @@ For **simple applications** (single smoke.py):
 benchmark/<category>/<application-name>/
 ├── jakarta/
 │   ├── Dockerfile
-│   ├── justfile
+│   ├── Makefile
 │   ├── smoke.py
 │   ├── pom.xml
 │   ├── mvnw
@@ -921,7 +921,7 @@ benchmark/<category>/<application-name>/
 │   └── src/
 ├── quarkus/
 │   ├── Dockerfile
-│   ├── justfile
+│   ├── Makefile
 │   ├── smoke.py
 │   ├── pom.xml
 │   ├── mvnw
@@ -930,7 +930,7 @@ benchmark/<category>/<application-name>/
 │   └── src/
 └── spring/
     ├── Dockerfile
-    ├── justfile
+    ├── Makefile
     ├── smoke.py
     ├── pom.xml
     ├── mvnw
@@ -944,7 +944,7 @@ For **complex applications** (smoke folder with pytest):
 benchmark/<category>/<application-name>/
 ├── jakarta/
 │   ├── Dockerfile
-│   ├── justfile
+│   ├── Makefile
 │   ├── pom.xml
 │   ├── mvnw
 │   ├── mvnw.cmd
@@ -979,7 +979,7 @@ benchmark/<category>/<application-name>/
 
 ### Common Variables
 
-These should appear in every justfile:
+These should appear in every Makefile:
 
 ```just
 APP_NAME       := "<app>-<framework>"
@@ -1002,7 +1002,7 @@ Before submitting your contribution, verify:
 - [ ] Uses correct Maven goal in CMD
 - [ ] **Playwright pattern**: Implements layer caching for pom.xml files
 
-### Justfile
+### Makefile
 - [ ] All variables defined at top (APP_NAME, IMAGE_NAME)
 - [ ] `build` target works
 - [ ] `rebuild` target works (no cache)
@@ -1082,7 +1082,7 @@ mkdir -p benchmark/<category>/<app>/{jakarta,quarkus,spring}
 
 # 2. Implement first framework
 cd benchmark/<category>/<app>/jakarta
-# ... create Dockerfile, justfile, smoke.py
+# ... create Dockerfile, Makefile, smoke.py
 
 # 3. Test
 just build && just up && just test

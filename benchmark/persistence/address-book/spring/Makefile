@@ -1,6 +1,6 @@
-### Spring Boot Justfile
-APP_NAME       := "address-book-spring"
-IMAGE_NAME     := "address-book-spring:latest"
+### Spring Boot Makefile
+APP_NAME       := address-book-spring
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Started Application
 
 build:

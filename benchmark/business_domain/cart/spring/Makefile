@@ -1,7 +1,7 @@
 # Run `make` to see available recipes
 
 APP_NAME       := "cart-spring"
-IMAGE_NAME   := $(APP_NAME):latest
+IMAGE_NAME := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Started Application
 
 # Set shell

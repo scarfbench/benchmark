@@ -43,8 +43,11 @@ def visit_main_page(page: Page) -> int:
 def guess(page: Page, number: int) -> int:
     passed = 0
 
-    # Guess and hope it's not the selected number
-    page.get_by_label("Number:").fill(f"{number}")
+    # Wait for the input to be enabled before interacting (JSF may render it disabled initially)
+    input_locator = page.get_by_label("Number:")
+    input_locator.wait_for(state="visible")
+    page.wait_for_function("!document.querySelector('#GuessMain\\\\:inputGuess')?.disabled")
+    input_locator.fill(f"{number}")
     with page.expect_navigation():
         page.get_by_role("button", name="Guess").click()
 

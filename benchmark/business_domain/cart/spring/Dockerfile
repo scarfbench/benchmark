@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "package", "spring-boot:run" ]
+CMD ["sh", "-c", "mvn clean install -DskipTests && mvn spring-boot:run -pl cart-web"]

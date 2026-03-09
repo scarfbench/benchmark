@@ -1,7 +1,7 @@
 APP_NAME        := realworld-spring
-IMAGE_NAME      := realworld-spring:latest
+IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 8080
-SUCCESS_PATTERN := Started
+SUCCESS_PATTERN := Started RealWorldApplication
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException|Could not find or load main class|ClassNotFoundException
 
 .PHONY: build rebuild up logs down clean test local

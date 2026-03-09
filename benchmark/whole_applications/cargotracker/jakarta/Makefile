@@ -1,7 +1,7 @@
-APP_NAME        := "cargo-tracker-jakarta"
-IMAGE_NAME      := "cargo-tracker-jakarta:latest"
+APP_NAME        := cargo-tracker-jakarta
+IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 8080
-SUCCESS_PATTERN := CWWKF0011I
+SUCCESS_PATTERN := Payara 5.2022.5 started on port
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException|NoSuchFieldError|Fatal error compiling|Could not find or load main class|ClassNotFoundException
 
 build:

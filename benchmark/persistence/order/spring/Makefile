@@ -1,6 +1,6 @@
-### Spring Boot Justfile
-APP_NAME       := "order-spring"
-IMAGE_NAME     := "order-spring:latest"
+### Spring Boot Makefile
+APP_NAME       := order-spring
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Started OrderApplication
 
 build:

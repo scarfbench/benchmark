@@ -1,5 +1,5 @@
-APP_NAME        := "daytrader-quarkus"
-IMAGE_NAME      := "daytrader-quarkus:latest"
+APP_NAME        := daytrader-quarkus
+IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 8080
 SUCCESS_PATTERN := Listening on:
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|Could not find or load main class|ClassNotFoundException

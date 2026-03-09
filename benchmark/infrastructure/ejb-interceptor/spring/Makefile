@@ -1,6 +1,6 @@
-### Spring Boot Justfile
-APP_NAME        := "interceptor-spring"
-IMAGE_NAME      := "interceptor-spring:latest"
+### Spring Boot Makefile
+APP_NAME        := interceptor-spring
+IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 8080
 SUCCESS_PATTERN := Started
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] COMPILATION ERROR|COMPILATION ERROR|\[ERROR\] Failed to execute goal|\[ERROR\] \*\*\*|\[FATAL\]|MojoExecutionException|ProjectBuildingException|ModelParseException|cannot find symbol|package .* does not exist| error:|APPLICATION FAILED TO START|BeanCreationException|UnsatisfiedDependencyException

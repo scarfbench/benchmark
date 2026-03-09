@@ -1,6 +1,6 @@
-### Quarkus Justfile
-APP_NAME       := "order-quarkus"
-IMAGE_NAME     := "order-quarkus:latest"
+### Quarkus Makefile
+APP_NAME       := order-quarkus
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Listening on:
 
 build:

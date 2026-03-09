@@ -1,6 +1,6 @@
-### Spring Boot Justfile
-APP_NAME       := "roster-spring"
-IMAGE_NAME     := "roster-spring:latest"
+### Spring Boot Makefile
+APP_NAME       := roster-spring
+IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 SUCCESS_PATTERN := Started RosterApplication
 
 build:

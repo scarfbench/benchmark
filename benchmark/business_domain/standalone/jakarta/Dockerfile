@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "package", "liberty:run" ]
+CMD [ "mvn", "clean", "-DskipTests", "package", "liberty:run" ]

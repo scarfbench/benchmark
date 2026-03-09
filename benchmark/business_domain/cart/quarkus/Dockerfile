@@ -24,4 +24,4 @@ COPY . .
 
 RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "package", "quarkus:run" ]
+CMD [ "sh", "-c", "mvn clean package && java -jar cart-web/target/quarkus-app/quarkus-run.jar" ]

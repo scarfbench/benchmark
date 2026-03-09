@@ -13,8 +13,8 @@ Exit codes:
 import os
 import sys
 from datetime import datetime
-from playwright.sync_api import Page, sync_playwright
 
+from playwright.sync_api import Page, sync_playwright
 
 DEFAULT_BASE = "http://localhost:8080"
 BASE_URL = os.getenv("CONVERTER_BASE_URL", DEFAULT_BASE)

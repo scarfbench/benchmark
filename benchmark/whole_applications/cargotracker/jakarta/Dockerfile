@@ -1,4 +1,4 @@
-FROM maven:3.9.12-ibm-semeru-21-noble
+FROM maven:3.9.12-ibm-semeru-11-noble
 
 # We’ll work as root for package installs (this is the default in this image)
 USER root
@@ -61,4 +61,4 @@ RUN mvn -B -DskipTests package
 # You can then exec into the container to run:
 #   uv run smoke/smoke.py
 # --------------------------------------------------------------------
-CMD ["mvn", "cargo:run"]
+CMD ["mvn", "clean", "-DskipTests", "package", "cargo:run"]

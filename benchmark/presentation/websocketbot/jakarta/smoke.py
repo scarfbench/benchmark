@@ -29,6 +29,7 @@ import ssl
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("WEBSOCKETBOT_BASE", "http://localhost:9080/websocketbot-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -67,11 +68,10 @@ def must_get_ok(path: str, fail_code: int):
     vprint("GET", url)
     resp, err = http_request("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp[0] != 200:
         print(f"[FAIL] GET {path} -> {resp[0]}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] GET {path} -> 200")
     return resp[1]
 
@@ -186,8 +186,7 @@ def test_websocket_bot():
     try:
         sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
     except Exception as e:
-        print(f"[FAIL] WS connect -> {e}", file=sys.stderr)
-        sys.exit(3)
+        pytest.fail(f"[FAIL] WS connect -> {e}")
     
     try:
         join_msg = json.dumps({"type": "join", "name": "TestUser"})
@@ -304,7 +303,7 @@ def test_websocket_bot():
         except Exception:
             pass
 
-def main():
+def _run_smoke():
     body = must_get_ok("/index.html", 2)
     
     if "WebsocketBot" in body and "WebSocket" in body:
@@ -319,6 +318,16 @@ def main():
     
     print("\n[PASS] Smoke sequence complete")
     return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -37,6 +37,7 @@ import os
 import sys
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
@@ -84,11 +85,10 @@ def must_get_ok(path: str, fail_code: int):
     vprint("GET", url)
     resp, err = http_request("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp[0] != 200:
         print(f"[FAIL] GET {path} -> {resp[0]}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] GET {path} -> 200")
     return resp[1]
 
@@ -634,7 +634,7 @@ def run_playwright_tests():
         if playwright:
             playwright.stop()
 
-def main():
+def _run_smoke():
     body = must_get_ok("/order.xhtml", 2)
 
     if "Order" in body and "Java Persistence" in body:
@@ -654,12 +654,22 @@ def main():
     print("\n[INFO] Running Playwright UI tests...")
     if not run_playwright_tests():
         print("[FAIL] Playwright tests failed", file=sys.stderr)
-        sys.exit(5)
+        pytest.fail("smoke test failed with code 5")
 
     print("\n[PASS] Enhanced smoke sequence complete")
     print("[INFO] Note: This test verifies the application loads and displays correctly.")
     print("[INFO] UI interactions have been tested with Playwright.")
     return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

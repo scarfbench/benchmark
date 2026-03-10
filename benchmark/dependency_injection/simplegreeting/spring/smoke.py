@@ -64,12 +64,51 @@ def page():
         browser.close()
 
 
+def greet_check(page: Page, name: str, expected: str) -> None:
+    """Helper: enter name, submit, and verify expected greeting."""
+    page.get_by_label("Enter your name:").fill(name)
+    with page.expect_navigation():
+        page.get_by_role("button", name="Say Hello").click()
+    assert expected in page.content(), f"Expected '{expected}' for name '{name}'"
+
+
 def test_visit_main_page(page):
     assert visit_main_page(page) == 1
 
 
+def test_form_has_name_input(page):
+    """Verify the form has a name input and Submit button."""
+    assert page.get_by_label("Enter your name:").is_visible()
+    assert page.get_by_role("button", name="Say Hello").is_visible()
+
+
 def test_greet(page):
     assert greet(page) == 1
+
+
+def test_greet_duke(page):
+    """Greeting Duke should return informal 'Hi, Duke!'"""
+    greet_check(page, "Duke", "Hi, Duke!")
+
+
+def test_greet_alice(page):
+    """Greeting Alice should return informal 'Hi, Alice!'"""
+    greet_check(page, "Alice", "Hi, Alice!")
+
+
+def test_greet_multi_word_name(page):
+    """Multi-word names should work correctly."""
+    greet_check(page, "Mary Jane", "Hi, Mary Jane!")
+
+
+def test_greeting_ends_with_exclamation(page):
+    """Informal greeting should end with '!' not '.'"""
+    page.get_by_label("Enter your name:").fill("Test")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Say Hello").click()
+    content = page.content()
+    assert "Hi, Test!" in content, "Should use informal 'Hi, Test!' format"
+    assert "Hello, Test." not in content, "Should NOT use formal 'Hello, Test.' format"
 
 
 def main() -> int:

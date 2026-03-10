@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/rkrsn/workspace/scarfbench/**)",
+      "Bash(python -m pytest benchmark/dependency_injection --co -q)",
+      "Bash(scarf bench:*)"
+    ]
+  }
+}

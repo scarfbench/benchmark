@@ -27,6 +27,7 @@ import json
 import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("RSVP_BASE", "http://localhost:8080").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -72,9 +73,9 @@ def must_get(path: str, fail_code: int):
     vprint(f"GET {url}")
     resp, err = http("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp["status"] != 200:
-        print(f"[FAIL] GET {path} -> HTTP {resp['status']}", file=sys.stderr); sys.exit(fail_code)
+        pytest.fail(f"[FAIL] GET {path} -> HTTP {resp['status']}")
     print(f"[PASS] GET {path} -> 200")
 
 def soft_get(path: str):
@@ -139,7 +140,7 @@ def get_status_all():
     vprint(f"GET {url} (Accept: application/json)")
     resp, err = http("GET", url, headers={"Accept": "application/json"})
     if err:
-        print(f"[FAIL] /webapi/status/all -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] /webapi/status/all -> {err}")
     if resp["status"] == 200 and resp["body"].strip():
         ctype = (resp["content_type"] or "").split(";")[0].strip().lower()
         if ctype == "application/json" or resp["body"].lstrip().startswith(("{", "[")):
@@ -149,9 +150,9 @@ def get_status_all():
     vprint(f"GET {url} (Accept: application/xml)")
     resp2, err2 = http("GET", url, headers={"Accept": "application/xml"})
     if err2:
-        print(f"[FAIL] /webapi/status/all (xml) -> {err2}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] /webapi/status/all (xml) -> {err2}")
     if resp2["status"] != 200:
-        print(f"[FAIL] GET /webapi/status/all -> HTTP {resp2['status']}", file=sys.stderr); sys.exit(3)
+        pytest.fail(f"[FAIL] GET /webapi/status/all -> HTTP {resp2['status']}")
     ids = parse_event_ids_from_xml(resp2["body"])
     print(f"[PASS] GET /webapi/status/all -> 200 (XML), events parsed: {len(ids)}")
     return ids, "xml", resp2
@@ -162,7 +163,7 @@ def get_event_by_id(event_id: int):
     vprint(f"GET {url}")
     resp, err = http("GET", url, headers={"Accept": "application/json"})
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     return resp
 
 def parse_event_data(event_resp):
@@ -229,7 +230,7 @@ def get_response_status(event_id: int, person_id: int):
         vprint(f"Error parsing response data: {e}")
         return None
 
-def main():
+def _run_smoke():
     must_get("/index.xhtml", 2)
     soft_get("/resources/css/default.css")
     ids, fmt, events_resp = get_status_all()
@@ -290,6 +291,16 @@ def main():
 
     print("\n[PASS] Smoke sequence complete")
     return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

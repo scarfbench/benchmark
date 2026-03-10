@@ -22,6 +22,7 @@ import sys
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
+import pytest
 
 BASE = os.getenv("HELLO_BASE", "http://localhost:8080/")
 NAME = os.getenv("SMOKE_NAME", "SmokeUser")
@@ -52,12 +53,10 @@ def must_get_with_name(base: str, name: str):
     vprint(f"GET {url}")
     resp, err = http_request("GET", url)
     if err:
-        print(f"[FAIL] {url} -> {err}", file=sys.stderr)
-        sys.exit(4)
+        pytest.fail(f"[FAIL] {url} -> {err}")
     status, body = resp
     if status != 200 or name not in body:
-        print(f"[FAIL] GET {url} expected 200 and body containing {name!r}, got {status}, body={body[:200]!r}", file=sys.stderr)
-        sys.exit(2)
+        pytest.fail(f"[FAIL] GET {url} expected 200 and body containing {name!r}, got {status}, body={body[:200]!r}")
     print(f"[PASS] GET /greeting?name=… -> 200, contains {name!r}")
 
 def must_fail_without_name(base: str):
@@ -65,22 +64,27 @@ def must_fail_without_name(base: str):
     vprint(f"GET {url} (missing 'name')")
     resp, err = http_request("GET", url)
     if err:
-        print(f"[FAIL] {url} -> {err}", file=sys.stderr)
-        sys.exit(4)
+        pytest.fail(f"[FAIL] {url} -> {err}")
     status, body = resp
     if status < 400 or status >= 500:
-        print(f"[FAIL] GET {url} expected 4xx, got {status}", file=sys.stderr)
-        sys.exit(3)
+        pytest.fail(f"[FAIL] GET {url} expected 4xx, got {status}")
     hint = "name" in body.lower()
     if not hint:
         print(f"[WARN] Missing 'name' hint in error body (status {status})", file=sys.stderr)
     print(f"[PASS] GET /greeting (no name) -> {status}")
 
-def main():
+
+def test_must_get_with_name():
     must_get_with_name(BASE, NAME)
+
+
+def test_must_fail_without_name():
     must_fail_without_name(BASE)
-    print("[PASS] Smoke sequence complete")
-    return 0
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

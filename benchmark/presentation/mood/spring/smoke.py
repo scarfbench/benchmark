@@ -20,6 +20,7 @@ import sys
 import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("MOOD_BASE", "http://localhost:8080/").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -65,9 +66,9 @@ def must_get(path: str, fail_code: int):
     vprint(f"GET {url}")
     resp, err = http("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp["status"] != 200:
-        print(f"[FAIL] GET {path} -> HTTP {resp['status']}", file=sys.stderr); sys.exit(fail_code)
+        pytest.fail(f"[FAIL] GET {path} -> HTTP {resp['status']}")
     print(f"[PASS] GET {path} -> 200")
     return resp
 
@@ -98,26 +99,25 @@ def test_duke_image(resp):
         print("[WARN] Duke image not found in response")
         return None, None
 
-def main():
+
+def test_step_1():
     resp = must_get("/report", 2)
-    
     mood = test_mood_display(resp)
-    
     img_src, img_alt = test_duke_image(resp)
-    
     body = resp["body"]
     if "<html" in body and "<head>" in body and "<body>" in body:
         print("[PASS] Valid HTML structure")
     else:
         print("[WARN] Invalid HTML structure")
-    
     if "Servlet MoodServlet" in body:
         print("[PASS] Servlet title found")
     else:
         print("[WARN] Servlet title not found")
-    
-    print("\n[PASS] Smoke sequence complete")
-    return 0
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

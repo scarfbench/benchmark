@@ -31,6 +31,7 @@ import time
 import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("DUKEETF_BASE", "http://localhost:9080/dukeetf-10-SNAPSHOT")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -71,12 +72,11 @@ def must_get_ok(path: str, fail_code: int):
     vprint(f"GET {url}")
     resp, err = http_request("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     status, _ = resp
     if status != 200:
         print(f"[FAIL] GET {path} -> {status}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] GET {path} -> 200")
 
 def soft_get_ok(path: str):
@@ -117,7 +117,7 @@ def assert_long_poll():
         if try_long_poll(u, f"cand#{i}"):
             return
     print("[FAIL] Long-poll endpoint did not respond with 200 + non-empty body within timeout.", file=sys.stderr)
-    sys.exit(4)
+    pytest.fail("smoke test failed with code 4")
 
 
 _num_re = re.compile(r"\s*(-?\d+(?:\.\d+)?)\s*/\s*(-?\d+)\s*")
@@ -150,31 +150,25 @@ def assert_price_changes():
 
     resp1, err1 = http_request("GET", url, timeout=LONG_TIMEOUT)
     if err1:
-        print(f"[FAIL] change-check first read -> {err1}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] change-check first read -> {err1}")
     s1, b1 = resp1
     if s1 != 200:
-        print(f"[FAIL] change-check first read -> HTTP {s1}", file=sys.stderr)
-        sys.exit(6)
+        pytest.fail(f"[FAIL] change-check first read -> HTTP {s1}")
     pv1 = parse_price_volume(b1)
     if not pv1:
-        print(f"[FAIL] change-check first read: could not parse numbers from body: {b1!r}", file=sys.stderr)
-        sys.exit(6)
+        pytest.fail(f"[FAIL] change-check first read: could not parse numbers from body: {b1!r}")
 
     time.sleep(5.0)
 
     resp2, err2 = http_request("GET", url, timeout=LONG_TIMEOUT)
     if err2:
-        print(f"[FAIL] change-check second read -> {err2}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] change-check second read -> {err2}")
     s2, b2 = resp2
     if s2 != 200:
-        print(f"[FAIL] change-check second read -> HTTP {s2}", file=sys.stderr)
-        sys.exit(6)
+        pytest.fail(f"[FAIL] change-check second read -> HTTP {s2}")
     pv2 = parse_price_volume(b2)
     if not pv2:
-        print(f"[FAIL] change-check second read: could not parse numbers from body: {b2!r}", file=sys.stderr)
-        sys.exit(6)
+        pytest.fail(f"[FAIL] change-check second read: could not parse numbers from body: {b2!r}")
 
     (p1, v1) = pv1
     (p2, v2) = pv2
@@ -183,17 +177,28 @@ def assert_price_changes():
               f"{p1:.2f}/{v1} -> {p2:.2f}/{v2}")
         return
 
-    print(f"[FAIL] DukeETF values unchanged after 5s: {p1:.2f}/{v1}", file=sys.stderr)
-    sys.exit(6)
+    pytest.fail(f"[FAIL] DukeETF values unchanged after 5s: {p1:.2f}/{v1}")
+
+
+def test_must_get_ok():
+    must_get_ok("/main.xhtml", 2)
+
+
+def test_soft_get_ok():
+    soft_get_ok("/resources/css/default.css")
+
+
+def test_assert_long_poll():
+    assert_long_poll()
+
+
+def test_assert_price_changes():
+    assert_price_changes()  
 
 
 def main():
-    must_get_ok("/main.xhtml", 2)
-    soft_get_ok("/resources/css/default.css")
-    assert_long_poll()
-    assert_price_changes()  
-    print("[PASS] Smoke sequence complete")
-    return 0
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

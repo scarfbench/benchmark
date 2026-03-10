@@ -87,14 +87,14 @@ def discover_base() -> str:
             print(f"[WARN] No base validated, using fallback {cand}")
             return cand
     print("[ERROR] No base URL candidates available", file=sys.stderr)
-    sys.exit(2)
+    pytest.fail("No base URL candidates available")
 
 
 def assert_token(base: str):
     token = try_get_token(base)
     if not token:
         print("[FAIL] Could not obtain token", file=sys.stderr)
-        sys.exit(3)
+        pytest.fail("Could not obtain token")
     print(f"[PASS] GET token -> {token}")
     return token
 
@@ -108,7 +108,7 @@ def submit_job(base: str, job_id: int, token: str | None):
     resp, err = http_request("POST", url, data=b"", headers=headers)
     if err:
         print(f"[FAIL] POST {label} {url}: {err}", file=sys.stderr)
-        sys.exit(4 if token else 5)
+        pytest.fail(f"POST {label} {url}: {err}")
     status, body = resp
     body_stripped = body.strip()
     if status != 200 or "successfully submitted" not in body_stripped:
@@ -116,7 +116,7 @@ def submit_job(base: str, job_id: int, token: str | None):
             f"[FAIL] POST {label} status/body mismatch: {status} :: {body_stripped}",
             file=sys.stderr,
         )
-        sys.exit(6 if token else 7)
+        pytest.fail(f"POST {label} status/body mismatch: {status} :: {body_stripped}")
     print(f"[PASS] POST {label} job {job_id} -> {status}")
 
 

@@ -14,6 +14,7 @@ Env:
 import io, os, sys, uuid, mimetypes
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("FILEUPLOAD_BASE", "http://localhost:9080/fileupload/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -41,7 +42,7 @@ def must_get(path: str, fail_code: int, contains: str | None = None):
     s, b = http_request("GET", url)
     if s != 200 or (contains and (contains not in b)):
         print(f"[FAIL] GET {path} expected 200 (contains={contains!r}), got {s}, body={b[:200]!r}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] GET {path} -> 200")
     return b
 
@@ -59,8 +60,7 @@ def get_upload_optional():
     if s == 500 and "not of type multipart" in b.lower():
         print(f"[PASS] GET /upload -> 500 with 'not multipart' message (acceptable)")
         return
-    print(f"[FAIL] GET /upload unacceptable response: {s} :: {b[:240]!r}", file=sys.stderr)
-    sys.exit(3)
+    pytest.fail(f"[FAIL] GET /upload unacceptable response: {s} :: {b[:240]!r}")
 
 def build_multipart(fields: dict[str, str], files: dict[str, tuple[str, bytes]]) -> tuple[bytes, str]:
     boundary = "----WebKitFormBoundary" + uuid.uuid4().hex
@@ -94,25 +94,31 @@ def post_upload(destination: str, filename: str, data: bytes, fail_code: int, ex
     s, b = http_request("POST", url, data=body, headers=headers)
     if s != 200 or (expect_hint and expect_hint not in b.lower()) or (expect_hint is None and not b.strip()):
         print(f"[FAIL] POST /upload -> {s}, body={b[:240]!r}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] POST /upload -> 200")
     return b
 
-def main():
+
+def test_must_get():
     must_get("/index.html", 2)
 
+
+def test_get_upload_optional():
     get_upload_optional()
 
-    post_upload("/tmp", "sample.txt", b"hello world\n", 4)
 
+def test_post_upload():
+    post_upload("/tmp", "sample.txt", b"hello world\n", 4)
     b = post_upload("", "sample.txt", b"x", 6)
     if "destination" not in b.lower() and "location" not in b.lower():
         print("[FAIL] Expected helpful 'destination/location' hint for blank destination", file=sys.stderr)
-        sys.exit(6)
+        pytest.fail("smoke test failed with code 6")
     print("[PASS] blank destination hint present")
 
-    print("[PASS] Smoke sequence complete")
-    return 0
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

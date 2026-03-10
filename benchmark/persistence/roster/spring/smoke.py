@@ -46,6 +46,7 @@ import sys
 import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 VERBOSE = os.getenv("VERBOSE") == "1"
 TEST_TIMEOUT = int(os.getenv("TIMEOUT", "60"))
@@ -235,7 +236,7 @@ def verify_database_tables():
         return True
 
 
-def main():
+def _run_smoke():
     """Main black-box smoke test following EAR deployment pattern"""
     print("Starting Roster application black-box smoke test...")
     print("Pattern: Boot server → Deploy EAR → Run app client → Verify DB")
@@ -245,24 +246,22 @@ def main():
 
     result, error = http_request("GET", app_url)
     if error:
-        print(f"[FAIL] Application not accessible: {error}")
-        sys.exit(9)
+        pytest.fail(f"[FAIL] Application not accessible: {error}")
 
     if result[0] in [200, 404]:
         print("[PASS] Application is running")
     else:
-        print(f"[FAIL] Application returned status {result[0]}")
-        sys.exit(2)
+        pytest.fail(f"[FAIL] Application returned status {result[0]}")
 
     if not check_application_deployment():
         print("[FAIL] Application not deployed")
-        sys.exit(2)
+        pytest.fail("smoke test failed with code 2")
     print("[PASS] Application is deployed")
 
     print("\n[INFO] Running application client test driver...")
     if not test_ejb_functionality():
         print("[FAIL] EJB functionality test failed")
-        sys.exit(2)
+        pytest.fail("smoke test failed with code 2")
 
     print("\n[INFO] Verifying database persistence...")
     db_verified = verify_database_tables()
@@ -280,6 +279,15 @@ def main():
         print("  ⚠ Database verification skipped/failed")
 
     return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

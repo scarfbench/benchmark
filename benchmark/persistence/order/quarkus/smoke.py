@@ -38,6 +38,7 @@ import sys
 import time
 import os
 import re
+import pytest
 
 try:
     from playwright.async_api import async_playwright
@@ -97,11 +98,10 @@ async def must_get_ok(session: aiohttp.ClientSession, path: str, fail_code: int)
     vprint(f"GET {url}")
     resp, err = await http_request(session, "GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp[0] != 200:
         print(f"[FAIL] GET {path} -> {resp[0]}", file=sys.stderr)
-        sys.exit(fail_code)
+        pytest.fail("smoke check failed")
     print(f"[PASS] GET {path} -> 200")
     return resp[1]
 
@@ -656,7 +656,7 @@ async def run_playwright_tests():
         return False
 
 
-async def main():
+async def _run_smoke():
     """Main test execution"""
     async with aiohttp.ClientSession() as session:
         # Wait for server to be ready
@@ -696,13 +696,15 @@ async def main():
     return 0
 
 
+def test_smoke():
+    import asyncio
+    rc = asyncio.run(_run_smoke())
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
+
 if __name__ == "__main__":
-    try:
-        exit_code = asyncio.run(main())
-        sys.exit(exit_code)
-    except KeyboardInterrupt:
-        print("\n[INFO] Tests interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        print(f"[FAIL] Unexpected error: {e}", file=sys.stderr)
-        sys.exit(9)
+    sys.exit(main())

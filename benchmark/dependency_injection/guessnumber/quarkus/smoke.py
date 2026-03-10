@@ -109,9 +109,33 @@ def test_visit_main_page(page):
     assert visit_main_page(page) == 1
 
 
+def test_initial_guesses_is_10(page):
+    """New game should start with 10 remaining guesses."""
+    assert ">10<" in page.content(), "Initial guess count should be 10"
+
+
+def test_form_has_elements(page):
+    """Verify the form has Number input and Guess button."""
+    assert page.get_by_label("Number:").is_visible()
+    assert page.get_by_role("button", name="Guess").is_visible()
+
+
 def test_guess(page):
     # Guess 1 and hope it's not the selected number
     assert guess(page=page, number=1) == 1
+
+
+def test_range_narrows_after_guess(page):
+    """After an incorrect guess, the range should narrow."""
+    assert ">9<" in page.content(), "Should have 9 remaining guesses after first guess"
+
+
+def test_second_guess_decrements(page):
+    """A second guess should leave 8 remaining."""
+    page.get_by_label("Number:").fill("50")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Guess").click()
+    assert ">8<" in page.content(), "Should have 8 remaining guesses after second guess"
 
 
 def test_trigger_validation_error(page):
@@ -121,6 +145,11 @@ def test_trigger_validation_error(page):
 
 def test_reset(page):
     assert reset(page) == 1
+
+
+def test_reset_restores_10_guesses(page):
+    """After reset, should have 10 guesses again."""
+    assert ">10<" in page.content(), "Reset should restore 10 guesses"
 
 
 def main() -> int:

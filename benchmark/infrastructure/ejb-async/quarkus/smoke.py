@@ -9,6 +9,7 @@ import threading
 import subprocess
 from pathlib import Path
 from typing import Optional, List
+import pytest
 
 # -------------------- Config --------------------
 
@@ -224,7 +225,7 @@ def run_playwright(recipient: str):
 
 # -------------------- Main --------------------
 
-def main():
+def _run_smoke():
     start_smtp = os.getenv("SKIP_START_SMTP") != "1"
     start_app  = os.getenv("SKIP_START_APP")  != "1"
     smtp_proc: Optional[ProcWrapper] = None
@@ -286,6 +287,16 @@ def main():
             smtp_proc.stop()
 
     return rc
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

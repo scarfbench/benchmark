@@ -29,6 +29,7 @@ import json
 import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("CUSTOMER_BASE", "http://localhost:8080").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -83,9 +84,9 @@ def must_get(path: str, fail_code: int):
     vprint(f"GET {url}")
     resp, err = http("GET", url)
     if err:
-        print(f"[FAIL] {path} -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] {path} -> {err}")
     if resp["status"] != 200:
-        print(f"[FAIL] GET {path} -> HTTP {resp['status']}", file=sys.stderr); sys.exit(fail_code)
+        pytest.fail(f"[FAIL] GET {path} -> HTTP {resp['status']}")
     print(f"[PASS] GET {path} -> 200")
 
 def soft_get(path: str):
@@ -102,9 +103,9 @@ def get_all_customers():
     vprint(f"GET {url} (Accept: application/json)")
     resp, err = http("GET", url, headers={"Accept": "application/json"})
     if err:
-        print(f"[FAIL] /webapi/Customer/all -> {err}", file=sys.stderr); sys.exit(9)
+        pytest.fail(f"[FAIL] /webapi/Customer/all -> {err}")
     if resp["status"] != 200:
-        print(f"[FAIL] GET /webapi/Customer/all -> HTTP {resp['status']}", file=sys.stderr); sys.exit(3)
+        pytest.fail(f"[FAIL] GET /webapi/Customer/all -> HTTP {resp['status']}")
     
     ctype = (resp["content_type"] or "").split(";")[0].strip().lower()
     if ctype == "application/json" or resp["body"].lstrip().startswith(("[", "{")):
@@ -232,7 +233,7 @@ def parse_customer_id_from_response(resp):
         pass
     return None
 
-def main():
+def _run_smoke():
     must_get("/index.xhtml", 2)
     
     soft_get("/list.xhtml")
@@ -286,6 +287,16 @@ def main():
     
     print("\n[PASS] Smoke sequence complete")
     return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -98,12 +98,50 @@ def test_visit_main_page(page):
     assert visit_main_page(page) == 1
 
 
+def test_form_has_input_and_buttons(page):
+    """Verify the form has text input, Submit, and Show Items buttons."""
+    assert page.get_by_label("Enter a string:").is_visible()
+    assert page.get_by_role("button", name="Submit").is_visible()
+    assert page.get_by_role("button", name="Show Items").is_visible()
+
+
 def test_add_todo(page):
     assert add_todo(page) == 1
 
 
-def test_display_todos(page):
-    assert display_todos(page) == 1
+def test_add_second_todo(page):
+    """Add a second todo item to verify multiple items work."""
+    page.get_by_label("Enter a string:").fill("Walk the dog")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Submit").click()
+    assert "Create To Do List" in page.content()
+
+
+def test_add_third_todo(page):
+    """Add a third todo item."""
+    page.get_by_label("Enter a string:").fill("Read a book")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Submit").click()
+    assert "Create To Do List" in page.content()
+
+
+def test_display_todos_shows_all(page):
+    """Show Items should display all added todos."""
+    with page.expect_navigation():
+        page.get_by_role("button", name="Show Items").click()
+    content = page.content()
+    assert "Smoke Test" in content, "First todo should be in list"
+    assert "Walk the dog" in content, "Second todo should be in list"
+    assert "Read a book" in content, "Third todo should be in list"
+
+
+def test_todos_are_ordered(page):
+    """Todos should be ordered by creation time (first added appears first)."""
+    content = page.content()
+    pos_first = content.index("Smoke Test")
+    pos_second = content.index("Walk the dog")
+    pos_third = content.index("Read a book")
+    assert pos_first < pos_second < pos_third, "Todos should be in creation order"
 
 
 def test_back(page):

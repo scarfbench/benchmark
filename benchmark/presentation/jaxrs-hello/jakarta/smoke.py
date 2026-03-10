@@ -19,6 +19,7 @@ import sys
 import time
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("HELLO_BASE", "http://localhost:9080/jaxrs-hello-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -60,23 +61,22 @@ def must_get_helloworld():
     vprint(f"GET {url}")
     resp, err = http("GET", url)
     if err:
-        print(f"[FAIL] GET /helloworld -> {err}", file=sys.stderr)
-        sys.exit(9)
+        pytest.fail(f"[FAIL] GET /helloworld -> {err}")
     if resp["status"] != 200:
-        print(f"[FAIL] GET /helloworld -> HTTP {resp['status']}", file=sys.stderr)
-        sys.exit(2)
+        pytest.fail(f"[FAIL] GET /helloworld -> HTTP {resp['status']}")
     ctype = resp["content_type"].split(";")[0].strip().lower()
     if ctype != "text/html":
-        print(f"[FAIL] GET /helloworld -> unexpected Content-Type {resp['content_type']!r}", file=sys.stderr)
-        sys.exit(2)
+        pytest.fail(f"[FAIL] GET /helloworld -> unexpected Content-Type {resp['content_type']!r}")
     print("[PASS] GET /helloworld -> 200 text/html")
 
 
-def main():
-    print(f"[INFO] BASE = {BASE}")
+def test_must_get_helloworld():
     must_get_helloworld()
-    print("[PASS] Smoke sequence complete")
-    return 0
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

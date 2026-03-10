@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+import pytest
 
 
 # Try both possible base URLs if not set
@@ -26,7 +27,7 @@ def pick_base_url() -> str:
     return BASE_CANDIDATES[1]
 
 
-def main() -> int:
+def _run_all_checks() -> int:
     base_url = pick_base_url()
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -67,8 +68,25 @@ def main() -> int:
 
         print(f"Summary: {passed_tests}/{num_tests} tests passed.")
         print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test complete ]---")
-        return 0
 
 
-if __name__ == "__main__":  # pragma: no cover
+@pytest.fixture(scope="module")
+def page():
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        pg = browser.new_page()
+        yield pg
+        browser.close()
+
+
+def test_smoke():
+    _run_all_checks()
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
+
+if __name__ == "__main__":
     sys.exit(main())

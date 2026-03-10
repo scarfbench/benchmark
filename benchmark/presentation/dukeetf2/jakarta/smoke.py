@@ -16,6 +16,7 @@ import os, sys, time, re, base64, hashlib, socket, ssl
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import pytest
 
 BASE = os.getenv("DUKEETF_BASE", "http://localhost:9080/dukeetf2-10-SNAPSHOT").rstrip("/")
 VERBOSE = os.getenv("VERBOSE") == "1"
@@ -48,8 +49,8 @@ def join(base: str, path: str) -> str:
 def must_get_ok(path: str, fail_code: int):
     url = join(BASE, path); vprint("GET", url)
     resp, err = http_request("GET", url)
-    if err: print(f"[FAIL] {path} -> {err}", file=sys.stderr); sys.exit(9)
-    if resp[0] != 200: print(f"[FAIL] GET {path} -> {resp[0]}", file=sys.stderr); sys.exit(fail_code)
+    if err: pytest.fail(f"[FAIL] {path} -> {err}")
+    if resp[0] != 200: pytest.fail(f"[FAIL] GET {path} -> {resp[0]}")
     print(f"[PASS] GET {path} -> 200")
 
 def soft_get_ok(path: str):
@@ -144,32 +145,42 @@ def assert_ws_changes_stdlib():
     try:
         sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
     except Exception as e:
-        print(f"[FAIL] WS connect -> {e}", file=sys.stderr); sys.exit(5)
+        pytest.fail(f"[FAIL] WS connect -> {e}")
     try:
         msg1, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
         vprint("WS recv#1:", repr(msg1))
         pv1 = parse_price_volume(msg1)
         if not pv1:
-            print(f"[FAIL] WS frame not parseable: {msg1!r}", file=sys.stderr); sys.exit(5)
+            pytest.fail(f"[FAIL] WS frame not parseable: {msg1!r}")
         time.sleep(SLEEP_SECS)
         msg2, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
         vprint("WS recv#2:", repr(msg2))
         pv2 = parse_price_volume(msg2)
         if not pv2:
-            print(f"[FAIL] WS frame not parseable: {msg2!r}", file=sys.stderr); sys.exit(5)
+            pytest.fail(f"[FAIL] WS frame not parseable: {msg2!r}")
         if pv1 != pv2:
             print(f"[PASS] WS changes over {SLEEP_SECS:.0f}s: {pv1[0]:.2f}/{pv1[1]} -> {pv2[0]:.2f}/{pv2[1]}")
             return
-        print(f"[FAIL] WS values unchanged after {SLEEP_SECS:.0f}s: {pv1[0]:.2f}/{pv1[1]}", file=sys.stderr); sys.exit(5)
+        pytest.fail(f"[FAIL] WS values unchanged after {SLEEP_SECS:.0f}s: {pv1[0]:.2f}/{pv1[1]}")
     finally:
         try: sock.close()
         except Exception: pass
 
-def main():
+def _run_smoke():
     must_get_ok("/index.html", 2)
     soft_get_ok("/resources/css/default.css")
     assert_ws_changes_stdlib()
     print("[PASS] Smoke sequence complete"); return 0
+
+
+def test_smoke():
+    rc = _run_smoke()
+    assert rc == 0, f"Smoke test failed with return code {rc}"
+
+
+def main():
+    return pytest.main([__file__, "-v"])
+
 
 if __name__ == "__main__":
     sys.exit(main())

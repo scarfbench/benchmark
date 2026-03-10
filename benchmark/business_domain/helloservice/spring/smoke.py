@@ -42,7 +42,7 @@ def _post_soap(name: str):
 
 
 def _get_wsdl():
-    request = urllib.request.Request(f"{HELLO_SERVICE_URL}?wsdl", method="GET")
+    request = urllib.request.Request(f"{HELLO_SERVICE_URL}.wsdl", method="GET")
     with urllib.request.urlopen(request, timeout=10) as response:
         return (
             response.getcode(),

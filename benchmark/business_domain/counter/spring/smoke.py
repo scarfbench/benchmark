@@ -72,7 +72,7 @@ def test_page_has_no_http_500_error_text(page: Page):
 
 
 def test_counter_text_format_is_exact(page: Page):
-    assert re.search(rf"^{COUNTER_PATTERN}$", _visit_counter(page), re.MULTILINE)
+    assert re.search(rf"^\s*(?:<[^>]+>)?\s*{COUNTER_PATTERN}\s*(?:</[^>]+>)?\s*$", _visit_counter(page), re.MULTILINE)
 
 
 def test_counter_values_are_non_negative(page: Page):

@@ -1,7 +1,8 @@
 # Run `make` to see available recipes
 
 APP_NAME       := standalone-spring
-IMAGE_NAME := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_TAG ?= $(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_NAME := $(APP_NAME):$(IMAGE_TAG)
 SUCCESS_PATTERN := Started StandaloneApplication
 
 # Set shell
@@ -74,7 +75,7 @@ clean: down
 test: up
 	sleep 10
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
-	$(MAKE) clean
+	$(MAKE) clean IMAGE_TAG=$(IMAGE_TAG)
 
 # Run the app locally
 local:

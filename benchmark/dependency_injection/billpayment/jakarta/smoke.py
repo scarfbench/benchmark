@@ -16,7 +16,7 @@ Exit codes:
 
 import os
 import sys
-from datetime import datetime
+import pytest
 from playwright.sync_api import Page, sync_playwright
 
 
@@ -91,40 +91,41 @@ def reset(page: Page) -> int:
     return passed
 
 
-def main() -> int:
-    print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test ]---")
+@pytest.fixture(scope="module")
+def page():
     with sync_playwright() as p:
-        num_tests = 0
-        passed_tests = 0
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        pg = browser.new_page()
+        yield pg
+        browser.close()
 
-        num_tests += 1
-        passed_tests += visit_main_page(page)
 
-        num_tests += 1
-        # Fill the amount input and pay with debit card
-        passed_tests += pay(page=page, amount=12, card_type="Debit")
+def test_visit_main_page(page):
+    assert visit_main_page(page) == 1
 
-        num_tests += 1
-        # Hit the back button and ensure we are back on the form
-        passed_tests += back(page)
 
-        num_tests += 1
-        # Fill the amount input and pay with credit card
-        passed_tests += pay(page=page, amount=5, card_type="Credit")
+def test_pay_debit(page):
+    assert pay(page=page, amount=12, card_type="Debit") == 1
 
-        num_tests += 1
-        # Hit the back button and ensure we are back on the form
-        passed_tests += back(page)
 
-        num_tests += 1
-        # Click the "Reset" button
-        passed_tests += reset(page)
+def test_back_after_debit(page):
+    assert back(page) == 1
 
-        print(f"Summary: {passed_tests}/{num_tests} tests passed.")
-        print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test complete ]---")
-        return 0 if num_tests == passed_tests else 1
+
+def test_pay_credit(page):
+    assert pay(page=page, amount=5, card_type="Credit") == 1
+
+
+def test_back_after_credit(page):
+    assert back(page) == 1
+
+
+def test_reset(page):
+    assert reset(page) == 1
+
+
+def main() -> int:
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

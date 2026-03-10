@@ -15,8 +15,8 @@ import os
 import re
 import sys
 import time
+import pytest
 from typing import Union
-from datetime import datetime
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -123,6 +123,28 @@ def submit_job(base: str, job_id: int, token: str | None):
     print(f"[PASS] POST {label} job {job_id} -> {status}")
 
 
+@pytest.fixture(scope="module")
+def base_url():
+    return discover_base()
+
+
+def test_token(base_url):
+    token = try_get_token(base_url)
+    assert token is not None, "Could not obtain token"
+    assert token.startswith("123X5-"), f"Token format mismatch: {token}"
+    print(f"[PASS] GET token -> {token}")
+
+
+def test_submit_job_with_auth(base_url):
+    token = try_get_token(base_url)
+    assert token is not None, "Could not obtain token for auth submit"
+    submit_job(base_url, 1, token)
+
+
+def test_submit_job_no_auth(base_url):
+    submit_job(base_url, 2, None)
+
+
 def main():
     start = time.time()
     base = discover_base()
@@ -131,7 +153,7 @@ def main():
     submit_job(base, 2, None)
     elapsed = time.time() - start
     print(f"[PASS] Smoke sequence complete in {elapsed:.2f}s")
-    return 0
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

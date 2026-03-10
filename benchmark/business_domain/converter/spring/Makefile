@@ -1,7 +1,8 @@
 # Run `make` to see available recipes
 
 APP_NAME         := converter-spring
-IMAGE_NAME       := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_TAG        ?= $(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_NAME       := $(APP_NAME):$(IMAGE_TAG)
 SUCCESS_PATTERN  := Started ConverterApplication
 
 # Set shell
@@ -73,7 +74,7 @@ clean: down
 # Run the smoke tests
 test: up
 	@docker exec $(APP_NAME) sh -c 'uv run /app/smoke.py'
-	$(MAKE) clean
+	$(MAKE) clean IMAGE_TAG=$(IMAGE_TAG)
 
 # Run the app locally
 local:

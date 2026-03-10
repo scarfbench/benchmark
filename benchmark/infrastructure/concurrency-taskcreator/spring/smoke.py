@@ -14,6 +14,7 @@ Exit: 0 on success, non-zero otherwise.
 import argparse
 import os
 import sys
+import pytest
 from datetime import datetime
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -92,6 +93,10 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Smoke test for taskcreator-quarkus")
     p.add_argument("--base-url", default=DEFAULT_BASE, help=f"Base URL (env BASE_URL or {DEFAULT_BASE})")
     return p.parse_args()
+
+
+def test_smoke():
+    assert main() == 0
 
 
 def main() -> int:

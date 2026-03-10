@@ -14,7 +14,7 @@ public class CartServiceImpl implements Cart {
 
     private String customerId;
     private String customerName;
-    private List<String> contents;
+    private List<String> contents = new ArrayList<>();
 
     @Override
     public void initialize(String person) throws BookException {
@@ -63,6 +63,6 @@ public class CartServiceImpl implements Cart {
 
     @Override
     public void remove() {
-        contents = null;
+        contents = new ArrayList<>();
     }
 }

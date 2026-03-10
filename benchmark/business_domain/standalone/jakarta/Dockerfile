@@ -16,12 +16,17 @@ RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwr
 ENV PATH="/opt/venv/bin:$PATH"
 RUN playwright install --with-deps chromium
 
-# Set working directory
 WORKDIR /app
 
-# Copy all the assets
-COPY . .
+# Cache Maven dependencies separately from source
+COPY pom.xml .
+RUN mvn dependency:go-offline -q
 
-RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
+# Build application
+COPY src ./src
+RUN mvn package -DskipTests -q
 
-CMD [ "mvn", "clean", "-DskipTests", "package", "liberty:run" ]
+COPY smoke.py .
+RUN chmod +x smoke.py
+
+CMD ["mvn", "liberty:run"]

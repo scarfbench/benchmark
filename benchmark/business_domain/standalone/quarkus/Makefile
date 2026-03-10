@@ -1,7 +1,8 @@
 # Run `make` to see available recipes
 
 APP_NAME       := standalone-quarkus
-IMAGE_NAME := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_TAG ?= $(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_NAME := $(APP_NAME):$(IMAGE_TAG)
 SUCCESS_PATTERN := Listening on:
 FAILURE_PATTERN := BUILD FAILURE|\\[ERROR\\] \\[ERROR\\] Some problems were encountered while processing the POMs:|\\[ERROR\\] The build could not read [0-9]+ projects|\\[FATAL\\]|Malformed POM|ProjectBuildingException|ModelParseException
 
@@ -69,7 +70,7 @@ clean: down
 test: up
 	sleep 10
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
-	$(MAKE) clean IMAGE_NAME=$(IMAGE_NAME)
+	$(MAKE) clean IMAGE_TAG=$(IMAGE_TAG)
 
 # Run the app locally
 local:

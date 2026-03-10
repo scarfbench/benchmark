@@ -15,7 +15,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.ejb.Remove;
 import jakarta.ejb.Stateful;
 import jakarta.tutorial.cart.util.BookException;
 import jakarta.tutorial.cart.util.IdVerifier;
@@ -25,7 +24,7 @@ public class CartBean implements Cart, Serializable {
 
     String customerId;
     String customerName;
-    List<String> contents;
+    List<String> contents = new ArrayList<>();
 
     @Override
     public void initialize(String person) throws BookException {
@@ -76,9 +75,8 @@ public class CartBean implements Cart, Serializable {
         return contents;
     }
 
-    @Remove()
     @Override
     public void remove() {
-        contents = null;
+        contents = new ArrayList<>();
     }
 }

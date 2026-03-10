@@ -12,7 +12,7 @@ public class CartBean implements Cart, Serializable {
 
     String customerId;
     String customerName;
-    List<String> contents;
+    List<String> contents = new ArrayList<>();
 
     @Override
     public void initialize(String person) throws BookException {
@@ -65,7 +65,6 @@ public class CartBean implements Cart, Serializable {
 
     @Override
     public void remove() {
-        // No @Remove, so clear session state
-        contents = null;
+        contents = new ArrayList<>();
     }
 }

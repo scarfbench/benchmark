@@ -1,72 +1,87 @@
 #!/usr/bin/env python3
-"""Smoke test for counter-jakarta
-
-Checks:
-  1) Visit and validate contents of main page
-  2) Visit the main page again and validate the access counter increses by 1
-
-Exit codes:
-  0 success
-  1 failure
-"""
+"""Smoke tests for counter-quarkus."""
 
 import os
 import re
 import sys
-from datetime import datetime
-from playwright.sync_api import Page, sync_playwright
 
+import pytest
+from playwright.sync_api import Page, sync_playwright
 
 DEFAULT_BASE = "http://localhost:8080"
 BASE_URL = os.getenv("COUNTER_BASE_URL", DEFAULT_BASE)
-DEFAULT_ENDPOINT = "/counter"
-HOME_URI = os.getenv("COUNTER_HOME_URI", DEFAULT_ENDPOINT)
+HOME_URI = os.getenv("COUNTER_HOME_URI", "/counter")
+COUNTER_PATTERN = r"This page has been accessed (\d+) time\(s\)\."
 
 
-def visit_main_page(page: Page) -> tuple[int, int]:
-    passed = 0
-    access_count = 0
+@pytest.fixture(scope="module")
+def page():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        browser_page = browser.new_page()
+        yield browser_page
+        browser.close()
+
+
+def _visit_counter(page: Page) -> str:
     page.goto(BASE_URL + HOME_URI)
-
-    # Ensure that the page loads successfully
-    html = page.content()
-    match = re.search(r"This page has been accessed (\d+) time\(s\)\.", html)
-
-    if match:
-        access_count = int(match.group(1))
-        passed = 1
-
-    return (passed, access_count)
+    return page.content()
 
 
-def main() -> int:
-    print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test ]---")
-    with sync_playwright() as p:
-        num_tests = 0
-        passed_tests = 0
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+def _get_access_count(page: Page) -> int:
+    match = re.search(COUNTER_PATTERN, _visit_counter(page))
+    assert match, "Page did not contain expected counter text"
+    return int(match.group(1))
 
-        num_tests += 1
-        passed, access_counter = visit_main_page(page)
-        if passed == 1:
-            print("[PASS] Page loaded successfully and contains expected text.")
-        else:
-            print("[FAIL] Page did not contain expected text.", file=sys.stderr)
-        passed_tests += passed
 
-        # access counter should increse by 1 on each call
-        num_tests += 1
-        passed, next_access_counter = visit_main_page(page)
-        if passed == 1 and (access_counter + 1) == next_access_counter:
-            print("[PASS] Page loaded successfully and contains expected text.")
-            passed_tests += passed
-        else:
-            print("[FAIL] Page did not contain expected text.", file=sys.stderr)
+def test_page_renders_without_errors(page: Page):
+    html = _visit_counter(page)
+    assert html.strip()
 
-        print(f"Summary: {passed_tests}/{num_tests} tests passed.")
-        print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test complete ]---")
-        return 0 if num_tests == passed_tests else 1
+
+def test_page_contains_hit_count_sentence(page: Page):
+    assert re.search(COUNTER_PATTERN, _visit_counter(page))
+
+
+def test_first_observed_count_is_positive(page: Page):
+    assert _get_access_count(page) > 0
+
+
+def test_counter_increments_by_exactly_one(page: Page):
+    count1 = _get_access_count(page)
+    count2 = _get_access_count(page)
+    assert count2 == count1 + 1
+
+
+def test_counter_increments_monotonically(page: Page):
+    counts = [_get_access_count(page) for _ in range(3)]
+    assert counts[1] == counts[0] + 1
+    assert counts[2] == counts[1] + 1
+
+
+def test_page_has_no_java_exception_text(page: Page):
+    html = _visit_counter(page)
+    assert "Exception" not in html
+    assert "at java." not in html
+
+
+def test_page_has_no_http_500_error_text(page: Page):
+    html = _visit_counter(page)
+    assert "500" not in html
+    assert "Internal Server Error" not in html
+
+
+def test_counter_text_format_is_exact(page: Page):
+    assert re.search(rf"^{COUNTER_PATTERN}$", _visit_counter(page), re.MULTILINE)
+
+
+def test_counter_values_are_non_negative(page: Page):
+    counts = [_get_access_count(page) for _ in range(4)]
+    assert all(count >= 0 for count in counts)
+
+
+def main():
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ Exit codes:
 
 import os
 import sys
-from datetime import datetime
+import pytest
 from playwright.sync_api import Page, sync_playwright
 
 
@@ -105,47 +105,50 @@ def reset(page: Page) -> int:
     return passed
 
 
-def main() -> int:
-    print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test ]---")
+@pytest.fixture(scope="module")
+def page():
     with sync_playwright() as p:
-        num_tests = 0
-        passed_tests = 0
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        pg = browser.new_page()
+        yield pg
+        browser.close()
 
-        num_tests += 1
-        passed_tests += visit_main_page(page)
 
-        num_tests += 1
-        # Test shift letters encoder
-        passed_tests += encode(
-            page=page,
-            encoder_label="Shift Letters",
-            input="aa2",
-            expected_encoding="cc2",
-        )
+def test_visit_main_page(page):
+    assert visit_main_page(page) == 1
 
-        num_tests += 1
-        # Fill fields and use test encoder
-        passed_tests += encode(
-            page=page,
-            encoder_label="Test",
-            input="aa2",
-            expected_encoding="input string is aa2, shift value is 2",
-            shift_by=2,
-        )
 
-        num_tests += 1
-        # Validate number of shifts
-        passed_tests += trigger_validation_error(page)
+def test_encode_shift_letters(page):
+    # Test shift letters encoder
+    assert encode(
+        page=page,
+        encoder_label="Shift Letters",
+        input="aa2",
+        expected_encoding="cc2",
+    ) == 1
 
-        num_tests += 1
-        # Click the "Reset" button
-        passed_tests += reset(page)
 
-        print(f"Summary: {passed_tests}/{num_tests} tests passed.")
-        print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test complete ]---")
-        return 0 if num_tests == passed_tests else 1
+def test_encode_test(page):
+    # Fill fields and use test encoder
+    assert encode(
+        page=page,
+        encoder_label="Test",
+        input="aa2",
+        expected_encoding="input string is aa2, shift value is 2",
+        shift_by=2,
+    ) == 1
+
+
+def test_trigger_validation_error(page):
+    assert trigger_validation_error(page) == 1
+
+
+def test_reset(page):
+    assert reset(page) == 1
+
+
+def main() -> int:
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

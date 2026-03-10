@@ -1,5 +1,6 @@
 APP_NAME       := counter-liberty
-IMAGE_NAME     := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_TAG      ?= $(shell date -u +%Y%m%dT%H%M%S%3NZ)
+IMAGE_NAME     := $(APP_NAME):$(IMAGE_TAG)
 SUCCESS_PATTERN := CWWKF0011I
 FAILURE_PATTERN := BUILD FAILURE|\\[ERROR\\] \\[ERROR\\] Some problems were encountered while processing the POMs:|\\[ERROR\\] The build could not read [0-9]+ projects|\\[FATAL\\]|Malformed POM|ProjectBuildingException|ModelParseException
 
@@ -52,7 +53,7 @@ clean: down
 
 test: up
 	@docker exec $(APP_NAME) sh -c 'uv run /app/smoke.py'
-	$(MAKE) clean
+	$(MAKE) clean IMAGE_TAG=$(IMAGE_TAG)
 
 local:
 	./mvnw clean package liberty:run

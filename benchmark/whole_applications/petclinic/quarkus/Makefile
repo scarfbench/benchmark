@@ -40,7 +40,7 @@ logs:
 	docker logs $(APP_NAME)
 
 down:
-	- docker rm -f $(APP_NAME)
+	- docker stop $(APP_NAME) && docker rm $(APP_NAME) || docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
@@ -57,7 +57,7 @@ test: up
 	exit 1'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && pytest -v smoke.py"
-	$(MAKE) clean
+	$(MAKE) clean IMAGE_NAME=$(IMAGE_NAME)
 
 local:
 	./mvnw clean package quarkus:run

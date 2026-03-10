@@ -55,7 +55,7 @@ logs:
 
 # Stop the app
 down:
-	docker rm -f $(APP_NAME)
+	docker stop $(APP_NAME) && docker rm $(APP_NAME) || docker rm -f $(APP_NAME)
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
@@ -69,7 +69,7 @@ clean: down
 test: up
 	sleep 10
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
-	$(MAKE) clean
+	$(MAKE) clean IMAGE_NAME=$(IMAGE_NAME)
 
 # Run the app locally
 local:

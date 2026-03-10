@@ -18,7 +18,8 @@ START_TIMEOUT = int(os.getenv("START_TIMEOUT", "90"))
 SEND_TIMEOUT = int(os.getenv("SEND_TIMEOUT", "30"))
 STATUS_STRICT = os.getenv("STATUS_STRICT", "0") == "1"
 ROOT = Path(__file__).parent
-MVNW = str(ROOT / "mvnw")
+_mvnw = ROOT / "mvnw"
+MVNW = str(_mvnw) if _mvnw.exists() else "mvn"
 
 EXPECT_SUBSTRINGS = [
     "[Delivering message...]",
@@ -230,9 +231,6 @@ def main():
     app_proc:  Optional[ProcWrapper] = None
     rc = 0
 
-    # Free up 9080
-    kill_port(9080)
-
     try:
         # Start SMTP
         if start_smtp:
@@ -243,6 +241,7 @@ def main():
 
         # Start app
         if start_app:
+            kill_port(9080)
             app_proc = ProcWrapper("async-service", [MVNW, "-q", "-pl", "async-service", "clean", "package", "quarkus:run"])
             app_proc.start()
             wait_for_http("localhost", 9080, START_TIMEOUT)

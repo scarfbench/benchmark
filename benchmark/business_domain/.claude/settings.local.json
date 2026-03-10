@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"yen = 521.70/5; eur_per_yen = 3.66/521.70; print\\(f''1 dollar = {yen} yen''\\); print\\(f''1 yen = {eur_per_yen:.6f} euro''\\); print\\(f''1 dollar = {10*yen:.2f} yen, {10*yen*eur_per_yen:.2f} euro''\\); print\\(f''1 dollar = {1*yen:.2f} yen, {1*yen*eur_per_yen:.2f} euro''\\)\")"
+    ]
+  }
+}

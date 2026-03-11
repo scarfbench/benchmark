@@ -1,4 +1,4 @@
-FROM gradle:6.8.3-jdk11
+FROM eclipse-temurin:11-jdk-focal
 
 USER root
 # install uv and python tooling for smoke tests

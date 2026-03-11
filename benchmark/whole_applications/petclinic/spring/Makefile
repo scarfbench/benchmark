@@ -44,15 +44,18 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
-	- docker rmi $(IMAGE_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
 	- docker image prune -f
-	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+	@echo "[INFO] Removed app image(s) and pruned dangling Docker layers"
 
 test: up
 	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && uv sync && uv run playwright install chromium && uv run smoke.py"
-	$(MAKE) clean
+	- docker rm -f $(APP_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
+	- docker image prune -f
+	@echo "[INFO] Cleaned up container and image"
 
 local:
 	./mvnw clean -DskipTests spring-boot:run

@@ -166,16 +166,192 @@ def assert_ws_changes_stdlib():
         try: sock.close()
         except Exception: pass
 
-def _run_smoke():
+def test_index_page():
+    """Index page should load successfully."""
     must_get_ok("/index.html", 2)
+
+
+def test_css_resource():
+    """CSS resource should be accessible."""
     soft_get_ok("/css/default.css")
+
+
+def test_websocket_price_changes():
+    """WebSocket should send changing price/volume frames."""
     assert_ws_changes_stdlib()
-    print("[PASS] Smoke sequence complete"); return 0
 
 
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
+def test_ws_connection():
+    """Scenario: Connect to the WebSocket endpoint."""
+    ws_url = http_to_ws_url(BASE)
+    vprint("WS connect ->", ws_url)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        print("[PASS] WebSocket connection established")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_ws_message_format():
+    """Scenario: Update message includes both price and volume separated by ' / '."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pattern = re.compile(r"\d+\.\d{2}\s*/\s*\d+")
+        assert pattern.search(msg), f"Message does not match 'X.XX / NNNN' format: {msg!r}"
+        print(f"[PASS] WS message format: {msg.strip()!r}")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_price_two_decimal_places():
+    """Scenario: Update message uses two decimal places for price."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        price_pattern = re.compile(r"(\d+\.\d{2})\s*/")
+        m = price_pattern.search(msg)
+        assert m, f"Could not find price with two decimals in: {msg!r}"
+        price_str = m.group(1)
+        assert "." in price_str and len(price_str.split(".")[1]) == 2, \
+            f"Price does not have exactly two decimal places: {price_str}"
+        print(f"[PASS] Price two decimals: {price_str}")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_initial_price_near_100():
+    """Scenario: Price starts near 100.0."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv = parse_price_volume(msg)
+        assert pv is not None, f"Could not parse price/volume from: {msg!r}"
+        price = pv[0]
+        assert 50.0 <= price <= 150.0, f"Initial price {price} not near 100.0"
+        print(f"[PASS] Initial price near 100: {price:.2f}")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_initial_volume_near_300000():
+    """Scenario: Volume starts near 300000."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv = parse_price_volume(msg)
+        assert pv is not None, f"Could not parse price/volume from: {msg!r}"
+        volume = pv[1]
+        assert 100000 <= volume <= 500000, f"Initial volume {volume} not near 300000"
+        print(f"[PASS] Initial volume near 300000: {volume}")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_price_fluctuation_bounded():
+    """Scenario: Price fluctuates with each update by at most 0.50."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg1, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv1 = parse_price_volume(msg1)
+        assert pv1 is not None, f"Could not parse frame 1: {msg1!r}"
+        time.sleep(SLEEP_SECS)
+        msg2, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv2 = parse_price_volume(msg2)
+        assert pv2 is not None, f"Could not parse frame 2: {msg2!r}"
+        price_diff = abs(pv2[0] - pv1[0])
+        # Allow some tolerance for multiple updates between reads
+        assert price_diff <= 5.0, \
+            f"Price change {price_diff:.2f} exceeds reasonable bound: {pv1[0]:.2f} -> {pv2[0]:.2f}"
+        print(f"[PASS] Price fluctuation bounded: {pv1[0]:.2f} -> {pv2[0]:.2f} (diff={price_diff:.2f})")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_volume_fluctuation_bounded():
+    """Scenario: Volume fluctuates with each update by at most 2500."""
+    ws_url = http_to_ws_url(BASE)
+    try:
+        sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+    except Exception as e:
+        pytest.fail(f"[FAIL] WS connect -> {e}")
+    try:
+        msg1, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv1 = parse_price_volume(msg1)
+        assert pv1 is not None, f"Could not parse frame 1: {msg1!r}"
+        time.sleep(SLEEP_SECS)
+        msg2, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+        pv2 = parse_price_volume(msg2)
+        assert pv2 is not None, f"Could not parse frame 2: {msg2!r}"
+        vol_diff = abs(pv2[1] - pv1[1])
+        # Allow some tolerance for multiple updates between reads
+        assert vol_diff <= 25000, \
+            f"Volume change {vol_diff} exceeds reasonable bound: {pv1[1]} -> {pv2[1]}"
+        print(f"[PASS] Volume fluctuation bounded: {pv1[1]} -> {pv2[1]} (diff={vol_diff})")
+    finally:
+        try: sock.close()
+        except Exception: pass
+
+
+def test_multiple_clients_receive_same_update():
+    """Scenario: Updates are sent to all connected WebSocket clients."""
+    ws_url = http_to_ws_url(BASE)
+    socks = []
+    try:
+        for i in range(3):
+            try:
+                sock, leftover = _ws_connect(ws_url, timeout=WS_TIMEOUT)
+                socks.append((sock, leftover))
+            except Exception as e:
+                pytest.fail(f"[FAIL] WS connect client {i+1} -> {e}")
+        # Drain initial messages from each client
+        for i, (sock, leftover) in enumerate(socks):
+            _, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+            socks[i] = (sock, leftover)
+        # Wait for a fresh update
+        time.sleep(SLEEP_SECS)
+        messages = []
+        for i, (sock, leftover) in enumerate(socks):
+            msg, leftover = _ws_recv_text(sock, leftover, timeout=WS_TIMEOUT)
+            messages.append(msg.strip())
+            socks[i] = (sock, leftover)
+        # All clients should receive the same message
+        assert len(set(messages)) == 1, \
+            f"Not all clients received the same message: {messages}"
+        print(f"[PASS] All 3 clients received same update: {messages[0]!r}")
+    finally:
+        for sock, _ in socks:
+            try: sock.close()
+            except Exception: pass
 
 
 def main():

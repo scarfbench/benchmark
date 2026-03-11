@@ -27,52 +27,18 @@ def pick_base_url() -> str:
     return BASE_CANDIDATES[1]
 
 
-def _run_all_checks() -> int:
+def greet_check(page, name, expected_greeting):
+    """Helper: submit a name and assert the expected greeting appears."""
     base_url = pick_base_url()
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(base_url + DEFAULT_ENDPOINT)
-        num_tests = 0
-        passed_tests = 0
-        # Ensure that the page loads successfully
-        if "Enter your name:" in page.content():
-            print("[PASS] Page loaded successfully and contains expected text.")
-            passed_tests += 1
-        else:
-            print("[FAIL] Page did not contain expected text.", file=sys.stderr)
-
-        num_tests += 1
-        # Fill a name in all caps in the input field
-        page.get_by_role("textbox", name="Enter your name:").fill("TEST USER")
-        page.get_by_role("button", name="Submit").click()
-
-        # Assert the lowercased greeting is displayed
-        page.wait_for_selector("text=Hello, test user.")
-        if "Hello, test user." in page.content():
-            print("[PASS] Greeting displayed correctly.")
-            passed_tests += 1
-        else:
-            print("[FAIL] Greeting not displayed as expected.", file=sys.stderr)
-
-        num_tests += 1
-
-        # Hit the back button and ensure we are back on the form
-        page.go_back()
-        if "Enter your name:" in page.content():
-            print("[PASS] Back navigation successful.")
-            passed_tests += 1
-        else:
-            print("[FAIL] Back navigation failed.", file=sys.stderr)
-        num_tests += 1
-
-        print(f"Summary: {passed_tests}/{num_tests} tests passed.")
-        print(f"---[ {datetime.now().strftime('%H:%M:%S')} - Smoke test complete ]---")
+    page.goto(base_url + DEFAULT_ENDPOINT)
+    page.get_by_role("textbox", name="Enter your name:").fill(name)
+    page.get_by_role("button", name="Submit").click()
+    page.wait_for_selector(f"text={expected_greeting}")
+    assert expected_greeting in page.content()
 
 
 @pytest.fixture(scope="module")
 def page():
-    from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         pg = browser.new_page()
@@ -80,8 +46,53 @@ def page():
         browser.close()
 
 
-def test_smoke():
-    _run_all_checks()
+def test_page_loads(page):
+    """Greeting page should load with name input."""
+    base_url = pick_base_url()
+    page.goto(base_url + DEFAULT_ENDPOINT)
+    assert "Enter your name:" in page.content()
+
+
+def test_form_has_input_and_button(page):
+    """Form should have a name textbox and Submit button."""
+    assert page.get_by_role("textbox", name="Enter your name:").is_visible()
+    assert page.get_by_role("button", name="Submit").is_visible()
+
+
+def test_uppercase_name_lowercased(page):
+    """Interceptor should lowercase an all-caps name: DUKE -> duke."""
+    greet_check(page, "DUKE", "Hello, duke.")
+
+
+def test_mixed_case_lowered(page):
+    """Interceptor should lowercase mixed-case: Alice -> alice."""
+    greet_check(page, "Alice", "Hello, alice.")
+
+
+def test_already_lowercase_unchanged(page):
+    """Already lowercase name should remain unchanged: bob -> bob."""
+    greet_check(page, "bob", "Hello, bob.")
+
+
+def test_name_with_spaces_lowercased(page):
+    """Interceptor should lowercase name with spaces: Mary Jane -> mary jane."""
+    greet_check(page, "Mary Jane", "Hello, mary jane.")
+
+
+def test_single_character_name(page):
+    """Single character name should be lowercased: X -> x."""
+    greet_check(page, "X", "Hello, x.")
+
+
+def test_back_navigation(page):
+    """After greeting, back navigation should return to the form."""
+    base_url = pick_base_url()
+    page.goto(base_url + DEFAULT_ENDPOINT)
+    page.get_by_role("textbox", name="Enter your name:").fill("Test")
+    page.get_by_role("button", name="Submit").click()
+    page.wait_for_selector("text=Hello, test.")
+    page.go_back()
+    assert "Enter your name:" in page.content()
 
 
 def main():

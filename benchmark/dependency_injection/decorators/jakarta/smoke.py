@@ -60,6 +60,7 @@ def trigger_validation_error(page: Page) -> int:
     passed = 0
 
     # Validate number of shifts
+    page.get_by_label("Enter a string:").fill("aa")
     page.get_by_label("Enter the number of letters to shift by:").fill("33")
     with page.expect_navigation():
         page.get_by_role("button", name="Encode").click()

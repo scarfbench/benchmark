@@ -1,37 +1,56 @@
 #!/usr/bin/env python3
+"""Pytest feature coverage for async email sending (Spring Boot).
+
+Split by SMTP availability:
+- tests marked `smtp_up` require SMTP server running
+- tests marked `smtp_down` require SMTP server unavailable
+"""
+
+from __future__ import annotations
+
 import os
 import re
-import sys
-import time
 import signal
 import socket
-import threading
 import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
-from typing import Optional, List
+from typing import Callable, List, Optional
+
 import pytest
 
-# -------------------- Config --------------------
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
 
-RECIPIENT = os.getenv("RECIPIENT", "someone@email.com")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:9080/index.xhtml")
-START_TIMEOUT = int(os.getenv("START_TIMEOUT", "90"))
-SEND_TIMEOUT = int(os.getenv("SEND_TIMEOUT", "30"))
-STATUS_STRICT = os.getenv("STATUS_STRICT", "0") == "1"
 ROOT = Path(__file__).parent
 MVNW = str(ROOT / "mvnw")
+if os.path.exists(MVNW):
+    try:
+        os.chmod(MVNW, os.stat(MVNW).st_mode | 0o111)
+    except OSError:
+        pass
+MVN_CMD = [MVNW] if os.path.exists(MVNW) else ["mvn"]
 
-EXPECT_SUBSTRINGS = [
-    "[Delivering message...]",
-    "Subject: Test message from async example",
-    "X-Mailer: Jakarta Mail",
-    "This is a test message from the async example of the Jakarta EE Tutorial.",
-]
+START_TIMEOUT = int(os.getenv("START_TIMEOUT", "90"))
+SEND_TIMEOUT = int(os.getenv("SEND_TIMEOUT", "30"))
+FAST_RESPONSE_THRESHOLD_SEC = float(os.getenv("FAST_RESPONSE_THRESHOLD_SEC", "2.0"))
 
 SMTP_LISTEN_MARKER = "[Test SMTP server listening on port 3025]"
-SMTP_CLIENT_MARKER = "[Client connected]"
+SMTP_PORT_MARKER = "3025"
 
-# -------------------- Proc Wrapper --------------------
+EMAIL_SELECTOR = 'input[id$="emailInputText"]'
+SEND_SELECTOR = 'input[id$="sendButton"]'
+STATUS_SELECTOR = 'span[id$="messageStatus"], *[id$="messageStatus"]'
+
+
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
+
 
 class ProcWrapper:
     def __init__(self, name: str, args: List[str]):
@@ -42,7 +61,7 @@ class ProcWrapper:
         self._lock = threading.Lock()
         self._thread: Optional[threading.Thread] = None
 
-    def start(self):
+    def start(self) -> None:
         self.proc = subprocess.Popen(
             self.args,
             cwd=str(ROOT),
@@ -55,14 +74,15 @@ class ProcWrapper:
         self._thread = threading.Thread(target=self._pump, daemon=True)
         self._thread.start()
 
-    def _pump(self):
+    def _pump(self) -> None:
         assert self.proc and self.proc.stdout
         for line in self.proc.stdout:
+            ln = line.rstrip("\n")
             with self._lock:
-                self.lines.append(line.rstrip("\n"))
-            print(f"[{self.name}] {line.rstrip()}")
+                self.lines.append(ln)
+            print(f"[{self.name}] {ln}")
 
-    def stop(self):
+    def stop(self) -> None:
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
             try:
@@ -79,9 +99,17 @@ class ProcWrapper:
         with self._lock:
             return "\n".join(self.lines)
 
-# -------------------- Helpers --------------------
+    def clear_logs(self) -> None:
+        with self._lock:
+            self.lines.clear()
 
-def wait_for(predicate, timeout: int, interval: float = 0.5, desc: str = "condition"):
+
+def wait_for(
+    predicate: Callable[[], bool],
+    timeout: int,
+    interval: float = 0.25,
+    desc: str = "condition",
+) -> bool:
     end = time.time() + timeout
     while time.time() < end:
         if predicate():
@@ -89,215 +117,370 @@ def wait_for(predicate, timeout: int, interval: float = 0.5, desc: str = "condit
         time.sleep(interval)
     raise TimeoutError(f"Timed out waiting for {desc} after {timeout}s")
 
-def wait_for_http(host: str, port: int, timeout: int):
-    def _try():
+
+def wait_for_http(host: str, port: int, timeout: int) -> None:
+    def _try() -> bool:
         try:
             with socket.create_connection((host, port), timeout=1):
                 return True
         except OSError:
             return False
+
     wait_for(_try, timeout=timeout, desc=f"HTTP port {port}")
 
-def kill_port(port: int):
-    """Find and kill any process listening on the given TCP port."""
+
+def kill_port(port: int) -> None:
     try:
         if sys.platform.startswith(("linux", "darwin")):
             result = subprocess.run(
                 ["lsof", "-ti", f"tcp:{port}"],
-                capture_output=True, text=True, check=False
+                capture_output=True, text=True, check=False,
             )
             pids = [line.strip() for line in result.stdout.splitlines() if line.strip()]
             for pid in pids:
                 print(f"[INFO] Killing process {pid} on port {port}")
                 os.kill(int(pid), signal.SIGKILL)
-        elif sys.platform.startswith("win"):
-            result = subprocess.run(
-                ["netstat", "-ano"], capture_output=True, text=True, check=False
-            )
-            for line in result.stdout.splitlines():
-                if f":{port} " in line and "LISTENING" in line:
-                    pid = line.strip().split()[-1]
-                    print(f"[INFO] Killing process {pid} on port {port}")
-                    subprocess.run(["taskkill", "/PID", pid, "/F"])
-        else:
-            print(f"[WARN] Kill on port {port} not implemented for this platform")
     except Exception as e:
         print(f"[WARN] Could not kill processes on port {port}: {e}")
 
-# -------------------- UI Driver --------------------
 
-def run_playwright(recipient: str):
-    from re import compile as _re
+def extract_status(page) -> str:
+    page.wait_for_selector(STATUS_SELECTOR, timeout=10000)
+    return page.inner_text(STATUS_SELECTOR).strip()
+
+
+def send_email_via_ui(page, recipient: str) -> float:
+    page.goto(BASE_URL)
+    page.wait_for_selector(EMAIL_SELECTOR, timeout=15000)
+    page.wait_for_selector(SEND_SELECTOR, timeout=15000)
+
+    page.fill(EMAIL_SELECTOR, recipient)
+    start = time.time()
+    page.click(SEND_SELECTOR)
+    _ = extract_status(page)
+    return time.time() - start
+
+
+def wait_for_final_status(page, timeout: int = SEND_TIMEOUT) -> str:
+    start = time.time()
+    status = extract_status(page)
+    while status.startswith("Processing"):
+        if time.time() - start > timeout:
+            raise TimeoutError("Timeout waiting for async status to complete")
+        time.sleep(1.0)
+        page.reload()
+        status = extract_status(page)
+    return status
+
+
+def smtp_wait_for_delivery(smtp_proc: ProcWrapper, timeout: int = SEND_TIMEOUT) -> str:
+    delivery_pattern = re.escape("[Delivering message...]")
+    wait_for(
+        lambda: smtp_proc.grep(delivery_pattern),
+        timeout=timeout,
+        desc="SMTP delivery log",
+    )
+    return smtp_proc.snapshot()
+
+
+def assert_contains(output: str, needle: str) -> None:
+    assert needle in output, f"Expected to find '{needle}' in SMTP output."
+
+
+# -----------------------------------------------------------------------------
+# Fixtures
+# -----------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="function")
+def smtp_server(request) -> Optional[ProcWrapper]:
+    needs_smtp = request.node.get_closest_marker("smtp_up") is not None
+    if not needs_smtp:
+        yield None
+        return
+
+    proc = ProcWrapper(
+        "async-smtpd",
+        [*MVN_CMD, "-q", "-pl", "async-smtpd", "compile", "exec:java"],
+    )
+    proc.start()
+    wait_for(
+        lambda: proc.grep(re.escape(SMTP_LISTEN_MARKER)),
+        timeout=START_TIMEOUT,
+        desc="SMTP server listen marker",
+    )
+    try:
+        yield proc
+    finally:
+        proc.stop()
+
+
+@pytest.fixture(scope="session")
+def app_server():
+    skip = os.getenv("SKIP_START_APP") == "1"
+    if skip:
+        yield ProcWrapper("async-service", [])
+        return
+
+    kill_port(9080)
+    proc = ProcWrapper(
+        "async-service",
+        [*MVN_CMD, "-q", "-pl", "async-service", "spring-boot:run"],
+    )
+    proc.start()
+    wait_for_http("localhost", 9080, START_TIMEOUT)
+    yield proc
+    proc.stop()
+
+
+@pytest.fixture(scope="function")
+def browser_page(app_server, smtp_server):
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         page = browser.new_page()
-
-        # Normalize URL (avoid trailing slash for .xhtml)
-        url = BASE_URL[:-1] if BASE_URL.endswith("/") else BASE_URL
-        page.goto(url)
-
-        print(f"[DEBUG] Page title: {page.title()}")
-        print(f"[DEBUG] Page URL: {page.url}")
         try:
-            page.screenshot(path="debug_screenshot.png")
-            print("[DEBUG] Screenshot saved as debug_screenshot.png")
-        except Exception as e:
-            print(f"[DEBUG] Could not save screenshot: {e}")
+            yield page
+        finally:
+            browser.close()
 
-        content = page.content()
-        print(f"[DEBUG] Page content length: {len(content)}")
-        if len(content) < 1000:
-            print(f"[DEBUG] Full page content: {content}")
-        else:
-            print(f"[DEBUG] Page content preview: {content[:500]}...")
 
-        # Robust selectors for JSF-generated IDs
-        selectors_to_try = [
-            'input[id$="emailInputText"]',
-            'input[id*="emailInputText"]',
-            'input[type="text"]',
-            '#emailForm\\:emailInputText',
-            'input[id="emailForm:emailInputText"]',
+@pytest.fixture(scope="function")
+def clean_smtp_logs(smtp_server: Optional[ProcWrapper]):
+    if smtp_server:
+        smtp_server.clear_logs()
+    yield
+    if smtp_server:
+        smtp_server.clear_logs()
+
+
+# -----------------------------------------------------------------------------
+# Feature: Email form
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.smtp_up
+def test_email_form_displays_input_and_send_button(browser_page):
+    page = browser_page
+    page.goto(BASE_URL)
+    page.wait_for_selector(EMAIL_SELECTOR, timeout=15000)
+    page.wait_for_selector(SEND_SELECTOR, timeout=15000)
+    assert page.is_visible(EMAIL_SELECTOR), "Email input field should be visible."
+    assert page.is_visible(SEND_SELECTOR), "Send button should be visible."
+
+
+# -----------------------------------------------------------------------------
+# Feature: Sending emails
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.smtp_up
+def test_send_email_to_valid_address_eventually_sent(
+    browser_page, smtp_server, clean_smtp_logs
+):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(output, "[Delivering message...]")
+
+
+@pytest.mark.smtp_up
+def test_email_is_sent_to_correct_recipient(browser_page, smtp_server, clean_smtp_logs):
+    page = browser_page
+    recipient = "alice@example.com"
+    send_email_via_ui(page, recipient)
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(output, recipient)
+
+
+@pytest.mark.smtp_up
+def test_email_has_correct_subject(browser_page, smtp_server, clean_smtp_logs):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(output, "Subject: Test message from async example")
+
+
+@pytest.mark.smtp_up
+def test_email_has_x_mailer_header(browser_page, smtp_server, clean_smtp_logs):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(output, "X-Mailer: Jakarta Mail")
+
+
+@pytest.mark.smtp_up
+def test_email_body_contains_test_message(browser_page, smtp_server, clean_smtp_logs):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(
+        output,
+        "This is a test message from the async example of the Jakarta EE Tutorial.",
+    )
+
+
+@pytest.mark.smtp_up
+def test_email_body_contains_formatted_date_time(
+    browser_page, smtp_server, clean_smtp_logs
+):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+    output = smtp_wait_for_delivery(smtp_server)
+
+    date_time_patterns = [
+        r"\b\d{4}-\d{2}-\d{2}\b.*\b\d{1,2}:\d{2}(:\d{2})?\b",
+        r"\b\d{1,2}/\d{1,2}/\d{4}\b.*\b\d{1,2}:\d{2}\s?(AM|PM|am|pm)?\b",
+        r"\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b.*\b\d{1,2}:\d{2}(:\d{2})?\b",
+    ]
+    assert any(
+        re.search(p, output, flags=re.IGNORECASE | re.MULTILINE)
+        for p in date_time_patterns
+    ), "Expected email body/log to contain a formatted date and time."
+
+
+# -----------------------------------------------------------------------------
+# Feature: Asynchronous behavior
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.smtp_up
+def test_send_message_behavior_returns_eventual_sent_proxy(
+    browser_page, smtp_server, clean_smtp_logs
+):
+    page = browser_page
+    elapsed = send_email_via_ui(page, "duke@example.com")
+    assert elapsed < SEND_TIMEOUT, (
+        "UI action should return before full async completion."
+    )
+
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+
+    output = smtp_wait_for_delivery(smtp_server)
+    assert_contains(output, "[Delivering message...]")
+
+
+@pytest.mark.smtp_up
+def test_ui_not_blocked_during_email_sending(
+    browser_page, smtp_server, clean_smtp_logs
+):
+    page = browser_page
+    elapsed = send_email_via_ui(page, "duke@example.com")
+    assert elapsed <= FAST_RESPONSE_THRESHOLD_SEC, (
+        f"Expected click->response in <= {FAST_RESPONSE_THRESHOLD_SEC}s, got {elapsed:.3f}s"
+    )
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+
+
+# -----------------------------------------------------------------------------
+# Feature: SMTP configuration
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.smtp_up
+def test_emails_are_sent_via_smtp_port_3025(browser_page, smtp_server):
+    page = browser_page
+    send_email_via_ui(page, "duke@example.com")
+    final_status = wait_for_final_status(page)
+    assert final_status == "Sent"
+
+    output = smtp_wait_for_delivery(smtp_server)
+    # Use full snapshot (including listen marker) to verify port 3025.
+    full_output = smtp_server.snapshot()
+    assert SMTP_LISTEN_MARKER in full_output or SMTP_PORT_MARKER in full_output, (
+        "Expected SMTP transport/logging to indicate port 3025."
+    )
+
+
+# -----------------------------------------------------------------------------
+# Feature: Error handling
+# -----------------------------------------------------------------------------
+
+
+@pytest.mark.smtp_down
+def test_messaging_error_returns_error_status(app_server):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        try:
+            page.goto(BASE_URL)
+            page.wait_for_selector(EMAIL_SELECTOR, timeout=15000)
+            page.fill(EMAIL_SELECTOR, "duke@example.com")
+            page.click(SEND_SELECTOR)
+
+            status = wait_for_final_status(page, timeout=SEND_TIMEOUT)
+            assert "Encountered an error" in status, (
+                f"Expected error status, got: {status}"
+            )
+        finally:
+            browser.close()
+
+
+@pytest.mark.smtp_down
+def test_messaging_error_is_logged(app_server):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        try:
+            page.goto(BASE_URL)
+            page.wait_for_selector(EMAIL_SELECTOR, timeout=15000)
+            page.fill(EMAIL_SELECTOR, "duke@example.com")
+            page.click(SEND_SELECTOR)
+            _ = wait_for_final_status(page, timeout=SEND_TIMEOUT)
+        finally:
+            browser.close()
+
+    error_marker = "Error sending mail"
+    app_log = ROOT / "app.log"
+
+    def _check_logs() -> bool:
+        if app_server.proc is not None:
+            return app_server.grep(re.escape(error_marker))
+        # Inside Docker the CMD tees output to /app/app.log.
+        try:
+            return error_marker in app_log.read_text(errors="replace")
+        except FileNotFoundError:
+            return False
+
+    wait_for(_check_logs, timeout=SEND_TIMEOUT, desc="app error log marker")
+
+
+# -----------------------------------------------------------------------------
+# Entrypoint
+# -----------------------------------------------------------------------------
+
+
+def main() -> int:
+    return pytest.main(
+        [
+            __file__,
+            "-v",
+            "-m",
+            os.getenv("PYTEST_MARK_EXPR", "smtp_up or smtp_down"),
         ]
-
-        found_selector = None
-        for selector in selectors_to_try:
-            try:
-                page.wait_for_selector(selector, timeout=2000)
-                found_selector = selector
-                print(f"[DEBUG] Found input using selector: {selector}")
-                break
-            except Exception:
-                print(f"[DEBUG] Selector failed: {selector}")
-                continue
-
-        if not found_selector:
-            inputs = page.query_selector_all('input')
-            print(f"[DEBUG] Found {len(inputs)} input elements:")
-            for i, inp in enumerate(inputs):
-                print(f"[DEBUG] Input {i}: id='{inp.get_attribute('id')}' "
-                      f"type='{inp.get_attribute('type')}' name='{inp.get_attribute('name')}'")
-            raise RuntimeError("Could not find email input field with any selector")
-
-        # Fill and submit
-        page.fill(found_selector, recipient)
-        send_selector = 'input[id$="sendButton"]'
-
-        # Handle redirect to response.xhtml if it happens
-        try:
-            with page.expect_navigation(url=_re(r".*/response\.xhtml$"), timeout=10000):
-                page.click(send_selector)
-        except Exception:
-            # No redirect; just click and continue
-            page.click(send_selector)
-
-        # Try to read status from UI if present
-        status = "UNKNOWN"
-        status_selector = 'span[id$="messageStatus"], *[id$="messageStatus"]'
-        try:
-            page.wait_for_selector(status_selector, timeout=5000)
-            start = time.time()
-            status = page.inner_text(status_selector).strip()
-            while status.startswith("Processing"):
-                if time.time() - start > SEND_TIMEOUT:
-                    raise RuntimeError("Timeout waiting for async status to complete")
-                time.sleep(1.0)
-                page.reload()
-                page.wait_for_selector(status_selector, timeout=3000)
-                status = page.inner_text(status_selector).strip()
-        except Exception:
-            if STATUS_STRICT:
-                raise RuntimeError("UI status element not found and STATUS_STRICT=1")
-            # Fallback: attempt to parse "Status:" line anywhere on the page
-            try:
-                body = page.inner_text("body")
-                m = re.search(r"Status:\s*(.+)", body)
-                if m:
-                    status = m.group(1).strip()
-            except Exception:
-                pass  # leave as UNKNOWN
-
-        browser.close()
-        return status
-
-# -------------------- Main --------------------
-
-def _run_smoke():
-    start_smtp = os.getenv("SKIP_START_SMTP") != "1"
-    start_app  = os.getenv("SKIP_START_APP")  != "1"
-    smtp_proc: Optional[ProcWrapper] = None
-    app_proc:  Optional[ProcWrapper] = None
-    rc = 0
-
-    # Free up 9080
-    kill_port(9080)
-
-    try:
-        # Start SMTP
-        if start_smtp:
-            smtp_proc = ProcWrapper("async-smtpd", [MVNW, "-q", "-pl", "async-smtpd", "compile", "exec:java"])
-            smtp_proc.start()
-            wait_for(lambda: smtp_proc.grep(re.escape(SMTP_LISTEN_MARKER)),
-                     START_TIMEOUT, desc="SMTP listen")
-
-        # Start app
-        if start_app:
-            app_proc = ProcWrapper("async-service", [MVNW, "-q", "-pl", "async-service", "spring-boot:run"])
-            app_proc.start()
-            wait_for_http("localhost", 9080, START_TIMEOUT)
-
-        # Drive UI
-        status = run_playwright(RECIPIENT)
-        print(f"[INFO] UI reported status: {status}")
-
-        # Validate SMTP delivery
-        if smtp_proc:
-            delivery_pattern = re.escape("[Delivering message...]")
-            try:
-                wait_for(lambda: smtp_proc.grep(delivery_pattern),
-                         SEND_TIMEOUT, desc="SMTP delivery")
-            except TimeoutError:
-                recent = "\n".join(smtp_proc.snapshot().splitlines()[-25:])
-                raise TimeoutError(f"Timed out waiting for SMTP delivery after {SEND_TIMEOUT}s.\n"
-                                   f"Recent SMTP log:\n{recent}")
-
-            # Normalize QP soft breaks and whitespace
-            output = smtp_proc.snapshot()
-            output_norm = re.sub(r"=\r?\n", "", output)     # quoted-printable soft break
-            output_norm = re.sub(r"\s+", " ", output_norm)  # collapse whitespace
-
-            missing = [s for s in EXPECT_SUBSTRINGS if s not in output_norm]
-            if missing:
-                print("[ERROR] Missing expected substrings in SMTP output:", missing, file=sys.stderr)
-                print(output)  # raw for debugging
-                rc = 2
-            else:
-                print("[PASS] SMTP output contains all expected substrings")
-        else:
-            print("[WARN] SMTP process not started; skipped delivery validation")
-
-    except Exception as e:
-        print(f"[FAIL] {e}", file=sys.stderr)
-        rc = 1
-    finally:
-        if app_proc:
-            app_proc.stop()
-        if smtp_proc:
-            smtp_proc.stop()
-
-    return rc
-
-
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
-
-
-def main():
-    return pytest.main([__file__, "-v"])
+    )
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
+
+

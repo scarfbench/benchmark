@@ -116,6 +116,82 @@ def test_step_1():
         print("[WARN] Servlet title not found")
 
 
+def test_mood_page_returns_200():
+    """Scenario: Mood page displays Duke's current mood."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200, f"Expected 200, got {resp['status']}"
+    print("[PASS] GET /report -> 200")
+
+
+def test_mood_is_displayed():
+    """Scenario: Mood page displays a mood value."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200
+    body = resp["body"]
+    mood_match = re.search(r"Duke's mood is: ([^<]+)", body)
+    assert mood_match, f"Expected 'Duke's mood is:' in response body"
+    mood = mood_match.group(1).strip()
+    assert mood, "Mood value should not be empty"
+    print(f"[PASS] Mood displayed: {mood}")
+
+
+def test_mood_image_displayed():
+    """Scenario: Mood page contains an image for the mood."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200
+    body = resp["body"]
+    assert "<img" in body.lower(), "Expected an img tag in the response"
+    img_match = re.search(r'<img[^>]+src="([^"]+)"', body)
+    assert img_match, "Expected img tag with src attribute"
+    img_src = img_match.group(1)
+    assert "duke" in img_src.lower() or ".gif" in img_src.lower(), \
+        f"Expected Duke mood image, got: {img_src}"
+    print(f"[PASS] Mood image displayed: {img_src}")
+
+
+def test_response_is_html():
+    """Scenario: Response is an HTML page."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200
+    body = resp["body"]
+    assert "<html" in body, "Expected <html in response"
+    assert "</html>" in body, "Expected </html> in response"
+    ctype = resp["content_type"].lower()
+    assert "text/html" in ctype, f"Expected text/html Content-Type, got: {ctype}"
+    print("[PASS] Response is valid HTML")
+
+
+def test_page_title():
+    """Scenario: Page title is 'Servlet MoodServlet'."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200
+    assert "<title>" in resp["body"].lower(), "Expected <title> in response"
+    assert "Servlet MoodServlet" in resp["body"], \
+        f"Expected 'Servlet MoodServlet' in title"
+    print("[PASS] Page title: Servlet MoodServlet")
+
+
+def test_context_path():
+    """Scenario: Page shows the context path."""
+    url = join(BASE, "/report")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /report -> {err}"
+    assert resp["status"] == 200
+    assert "Servlet MoodServlet at" in resp["body"], \
+        "Expected 'Servlet MoodServlet at' with context path"
+    print("[PASS] Context path shown in response")
+
+
 def main():
     return pytest.main([__file__, "-v"])
 

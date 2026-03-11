@@ -67,6 +67,7 @@ def encode(
 
 def trigger_validation_error(page: Page) -> int:
     passed = 0
+    page.get_by_label("Enter a string:").fill("aa2")
     page.get_by_label("Enter the number of letters to shift by:").fill("33")
     with page.expect_navigation():
         page.get_by_role("button", name="Encode").click()

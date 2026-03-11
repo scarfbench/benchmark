@@ -142,6 +142,56 @@ def test_submit_job_no_auth(base_url):
     submit_job(base_url, 2, None)
 
 
+def test_tokens_are_unique(base_url):
+    """Each token request should return a different token."""
+    token1 = try_get_token(base_url)
+    token2 = try_get_token(base_url)
+    assert token1 is not None, "First token request failed"
+    assert token2 is not None, "Second token request failed"
+    assert token1 != token2, f"Tokens should be unique, got '{token1}' twice"
+
+
+def test_submit_with_invalid_token(base_url):
+    """Invalid token should still allow job submission (falls to low priority)."""
+    url = f"{base_url.rstrip('/')}{PROCESS_PATH}?jobID=3"
+    headers = {"Content-Type": "text/plain", API_HEADER: "invalid-token"}
+    resp, err = http_request("POST", url, data=b"", headers=headers)
+    assert err is None, f"Request failed: {err}"
+    status, body = resp
+    assert status == 200
+    assert "successfully submitted" in body.strip()
+
+
+def test_job_response_contains_job_id(base_url):
+    """Response body should reference the submitted job ID."""
+    url = f"{base_url.rstrip('/')}{PROCESS_PATH}?jobID=42"
+    headers = {"Content-Type": "text/plain"}
+    resp, err = http_request("POST", url, data=b"", headers=headers)
+    assert err is None, f"Request failed: {err}"
+    status, body = resp
+    assert status == 200
+    assert "42" in body.strip(), f"Expected job ID 42 in response: {body.strip()}"
+
+
+def test_token_has_content_after_prefix(base_url):
+    """Token should have meaningful content after the '123X5-' prefix."""
+    token = try_get_token(base_url)
+    assert token is not None
+    assert len(token) > len("123X5-"), "Token should have content after prefix"
+
+
+def test_submit_multiple_sequential_jobs(base_url):
+    """Multiple jobs can be submitted sequentially."""
+    for job_id in [10, 11, 12]:
+        url = f"{base_url.rstrip('/')}{PROCESS_PATH}?jobID={job_id}"
+        headers = {"Content-Type": "text/plain"}
+        resp, err = http_request("POST", url, data=b"", headers=headers)
+        assert err is None, f"Job {job_id} request failed: {err}"
+        status, body = resp
+        assert status == 200
+        assert "successfully submitted" in body.strip()
+
+
 def main():
     start = time.time()
     base = discover_base()

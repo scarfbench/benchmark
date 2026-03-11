@@ -275,7 +275,7 @@ def create_playwright_context():
         return None, None, None
 
 
-def test_contact_form_ui(page):
+def _check_contact_form_ui(page):
     print("\n[INFO] Testing contact form UI...")
 
     try:
@@ -413,7 +413,7 @@ def test_contact_form_ui(page):
         return False
 
 
-def test_contact_list_ui(page):
+def _check_contact_list_ui(page):
     print("\n[INFO] Testing contact list UI...")
 
     try:
@@ -496,7 +496,7 @@ def test_contact_list_ui(page):
         return False
 
 
-def test_contact_edit_ui(page):
+def _check_contact_edit_ui(page):
     print("\n[INFO] Testing contact edit UI...")
 
     try:
@@ -554,7 +554,7 @@ def test_contact_edit_ui(page):
         return False
 
 
-def test_contact_view_ui(page):
+def _check_contact_view_ui(page):
     print("\n[INFO] Testing contact view UI...")
 
     try:
@@ -627,7 +627,7 @@ def test_contact_view_ui(page):
         return False
 
 
-def test_form_validation(page):
+def _check_form_validation(page):
     print("\n[INFO] Testing form validation...")
 
     try:
@@ -672,7 +672,7 @@ def test_form_validation(page):
         return False
 
 
-def test_contact_deletion_ui(page):
+def _check_contact_deletion_ui(page):
     print("\n[INFO] Testing contact deletion UI...")
 
     try:
@@ -732,7 +732,7 @@ def test_contact_deletion_ui(page):
         return False
 
 
-def test_contact_deletion_from_view(page):
+def _check_contact_deletion_from_view(page):
     print("\n[INFO] Testing contact deletion from view page...")
 
     try:
@@ -820,7 +820,7 @@ def test_contact_deletion_from_view(page):
         return False
 
 
-def test_navigation_links(page):
+def _check_navigation_links(page):
     print("\n[INFO] Testing navigation links...")
 
     try:
@@ -876,25 +876,25 @@ def run_playwright_tests():
             f"[INFO] Running Playwright tests with {BROWSER} browser (headless={HEADLESS})"
         )
 
-        if not test_contact_form_ui(page):
+        if not _check_contact_form_ui(page):
             return False
 
-        if not test_contact_list_ui(page):
+        if not _check_contact_list_ui(page):
             return False
 
-        if not test_contact_edit_ui(page):
+        if not _check_contact_edit_ui(page):
             return False
 
-        if not test_contact_view_ui(page):
+        if not _check_contact_view_ui(page):
             return False
 
-        if not test_form_validation(page):
+        if not _check_form_validation(page):
             return False
 
-        if not test_navigation_links(page):
+        if not _check_navigation_links(page):
             return False
 
-        if not test_contact_deletion_ui(page):
+        if not _check_contact_deletion_ui(page):
             return False
 
         print("[PASS] All Playwright tests completed successfully")
@@ -907,33 +907,73 @@ def run_playwright_tests():
             playwright.stop()
 
 
-def _run_smoke():
+@pytest.fixture(scope="module")
+def page():
+    if not PLAYWRIGHT_AVAILABLE:
+        pytest.skip("Playwright not available")
+    pw, browser, pg = create_playwright_context()
+    if not pg:
+        pytest.skip("Could not create Playwright context")
+    yield pg
+    browser.close()
+    pw.stop()
+
+
+def test_index_page():
+    """Index page should load with Address Book content."""
     body = must_get_ok("/index.xhtml", 2)
-
-    if "Address Book" in body and "Contact" in body:
-        print("[PASS] HTML content valid")
-    else:
-        print("[WARN] HTML content invalid")
-
-    soft_get_ok("/contact/List.xhtml")
-    soft_get_ok("/contact/Create.xhtml")
-    soft_get_ok("/contact/View.xhtml")
-    soft_get_ok("/contact/Edit.xhtml")
-
-    soft_get_ok("/resources/css/jsfcrud.css")
-
-    print("\n[INFO] Running Playwright UI tests...")
-    if not run_playwright_tests():
-        print("[FAIL] Playwright tests failed", file=sys.stderr)
-        pytest.fail("smoke test failed with code 5")
-
-    print("\n[PASS] Enhanced smoke sequence complete")
-    return 0
+    assert "Address Book" in body or "Contact" in body
 
 
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
+def test_list_page_accessible():
+    """Contact list page should be accessible."""
+    url = join(BASE, "/contact/List.xhtml")
+    resp, err = http_request("GET", url)
+    assert err is None, f"List page not accessible: {err}"
+    assert resp[0] == 200, f"List page returned {resp[0]}"
+
+
+def test_create_page_accessible():
+    """Contact creation page should be accessible."""
+    url = join(BASE, "/contact/Create.xhtml")
+    resp, err = http_request("GET", url)
+    assert err is None, f"Create page not accessible: {err}"
+    assert resp[0] == 200, f"Create page returned {resp[0]}"
+
+
+def test_contact_form_ui(page):
+    """Contact form should load and accept input."""
+    assert _check_contact_form_ui(page), "Contact form UI check failed"
+
+
+def test_contact_list_ui(page):
+    """Contact list should display table with contacts."""
+    assert _check_contact_list_ui(page), "Contact list UI check failed"
+
+
+def test_contact_edit_ui(page):
+    """Contact edit page should be navigable from list."""
+    assert _check_contact_edit_ui(page), "Contact edit UI check failed"
+
+
+def test_contact_view_ui(page):
+    """Contact view page should display contact details."""
+    assert _check_contact_view_ui(page), "Contact view UI check failed"
+
+
+def test_form_validation(page):
+    """Form validation should catch invalid input."""
+    assert _check_form_validation(page), "Form validation check failed"
+
+
+def test_navigation_links(page):
+    """Navigation links should work between pages."""
+    assert _check_navigation_links(page), "Navigation links check failed"
+
+
+def test_contact_deletion_ui(page):
+    """Contact deletion should work from list page."""
+    assert _check_contact_deletion_ui(page), "Contact deletion UI check failed"
 
 
 def main():

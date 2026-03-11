@@ -1,7 +1,7 @@
 APP_NAME        := hello-servlet-jakarta
 IMAGE_NAME      := $(APP_NAME):$(shell date -u +%Y%m%dT%H%M%S%3NZ)
 APP_PORT        := 9080
-SUCCESS_PATTERN := CWWKZ0001I
+SUCCESS_PATTERN := The defaultServer server started in
 FAILURE_PATTERN := BUILD FAILURE|\[ERROR\] \[ERROR\] Some problems were encountered while processing the POMs:|\[ERROR\] The build could not read [0-9]+ projects|\[FATAL\]|Malformed POM|ProjectBuildingException|ModelParseException
 
 build:
@@ -35,14 +35,17 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
-	- docker rmi $(IMAGE_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
 	- docker image prune -f
-	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+	@echo "[INFO] Removed app image(s) and pruned dangling Docker layers"
 
 test: up
 	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'python3 /app/smoke.py'
-	$(MAKE) clean
+	- docker rm -f $(APP_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
+	- docker image prune -f
+	@echo "[INFO] Cleaned up container and image"
 
 local:
 	./mvnw clean package liberty:run

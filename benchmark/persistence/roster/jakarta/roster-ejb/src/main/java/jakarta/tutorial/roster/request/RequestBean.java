@@ -61,26 +61,6 @@ public class RequestBean implements Request, Serializable {
     @PostConstruct
     private void init() {
         cb = em.getCriteriaBuilder();
-        seedCanonicalLeagues();
-    }
-
-    private void seedCanonicalLeagues() {
-        try {
-            if (em.find(League.class, "L1") == null) {
-                em.persist(new SummerLeague("L1", "Mountain", "Soccer"));
-            }
-            if (em.find(League.class, "L2") == null) {
-                em.persist(new SummerLeague("L2", "Valley", "Basketball"));
-            }
-            if (em.find(League.class, "L3") == null) {
-                em.persist(new SummerLeague("L3", "Foothills", "Soccer"));
-            }
-            if (em.find(League.class, "L4") == null) {
-                em.persist(new WinterLeague("L4", "Alpine", "Snowboarding"));
-            }
-        } catch (Exception ex) {
-            logger.log(Level.WARNING, "Failed to seed canonical leagues", ex);
-        }
     }
 
     @Override

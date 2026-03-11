@@ -89,27 +89,49 @@ def pick_base_url() -> str:
     return BASE_CANDIDATES[1]
 
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Smoke test for taskcreator-quarkus")
-    p.add_argument("--base-url", default=DEFAULT_BASE, help=f"Base URL (env BASE_URL or {DEFAULT_BASE})")
-    return p.parse_args()
+@pytest.fixture(scope="module")
+def base_url():
+    return pick_base_url()
 
 
-def test_smoke():
-    assert main() == 0
+def test_post_log_accepts_message(base_url):
+    """POST to /taskinfo should accept a message and return 200/204."""
+    msg = f"{datetime.now().strftime('%H:%M:%S')} - Test message"
+    assert post_log(base_url, msg)
+
+
+def test_get_taskinfo_returns_405(base_url):
+    """GET to /taskinfo should return 405 Method Not Allowed."""
+    assert get_taskinfo_expect_405(base_url)
+
+
+def test_post_log_with_task_format(base_url):
+    """POST with a task-formatted timestamp message."""
+    msg = f"{datetime.now().strftime('%H:%M:%S')} - IMMEDIATE Task TestTask started"
+    assert post_log(base_url, msg)
+
+
+def test_post_multiple_messages(base_url):
+    """Multiple messages can be posted sequentially."""
+    for i in range(3):
+        msg = f"{datetime.now().strftime('%H:%M:%S')} - Task {i} message"
+        assert post_log(base_url, msg)
+
+
+def test_post_delayed_task_format(base_url):
+    """POST with DELAYED task format message."""
+    msg = f"{datetime.now().strftime('%H:%M:%S')} - DELAYED Task DelayedOne submitted"
+    assert post_log(base_url, msg)
+
+
+def test_post_periodic_task_format(base_url):
+    """POST with PERIODIC task format message."""
+    msg = f"{datetime.now().strftime('%H:%M:%S')} - PERIODIC Task Repeater started run #1"
+    assert post_log(base_url, msg)
 
 
 def main() -> int:
-    base_url = pick_base_url()
-    print(f"Using base URL: {base_url}")
-    msg = f"{datetime.now().strftime('%H:%M:%S')} - Smoke test"
-    post_ok = post_log(base_url, msg)
-    get_ok = get_taskinfo_expect_405(base_url)
-    if post_ok and get_ok:
-        print("[PASS] Smoke tests complete")
-        return 0
-    print("[FAIL] Smoke tests failed", file=sys.stderr)
-    return 1
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":  # pragma: no cover

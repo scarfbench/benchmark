@@ -20,6 +20,9 @@ public class TeamDetails implements Serializable {
     private String name;
     private String city;
 
+    public TeamDetails() {
+    }
+
     public TeamDetails(String id, String name, String city) {
 
         this.id = id;

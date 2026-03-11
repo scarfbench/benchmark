@@ -233,16 +233,24 @@ def parse_customer_id_from_response(resp):
         pass
     return None
 
-def _run_smoke():
+def test_index_page():
+    """Index page should load successfully."""
     must_get("/index.xhtml", 2)
-    
+
+
+def test_list_page():
+    """List page should be accessible."""
     soft_get("/list.xhtml")
-    soft_get("/error.xhtml")
-    
+
+
+def test_get_all_customers():
+    """GET /Customer/all should return customer data."""
     customers = get_all_customers()
-    
-    print("\n[INFO] Testing CRUD operations...")
-    
+    assert customers is not None, "Failed to get customers"
+
+
+def test_create_customer():
+    """POST /Customer should create a new customer."""
     test_customer = {
         "firstname": "John",
         "lastname": "Doe",
@@ -257,41 +265,101 @@ def _run_smoke():
             "country": "USA"
         }
     }
-    
     create_resp = create_customer(test_customer)
-    if not create_resp:
-        print("[WARN] Customer creation failed; skipping remaining CRUD tests")
-        return 0
-    
+    assert create_resp is not None, "Customer creation failed"
+
+
+def test_get_customer_by_id():
+    """GET /Customer/{id} should return customer details."""
+    customers = get_all_customers()
+    if not isinstance(customers, list) or not customers:
+        pytest.skip("No customers to retrieve")
+    customer_id = str(customers[0].get("id", ""))
+    if not customer_id:
+        pytest.skip("No customer ID found")
+    resp = get_customer_by_id(customer_id)
+    assert resp is not None, f"Failed to get customer {customer_id}"
+
+
+def test_get_nonexistent_customer():
+    """Scenario: Get a non-existent customer returns null/empty."""
+    url = join(BASE, "/Customer/99999")
+    vprint(f"GET {url}")
+    resp, err = http("GET", url, headers={"Accept": "application/json"})
+    assert err is None, f"GET /Customer/99999 -> {err}"
+    if resp["status"] == 200:
+        body = resp["body"].strip()
+        assert not body or body == "null", \
+            f"Expected empty or null body for non-existent customer, got: {body[:100]}"
+    else:
+        assert resp["status"] in [404, 204], \
+            f"Expected 404 or 204 for non-existent customer, got {resp['status']}"
+    print(f"[PASS] GET non-existent customer -> {resp['status']}")
+
+
+def test_update_customer():
+    """Scenario: Update an existing customer via PUT."""
+    customers = get_all_customers()
+    if not isinstance(customers, list) or not customers:
+        pytest.skip("No customers to update")
+    customer_id = str(customers[0].get("id", ""))
+    if not customer_id:
+        pytest.skip("No customer ID found")
+    updated_data = {
+        "id": int(customer_id),
+        "firstname": customers[0].get("firstname", "Updated"),
+        "lastname": "Updated",
+        "email": "updated@example.com",
+        "phone": "555-9999"
+    }
+    result = update_customer(customer_id, updated_data)
+    assert result, f"Failed to update customer {customer_id}"
+    print(f"[PASS] PUT /Customer/{customer_id} updated successfully")
+
+
+def test_delete_customer():
+    """Scenario: Delete an existing customer."""
+    test_customer = {
+        "firstname": "ToDelete",
+        "lastname": "Temporary",
+        "email": "delete@example.com",
+        "phone": "555-0000"
+    }
+    create_resp = create_customer(test_customer)
+    if create_resp is None:
+        pytest.skip("Could not create customer to delete")
     customer_id = parse_customer_id_from_response(create_resp)
     if not customer_id:
-        updated_customers = get_all_customers()
-        if isinstance(updated_customers, list) and updated_customers:
-            for customer in updated_customers:
-                if (isinstance(customer, dict) and 
-                    customer.get("firstname") == "John" and 
-                    customer.get("lastname") == "Doe"):
-                    customer_id = str(customer.get("id"))
-                    break
-    
+        customers = get_all_customers()
+        if isinstance(customers, list) and customers:
+            customer_id = str(customers[-1].get("id", ""))
     if not customer_id:
-        return 0
-    
-    get_resp = get_customer_by_id(customer_id)
-    if get_resp:
-        try:
-            customer_data = json.loads(get_resp["body"])
-            print(f"[PASS] Retrieved customer: {customer_data.get('firstname')} {customer_data.get('lastname')}")
-        except Exception as e:
-            pass
-    
-    print("\n[PASS] Smoke sequence complete")
-    return 0
+        pytest.skip("Could not determine customer ID for deletion")
+    result = delete_customer(customer_id)
+    assert result, f"Failed to delete customer {customer_id}"
+    print(f"[PASS] DELETE /Customer/{customer_id} successful")
 
 
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
+def test_content_negotiation_json():
+    """Scenario: Customer endpoint supports JSON format."""
+    url = join(BASE, "/Customer/all")
+    resp, err = http("GET", url, headers={"Accept": "application/json"})
+    assert err is None, f"GET /Customer/all (JSON) -> {err}"
+    assert resp["status"] == 200, f"Expected 200, got {resp['status']}"
+    ctype = resp["content_type"].lower()
+    assert "json" in ctype, f"Expected JSON content type, got: {ctype}"
+    print(f"[PASS] Content negotiation JSON: {resp['content_type']}")
+
+
+def test_content_negotiation_xml():
+    """Scenario: Customer endpoint supports XML format."""
+    url = join(BASE, "/Customer/all")
+    resp, err = http("GET", url, headers={"Accept": "application/xml"})
+    assert err is None, f"GET /Customer/all (XML) -> {err}"
+    assert resp["status"] == 200, f"Expected 200, got {resp['status']}"
+    ctype = resp["content_type"].lower()
+    assert "xml" in ctype, f"Expected XML content type, got: {ctype}"
+    print(f"[PASS] Content negotiation XML: {resp['content_type']}")
 
 
 def main():

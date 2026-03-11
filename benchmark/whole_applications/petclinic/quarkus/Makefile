@@ -44,9 +44,9 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
-	- docker rmi $(IMAGE_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
 	- docker image prune -f
-	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+	@echo "[INFO] Removed app image(s) and pruned dangling Docker layers"
 
 test: up
 	@docker exec $(APP_NAME) sh -c 'for i in $$(seq 1 120); do \
@@ -57,7 +57,10 @@ test: up
 	exit 1'
 	@echo "[INFO] Running smoke tests inside container $(APP_NAME)..."
 	docker exec $(APP_NAME) bash -lc "cd smoke && pytest -v smoke.py"
-	$(MAKE) clean IMAGE_NAME=$(IMAGE_NAME)
+	- docker rm -f $(APP_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
+	- docker image prune -f
+	@echo "[INFO] Cleaned up container and image"
 
 local:
 	./mvnw clean package quarkus:run

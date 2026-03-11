@@ -24,4 +24,6 @@ COPY . .
 
 RUN if [ -f smoke.py ]; then chmod +x smoke.py; fi
 
-CMD [ "mvn", "clean", "package", "spring-boot:run" ]
+RUN mvn install -DskipTests
+
+CMD ["sh", "-c", "mvn -pl async-service spring-boot:run 2>&1 | tee /app/app.log"]

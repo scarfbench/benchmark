@@ -1,155 +1,422 @@
+"""
+Smoke test for Jakarta EE "Roster" app on Open Liberty.
+
+Tests the REST API endpoints at /api/roster/* that manage leagues, teams,
+and players. Maps to scenarios in roster.feature.
+
+Environment:
+  APP_PORT   Application port (default: 9080)
+  VERBOSE=1  Verbose logging
+
+Exit codes:
+  0  success (via pytest)
+"""
+
+import json
 import os
 import sys
-from random import randint
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 import pytest
-from playwright.sync_api import expect, sync_playwright
 
-BASE = os.getenv("ROSTER_BASE", "http://localhost:9080/roster").rstrip("/")
-HEADLESS = os.getenv("HEADLESS", "1") == "1"
-
-
-@pytest.fixture(scope="session")
-def playwright_instance():
-    """Start Playwright once per test session."""
-    with sync_playwright() as p:
-        yield p
+APP_PORT = os.getenv("APP_PORT", "9080")
+BASE = f"http://localhost:{APP_PORT}/roster"
+VERBOSE = os.getenv("VERBOSE") == "1"
 
 
-@pytest.fixture(scope="session")
-def browser(playwright_instance):
-    """Launch one browser for the whole test session."""
-    browser = playwright_instance.chromium.launch(headless=HEADLESS)
+def vprint(*args):
+    if VERBOSE:
+        print(*args)
+
+
+def http(method, path, body=None, query=None, content_type="application/json", timeout=10):
+    """Make an HTTP request and return (status, body_str)."""
+    url = f"{BASE}{path}"
+    if query:
+        from urllib.parse import quote
+        url += "?" + "&".join(f"{k}={quote(str(v))}" for k, v in query.items())
+    data = None
+    if body is not None:
+        if content_type == "application/json":
+            data = json.dumps(body).encode()
+        elif content_type == "application/x-www-form-urlencoded":
+            from urllib.parse import urlencode
+            data = urlencode(body).encode()
+
+    headers = {"User-Agent": "Roster-Smoke/1.0"}
+    if content_type and data is not None:
+        headers["Content-Type"] = content_type
+    if method == "GET":
+        headers["Accept"] = "application/json"
+
+    req = Request(url, data=data, method=method, headers=headers)
     try:
-        yield browser
-    finally:
-        browser.close()
+        with urlopen(req, timeout=timeout) as resp:
+            return resp.getcode(), resp.read().decode("utf-8", "replace")
+    except HTTPError as e:
+        try:
+            body_text = e.read().decode("utf-8", "replace")
+        except Exception:
+            body_text = ""
+        return e.code, body_text
+    except (URLError, Exception) as e:
+        pytest.fail(f"Network error on {method} {path}: {e}")
 
 
-@pytest.fixture
-def page(browser):
-    """New page per test (keeps tests isolated)."""
-    page = browser.new_page()
-    try:
-        yield page
-    finally:
-        page.close()
+def json_get(path, query=None):
+    """GET JSON and parse the response."""
+    status, body = http("GET", path, query=query)
+    assert status == 200, f"GET {path} returned {status}: {body}"
+    return json.loads(body) if body.strip() else None
 
 
-def test_create_league(page):
-    page.goto(f"{BASE}/league.xhtml", wait_until="domcontentloaded")
-    print("[INFO] Navigated to league creation page")
-
-    expect(
-        page.get_by_role("heading", name="Roster Application - League Management")
-    ).to_be_visible()
-    print("[INFO] Verified league creation page contents")
-
-    league_id = f"L{randint(0, 1000)}"
-    league_name = "English Premier League"
-    league_sport = "soccer"  # valid: soccer, swimming, basketball, baseball, hockey, skiing, snowboarding
-    print("[INFO] Creating league for", league_name)
-
-    # JSF ids contain ':' -> escape in CSS selectors as \\:
-    page.locator("#createLeagueForm\\:leagueId").fill(league_id)
-    page.locator("#createLeagueForm\\:leagueName").fill(league_name)
-    page.locator("#createLeagueForm\\:leagueSport").fill(league_sport)
-    print("[INFO] Filled league creation form")
-
-    # JSF commandButton does a postback and typically stays on the same URL.
-    # Also: this page only renders the canonical seed leagues (L1-L4) in the table,
-    # so validating persistence via table contents is not reliable here.
-    page.get_by_role("button", name="Create League").click()
-    print("[INFO] Submitted league creation form")
-
-    messages = page.locator(".messages")
-    expect(messages).to_contain_text("League created successfully")
-
-    # Fields should be cleared after successful creation.
-    expect(page.locator("#createLeagueForm\\:leagueId")).to_have_value("")
-    expect(page.locator("#createLeagueForm\\:leagueName")).to_have_value("")
-    expect(page.locator("#createLeagueForm\\:leagueSport")).to_have_value("")
-    print("[INFO] Verified form fields creation")
+# ---------------------------------------------------------------------------
+# Fixtures — seed canonical data (leagues + teams + players) once
+# ---------------------------------------------------------------------------
 
 
-def test_create_a_team(page):
-    # First let's check if we can go to the create team page that is located at `team.xhtml`
-    page.goto("http://localhost:9080/roster/team.xhtml", wait_until="domcontentloaded")
-    print("[INFO] Navigated to team creation page")
+@pytest.fixture(scope="session", autouse=True)
+def seed_data():
+    """Seed canonical leagues, teams, and players for the test session."""
+    # Create leagues
+    leagues = [
+        {"id": "L1", "name": "Mountain", "sport": "Soccer"},
+        {"id": "L2", "name": "Valley", "sport": "Basketball"},
+        {"id": "L3", "name": "Foothills", "sport": "Soccer"},
+        {"id": "L4", "name": "Alpine", "sport": "Snowboarding"},
+    ]
+    for lg in leagues:
+        http("POST", "/league", body=lg)
 
-    # Check if the page has the correct contents
-    expect(
-        page.get_by_role("heading", name="Roster Application - Team Management")
-    ).to_be_visible()
-    print("[INFO] Verified team creation page contents")
+    # Create teams
+    teams = [
+        ("T1", "Honey Bees", "Visalia", "L1"),
+        ("T2", "Gophers", "Manteca", "L1"),
+        ("T3", "Deer", "Bodie", "L2"),
+        ("T5", "Crows", "Denver", "L1"),
+    ]
+    for tid, name, city, lid in teams:
+        http("POST", f"/team/league/{lid}", body={"id": tid, "name": name, "city": city})
 
-    # Create a new team
-    team_id: str = "1"
-    team_name: str = "Arsenal FC"
-    city: str = "London"
+    # Create players via query params
+    players = [
+        ("P1", "Duke", "forward", "50000"),
+        ("P2", "Alice", "defender", "30000"),
+        ("P3", "Bob", "midfielder", "45000"),
+        ("P4", "Grace", "forward", "60000"),
+        ("P5", "Unassigned", "pitcher", "20000"),
+    ]
+    for pid, name, pos, sal in players:
+        http("POST", "/player", query={"id": pid, "name": name, "position": pos, "salary": sal})
 
-    page.locator("#createTeamForm\\:teamId").fill(team_id)
-    page.locator("#createTeamForm\\:teamName").fill(team_name)
-    page.locator("#createTeamForm\\:city").fill(city)
-    league_selector = page.locator("#createTeamForm\\:league")
-    options = league_selector.locator("option")
-    # Select first real option (skip placeholder)
-    first_real_value = options.nth(1).get_attribute("value")
-    assert first_real_value and first_real_value != ""
-    league_selector.select_option(value=first_real_value)
-    with page.expect_navigation(wait_until="domcontentloaded"):
-        page.get_by_role("button", name="Add Team").click()
-    print("[INFO] Submitted team creation form")
+    # Assign players to teams
+    http("POST", "/player/P1/team/T1", body="")
+    http("POST", "/player/P2/team/T1", body="")
+    http("POST", "/player/P3/team/T2", body="")
+    http("POST", "/player/P4/team/T1", body="")
+    # P1 also on T3 (multi-team for cross-entity queries)
+    http("POST", "/player/P1/team/T3", body="")
+    # P5 stays unassigned
 
-    # Wait until teams information is visible
-    table = page.locator("table.data-table")
-    expect(table).to_be_visible()
-    print("[INFO] Verified teams information is visible")
-
-    # Lastly, verify that a row exists with all the data we just populated.
-    row = table.locator("tr", has_text=team_id).filter(has_text=team_name).filter(has_text=city)
-    expect(row).to_have_count(1)
-    print("[INFO] Verified team information is visible")
-
-
-def test_create_a_player(page):
-    "Create a player to put in the team"
-    page.goto("http://localhost:9080/roster/player.xhtml", wait_until="domcontentloaded")
-    page.get_by_role("heading", name="Roster Application - Player Management")
-    print("[INFO] Verified player creation page contents")
-
-    # Create a new player
-    player_id: str = "1"
-    player_name: str = "Martin Odegaard"
-    position: str = "CAM"
-    salary: str = "1000000"
-
-    page.locator("#createPlayerForm\\:playerIdInputText").fill(player_id)
-    page.locator("#createPlayerForm\\:nameInputText").fill(player_name)
-    page.locator("#createPlayerForm\\:positionInputText").fill(position)
-    page.locator("#createPlayerForm\\:salaryInputText").fill(salary)
-    team_selector = page.locator("#createPlayerForm\\:team")
-    options = team_selector.locator("option")
-    first_real_value = options.nth(1).get_attribute("value")
-    assert first_real_value and first_real_value != ""
-    team_selector.select_option(value=first_real_value)
-    with page.expect_navigation(wait_until="domcontentloaded"):
-        page.get_by_role("button", name="Submit").click()
-    print("[INFO] Submitted player creation form")
-
-    # Wait until players information is visible
-    table = page.locator("table.data-table")
-    expect(table).to_be_visible()
-    print("[INFO] Verified players information is visible")
-
-    # Lastly, verify that a row exists with all the data we just populated.
-    row = table.locator("tr", has_text=player_id).filter(has_text=player_name).filter(has_text=position)
-    expect(row).to_have_count(1)
-    print("[INFO] Verified player information is visible")
+    yield
 
 
-def main() -> int:
-    return pytest.main([__file__, "-q", "-x"])
+# ---------------------------------------------------------------------------
+# League management
+# ---------------------------------------------------------------------------
+
+
+def test_application_is_running():
+    """Application should be accessible."""
+    status, _ = http("GET", "/league/L1")
+    assert status == 200
+
+
+def test_canonical_leagues_seeded():
+    """Scenario: Canonical leagues are seeded on startup."""
+    for lid, name, sport in [
+        ("L1", "Mountain", "Soccer"),
+        ("L2", "Valley", "Basketball"),
+        ("L3", "Foothills", "Soccer"),
+        ("L4", "Alpine", "Snowboarding"),
+    ]:
+        data = json_get(f"/league/{lid}")
+        assert data["id"] == lid
+        assert data["name"] == name
+        assert data["sport"] == sport
+    print("[PASS] Canonical leagues verified")
+
+
+def test_create_summer_league():
+    """Scenario: Create a summer league (swimming is a summer sport)."""
+    status, _ = http("POST", "/league", body={"id": "L5", "name": "Coastal", "sport": "Swimming"})
+    assert status in [200, 204], f"Create summer league failed: {status}"
+
+    data = json_get("/league/L5")
+    assert data["name"] == "Coastal"
+    print("[PASS] Summer league created")
+
+
+def test_create_winter_league():
+    """Scenario: Create a winter league (skiing is a winter sport)."""
+    status, _ = http("POST", "/league", body={"id": "L6", "name": "Nordic", "sport": "Skiing"})
+    assert status in [200, 204], f"Create winter league failed: {status}"
+
+    data = json_get("/league/L6")
+    assert data["name"] == "Nordic"
+    print("[PASS] Winter league created")
+
+
+def test_invalid_sport_rejected():
+    """Scenario: Invalid sport throws IncorrectSportException."""
+    status, _ = http("POST", "/league", body={"id": "LX", "name": "Bad", "sport": "Cricket"})
+    assert status == 400, f"Expected 400 for invalid sport, got {status}"
+    print("[PASS] Invalid sport correctly rejected")
+
+
+def test_create_summer_sport_leagues():
+    """Scenario: Summer sports include soccer, swimming, basketball, and baseball."""
+    for i, sport in enumerate(["Soccer", "Swimming", "Basketball", "Baseball"]):
+        lid = f"LS{i}"
+        status, _ = http("POST", "/league", body={"id": lid, "name": f"Test {sport}", "sport": sport})
+        assert status in [200, 204], f"Create {sport} league failed: {status}"
+    print("[PASS] All summer sport leagues created")
+
+
+def test_create_winter_sport_leagues():
+    """Scenario: Winter sports include hockey, skiing, and snowboarding."""
+    for i, sport in enumerate(["Hockey", "Skiing", "Snowboarding"]):
+        lid = f"LW{i}"
+        status, _ = http("POST", "/league", body={"id": lid, "name": f"Test {sport}", "sport": sport})
+        assert status in [200, 204], f"Create {sport} league failed: {status}"
+    print("[PASS] All winter sport leagues created")
+
+
+def test_remove_league():
+    """Scenario: Remove a league."""
+    # Create a disposable league
+    http("POST", "/league", body={"id": "LDEL", "name": "Disposable", "sport": "Soccer"})
+    status, _ = http("DELETE", "/league/LDEL")
+    assert status in [200, 204], f"Remove league failed: {status}"
+
+    status, _ = http("GET", "/league/LDEL")
+    assert status in [404, 500], "Removed league should not exist"
+    print("[PASS] League removed")
+
+
+# ---------------------------------------------------------------------------
+# Team management
+# ---------------------------------------------------------------------------
+
+
+def test_create_team_in_league():
+    """Scenario: Create a team in a league."""
+    status, _ = http("POST", "/team/league/L1", body={"id": "T10", "name": "Eagles", "city": "Denver"})
+    assert status in [200, 204], f"Create team failed: {status}"
+
+    data = json_get("/team/T10")
+    assert data["name"] == "Eagles"
+    assert data["city"] == "Denver"
+    print("[PASS] Team created in league")
+
+
+def test_get_team_details():
+    """Scenario: Get team details by ID."""
+    data = json_get("/team/T1")
+    assert data["id"] == "T1"
+    assert "name" in data
+    assert "city" in data
+    print("[PASS] Team details retrieved")
+
+
+def test_get_teams_of_league():
+    """Scenario: Get teams of a league."""
+    teams = json_get("/league/L1/teams")
+    assert isinstance(teams, list)
+    team_ids = [t["id"] for t in teams]
+    assert "T1" in team_ids
+    assert "T2" in team_ids
+    print("[PASS] Teams of league retrieved")
+
+
+def test_remove_team():
+    """Scenario: Remove a team drops all player associations."""
+    # Create a temp team and player
+    http("POST", "/team/league/L2", body={"id": "TDEL", "name": "Temp", "city": "Nowhere"})
+    http("POST", "/player", query={"id": "PDEL", "name": "Temp Player", "position": "sub", "salary": "100"})
+    http("POST", "/player/PDEL/team/TDEL", body="")
+
+    status, _ = http("DELETE", "/team/TDEL")
+    assert status in [200, 204], f"Remove team failed: {status}"
+
+    status, _ = http("GET", "/team/TDEL")
+    assert status in [404, 500], "Removed team should not exist"
+
+    # Clean up player
+    http("DELETE", "/player/PDEL")
+    print("[PASS] Team removed, player associations dropped")
+
+
+# ---------------------------------------------------------------------------
+# Player management
+# ---------------------------------------------------------------------------
+
+
+def test_create_player():
+    """Scenario: Create a new player."""
+    data = json_get("/player/P1")
+    assert data["id"] == "P1"
+    assert data["name"] == "Duke"
+    assert data["position"] == "forward"
+    assert data["salary"] == 50000.0
+    print("[PASS] Player details verified")
+
+
+def test_add_player_to_team():
+    """Scenario: Add a player to a team."""
+    players = json_get("/team/T1/players")
+    player_ids = [p["id"] for p in players]
+    assert "P1" in player_ids
+    print("[PASS] Player is on team")
+
+
+def test_drop_player_from_team():
+    """Scenario: Drop a player from a team."""
+    # Create a temp player on T2
+    http("POST", "/player", query={"id": "PDROP", "name": "Dropper", "position": "sub", "salary": "100"})
+    http("POST", "/player/PDROP/team/T2", body="")
+
+    status, _ = http("DELETE", "/player/PDROP/team/T2")
+    assert status in [200, 204], f"Drop player failed: {status}"
+
+    players = json_get("/team/T2/players")
+    player_ids = [p["id"] for p in players]
+    assert "PDROP" not in player_ids
+
+    http("DELETE", "/player/PDROP")
+    print("[PASS] Player dropped from team")
+
+
+def test_remove_player():
+    """Scenario: Remove a player from the system."""
+    http("POST", "/player", query={"id": "PREM", "name": "Removable", "position": "sub", "salary": "100"})
+    http("POST", "/player/PREM/team/T1", body="")
+
+    status, _ = http("DELETE", "/player/PREM")
+    assert status in [200, 204], f"Remove player failed: {status}"
+
+    status, _ = http("GET", "/player/PREM")
+    assert status in [404, 500], "Removed player should not exist"
+    print("[PASS] Player removed")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by position
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_position():
+    """Scenario: Get players by position."""
+    players = json_get("/players/position/forward")
+    assert len(players) > 0
+    for p in players:
+        assert p["position"] == "forward"
+    print("[PASS] Players by position query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by salary
+# ---------------------------------------------------------------------------
+
+
+def test_players_salary_higher_than():
+    """Scenario: Get players with salary higher than a named player."""
+    players = json_get("/players/salary/higher/Alice")
+    assert len(players) > 0
+    # Duke (50000) should be in results since Alice is 30000
+    names = [p["name"] for p in players]
+    assert "Duke" in names
+    print("[PASS] Salary higher-than query works")
+
+
+def test_players_by_salary_range():
+    """Scenario: Get players by salary range."""
+    players = json_get("/players/salary/range", query={"low": "40000", "high": "60000"})
+    assert len(players) > 0
+    for p in players:
+        assert 40000 <= p["salary"] <= 60000
+    print("[PASS] Salary range query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by league and sport
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_league():
+    """Scenario: Get players by league ID."""
+    players = json_get("/players/league/L1")
+    assert len(players) > 0
+    player_ids = [p["id"] for p in players]
+    assert "P1" in player_ids
+    print("[PASS] Players by league query works")
+
+
+def test_players_by_sport():
+    """Scenario: Get players by sport."""
+    players = json_get("/players/sport/Soccer")
+    assert len(players) > 0
+    print("[PASS] Players by sport query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by city and team
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_city():
+    """Scenario: Get players by city."""
+    players = json_get("/players/city/Visalia")
+    assert len(players) > 0
+    print("[PASS] Players by city query works")
+
+
+def test_players_not_on_team():
+    """Scenario: Get players not on any team."""
+    players = json_get("/players/not-on-team")
+    assert len(players) > 0
+    player_ids = [p["id"] for p in players]
+    assert "P5" in player_ids
+    print("[PASS] Players not on team query works")
+
+
+# ---------------------------------------------------------------------------
+# Cross-entity queries
+# ---------------------------------------------------------------------------
+
+
+def test_leagues_of_player():
+    """Scenario: Get leagues of a specific player."""
+    leagues = json_get("/player/P1/leagues")
+    assert leagues is not None
+    league_ids = [lg["id"] for lg in leagues]
+    # P1 is on T1 (L1) and T3 (L2)
+    assert "L1" in league_ids
+    assert "L2" in league_ids
+    print("[PASS] Leagues of player query works")
+
+
+def test_sports_of_player():
+    """Scenario: Get sports of a specific player."""
+    sports = json_get("/player/P1/sports")
+    assert "Soccer" in sports
+    assert "Basketball" in sports
+    print("[PASS] Sports of player query works")
+
+
+def main():
+    return pytest.main([__file__, "-v"])
 
 
 if __name__ == "__main__":

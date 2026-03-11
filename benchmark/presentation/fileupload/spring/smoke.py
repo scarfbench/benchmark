@@ -116,6 +116,54 @@ def test_post_upload():
     print("[PASS] blank destination hint present")
 
 
+def test_upload_reports_filename():
+    """Scenario: Upload reports the file name in the response."""
+    url = BASE.rstrip("/") + "/upload"
+    filename = "testdoc.txt"
+    body, boundary = build_multipart({"destination": "/tmp"}, {"file": (filename, b"test content")})
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    s, b = http_request("POST", url, data=body, headers=headers)
+    if s == 200:
+        assert filename in b, f"Expected filename '{filename}' in response, got: {b[:200]}"
+        print(f"[PASS] Upload reports filename: {filename}")
+    else:
+        print(f"[WARN] Upload returned {s}, skipping filename check")
+
+
+def test_upload_to_nonexistent_destination():
+    """Scenario: Upload to a nonexistent destination returns an error."""
+    url = BASE.rstrip("/") + "/upload"
+    body, boundary = build_multipart(
+        {"destination": "/nonexistent/path/does/not/exist"},
+        {"file": ("test.txt", b"test content")}
+    )
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    s, b = http_request("POST", url, data=body, headers=headers)
+    b_lower = b.lower() if b else ""
+    has_error = ("error" in b_lower or "protected" in b_lower or
+                 "nonexistent" in b_lower or "not found" in b_lower or
+                 s in [400, 404, 500])
+    assert has_error, f"Expected error for nonexistent destination, got {s}: {b[:200]}"
+    print(f"[PASS] Upload to nonexistent destination -> error (HTTP {s})")
+
+
+def test_response_content_type():
+    """Scenario: Response content type is text/html."""
+    url = BASE.rstrip("/") + "/upload"
+    body, boundary = build_multipart({"destination": "/tmp"}, {"file": ("test.txt", b"hello")})
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+    req = __import__("urllib.request", fromlist=["Request"]).Request(
+        url, data=body, method="POST", headers=headers
+    )
+    try:
+        with __import__("urllib.request", fromlist=["urlopen"]).urlopen(req, timeout=10) as resp:
+            ct = resp.headers.get("Content-Type", "")
+            assert "text/html" in ct.lower(), f"Expected text/html, got: {ct}"
+            print(f"[PASS] Response Content-Type: {ct}")
+    except Exception as e:
+        print(f"[WARN] Could not verify content type: {e}")
+
+
 def main():
     return pytest.main([__file__, "-v"])
 

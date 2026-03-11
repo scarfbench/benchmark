@@ -48,14 +48,17 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
-	- docker rmi $(IMAGE_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
 	- docker image prune -f
-	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+	@echo "[INFO] Removed app image(s) and pruned dangling Docker layers"
 
 test: up
 	@docker exec $(APP_NAME) sh -c 'until curl -sS "http://localhost:$(APP_PORT)" >/dev/null; do sleep 1; done'
 	@docker exec $(APP_NAME) sh -c 'SKIP_START_APP=1 python3 /app/smoke.py'
-	$(MAKE) clean
+	- docker rm -f $(APP_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
+	- docker image prune -f
+	@echo "[INFO] Cleaned up container and image"
 
 local:
 	./mvnw -pl async-service clean package spring-boot:run

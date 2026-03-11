@@ -60,16 +60,19 @@ down:
 	@echo "[INFO] Container removed (if it existed)"
 
 clean: down
-	- docker rmi $(IMAGE_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
 	- docker image prune -f
-	@echo "[INFO] Removed app image and pruned dangling Docker layers"
+	@echo "[INFO] Removed app image(s) and pruned dangling Docker layers"
 
 # Clean up
 
 # Run the smoke tests
 test: up
 	@docker exec $(APP_NAME) sh -c 'uv run /app/smoke.py'
-	$(MAKE) clean IMAGE_TAG=$(IMAGE_TAG)
+	- docker rm -f $(APP_NAME)
+	- docker rmi $$(docker images -q $(APP_NAME)) 2>/dev/null
+	- docker image prune -f
+	@echo "[INFO] Cleaned up container and image"
 
 # Run the app locally
 local:

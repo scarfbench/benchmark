@@ -1,61 +1,28 @@
 """
-Black-box smoke test for "Roster" app.
+Smoke test for Spring Boot "Roster" app.
 
-IMPORTANT: This test is designed to run INSIDE the Docker container where
-the Spring Boot application is running.
-
-This test follows the Spring Boot pattern:
-1) Boot the Spring Boot application
-2) Run the Spring Boot test client (test driver)
-3) Assert the client exits 0 and prints known "good" markers
-4) Optionally sanity-check the DB tables got created
-
-Usage:
-  # Copy smoke test into container
-  docker cp smoke.py <container_name>:/tmp/smoke.py
-
-  # Run inside container
-  docker exec -it <container_name> python3 /tmp/smoke.py
-
-Checks:
-  1) Spring Boot application availability
-  2) Application startup status
-  3) Spring Boot functionality via test client
-  4) Database persistence operations
-  5) Database table creation verification
+Tests the REST API endpoints at /roster/* that manage leagues, teams,
+and players. Maps to scenarios in roster.feature.
 
 Environment:
-  VERBOSE=1           Verbose logging
-  TIMEOUT=60          Test timeout in seconds
-  APP_PORT            Application port (default: 8080)
-  DB_HOST             Database host (default: localhost)
-  DB_PORT             Database port (default: 8080 for H2)
-  DB_NAME             Database name (default: roster)
-  DB_USER             Database user (default: sa)
-  DB_PASS             Database password (default: )
+  APP_PORT   Application port (default: 8080)
+  VERBOSE=1  Verbose logging
 
 Exit codes:
-  0  success
-  2  Spring Boot/persistence functionality failed
-  3  Database verification failed
-  9  Network / unexpected error
+  0  success (via pytest)
 """
 
+import json
 import os
 import sys
-import re
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+
 import pytest
 
-VERBOSE = os.getenv("VERBOSE") == "1"
-TEST_TIMEOUT = int(os.getenv("TIMEOUT", "60"))
 APP_PORT = os.getenv("APP_PORT", "8080")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "8080")
-DB_NAME = os.getenv("DB_NAME", "roster")
-DB_USER = os.getenv("DB_USER", "sa")
-DB_PASS = os.getenv("DB_PASS", "")
+BASE = f"http://localhost:{APP_PORT}/roster"
+VERBOSE = os.getenv("VERBOSE") == "1"
 
 
 def vprint(*args):
@@ -63,227 +30,385 @@ def vprint(*args):
         print(*args)
 
 
-def http_request(method: str, url: str, timeout: int = 10):
-    """Make HTTP request and return (status_code, body) or (None, error)"""
-    req = Request(url, method=method, headers={"User-Agent": "Roster-Smoke-Test/1.0"})
+def http(method, path, body=None, query=None, content_type="application/json", timeout=10):
+    """Make an HTTP request and return (status, body_str)."""
+    url = f"{BASE}{path}"
+    if query:
+        url += "?" + "&".join(f"{k}={v}" for k, v in query.items())
+    data = None
+    if body is not None:
+        if content_type == "application/json":
+            data = json.dumps(body).encode()
+        elif content_type == "application/x-www-form-urlencoded":
+            from urllib.parse import urlencode
+            data = urlencode(body).encode()
+
+    headers = {"User-Agent": "Roster-Smoke/1.0"}
+    if content_type and data is not None:
+        headers["Content-Type"] = content_type
+    if method == "GET":
+        headers["Accept"] = "application/json"
+
+    req = Request(url, data=data, method=method, headers=headers)
     try:
         with urlopen(req, timeout=timeout) as resp:
-            return (resp.getcode(), resp.read().decode("utf-8", "replace")), None
+            return resp.getcode(), resp.read().decode("utf-8", "replace")
     except HTTPError as e:
         try:
-            body = e.read().decode("utf-8", "replace")
+            body_text = e.read().decode("utf-8", "replace")
         except Exception:
-            body = ""
-        return (e.code, body), None
+            body_text = ""
+        return e.code, body_text
     except (URLError, Exception) as e:
-        return None, f"NETWORK-ERROR: {e}"
+        pytest.fail(f"Network error on {method} {path}: {e}")
 
 
-def check_application_deployment():
-    """Check if the application is actually deployed"""
-    vprint("Checking if application is deployed...")
-
-    app_url = f"http://localhost:{APP_PORT}"
-    result, error = http_request("GET", app_url)
-
-    if error:
-        vprint(f"Application not accessible: {error}")
-        return False
-
-    if result[0] in [200, 404]:
-        vprint(f"Application is running at {app_url}")
-        return True
-    else:
-        vprint(f"Application returned status {result[0]}")
-        return False
+def json_get(path, query=None):
+    """GET JSON and parse the response."""
+    status, body = http("GET", path, query=query)
+    assert status == 200, f"GET {path} returned {status}: {body}"
+    return json.loads(body) if body.strip() else None
 
 
-def find_application_jars():
-    """Find the actual JAR files for the application"""
-    app_paths = [
-        "/app/roster-boot/target/classes",
-        "/app/roster-common/target/classes",
-        "/app/roster-boot/target/dependency",
+# ---------------------------------------------------------------------------
+# Fixtures — seed canonical data (leagues + teams + players) once
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session", autouse=True)
+def seed_data():
+    """Seed canonical leagues, teams, and players for the test session."""
+    # Create leagues
+    leagues = [
+        {"id": "L1", "name": "Mountain", "sport": "Soccer"},
+        {"id": "L2", "name": "Valley", "sport": "Basketball"},
+        {"id": "L3", "name": "Foothills", "sport": "Soccer"},
+        {"id": "L4", "name": "Alpine", "sport": "Snowboarding"},
     ]
+    for lg in leagues:
+        http("POST", "/league", body=lg)
 
-    jar_paths = []
-
-    for app_path in app_paths:
-        if os.path.exists(app_path):
-            vprint(f"Found application path: {app_path}")
-
-            for root, dirs, files in os.walk(app_path):
-                for file in files:
-                    if file.endswith(".jar"):
-                        jar_paths.append(os.path.join(root, file))
-                        vprint(f"Found JAR: {os.path.join(root, file)}")
-
-    if not jar_paths:
-        vprint("No JARs found in target directories, looking for Spring Boot JAR...")
-        spring_boot_jar_paths = [
-            "/app/roster-boot/target/roster-boot-1.0.0.jar",
-            "/app/target/roster-boot-1.0.0.jar",
-            "/app/roster-boot/target/*.jar",
-        ]
-
-        for jar_path in spring_boot_jar_paths:
-            if "*" in jar_path:
-                # Handle glob patterns
-                import glob
-
-                matches = glob.glob(jar_path)
-                jar_paths.extend(matches)
-                for match in matches:
-                    vprint(f"Found JAR: {match}")
-            elif os.path.exists(jar_path):
-                jar_paths.append(jar_path)
-                vprint(f"Found JAR: {jar_path}")
-
-    return jar_paths
-
-
-def test_ejb_functionality():
-    """Test EJB functionality via application client - the core black-box test"""
-    if not check_application_deployment():
-        print("[FAIL] Application not deployed")
-        return False
-
-    vprint("Testing Spring Boot application functionality via HTTP...")
-
-    test_endpoints = [
-        f"http://localhost:{APP_PORT}/",
-        f"http://localhost:{APP_PORT}/h2-console",
-        f"http://localhost:{APP_PORT}/actuator/health",
+    # Create teams
+    teams = [
+        ("T1", "Honey Bees", "Visalia", "L1"),
+        ("T2", "Gophers", "Manteca", "L1"),
+        ("T3", "Deer", "Bodie", "L2"),
+        ("T5", "Crows", "Denver", "L1"),
     ]
+    for tid, name, city, lid in teams:
+        http("POST", f"/team/league/{lid}", body={"id": tid, "name": name, "city": city})
 
-    successful_requests = 0
-
-    for endpoint in test_endpoints:
-        result, error = http_request("GET", endpoint, timeout=5)
-        if result and result[0] in [200, 404]:
-            vprint(f"✓ Endpoint accessible: {endpoint}")
-            successful_requests += 1
-        else:
-            vprint(
-                f"✗ Endpoint not accessible: {endpoint} - {error if error else f'Status {result[0] if result else "unknown"}'}"
-            )
-
-    if successful_requests > 0:
-        print(
-            f"[PASS] Spring Boot application is responding to {successful_requests}/{len(test_endpoints)} endpoints"
-        )
-        return True
-    else:
-        print("[FAIL] Spring Boot application is not responding to any endpoints")
-        return False
-
-
-def validate_ejb_output(output):
-    """Validate that EJB output contains expected data patterns"""
-    patterns = [
-        r"player.*\d+",
-        r"team.*\w+",
-        r"league.*\w+",
-        r"salary.*\d+",
-        r"city.*\w+",
+    # Create players via form-encoded data
+    players = [
+        ("P1", "Duke", "forward", "50000"),
+        ("P2", "Alice", "defender", "30000"),
+        ("P3", "Bob", "midfielder", "45000"),
+        ("P4", "Grace", "forward", "60000"),
+        ("P5", "Unassigned", "pitcher", "20000"),
     ]
+    for pid, name, pos, sal in players:
+        http("POST", "/player", body={"id": pid, "name": name, "position": pos, "salary": sal},
+             content_type="application/x-www-form-urlencoded")
 
-    found_patterns = 0
-    for pattern in patterns:
-        if re.search(pattern, output, re.IGNORECASE):
-            found_patterns += 1
+    # Assign players to teams
+    http("POST", "/player/P1/team/T1", body="")
+    http("POST", "/player/P2/team/T1", body="")
+    http("POST", "/player/P3/team/T2", body="")
+    http("POST", "/player/P4/team/T1", body="")
+    # P1 also on T3 (multi-team for cross-entity queries)
+    http("POST", "/player/P1/team/T3", body="")
+    # P5 stays unassigned
 
-    return found_patterns >= 3
-
-
-def diagnose_ejb_error(error_output):
-    """Diagnose common EJB errors"""
-    if "classnotfoundexception" in error_output:
-        vprint("DIAGNOSIS: ClassNotFoundException - Application client class not found")
-    elif "connection" in error_output and "refused" in error_output:
-        vprint("DIAGNOSIS: Connection refused - Application server may not be running")
-    elif "lookup" in error_output and "failed" in error_output:
-        vprint("DIAGNOSIS: EJB lookup failed - Application may not be deployed")
-    elif "persistence" in error_output and "exception" in error_output:
-        vprint("DIAGNOSIS: Database/Persistence issue - Check database connectivity")
-    elif "naming" in error_output and "exception" in error_output:
-        vprint("DIAGNOSIS: Naming service issue - Check JNDI configuration")
-    else:
-        vprint("DIAGNOSIS: Unknown error - check application logs")
+    yield
 
 
-def verify_database_tables():
-    """Sanity-check that database tables were created"""
-    vprint("Verifying database table creation...")
-
-    try:
-        h2_url = f"http://localhost:{APP_PORT}/h2-console"
-        result, error = http_request("GET", h2_url)
-
-        if result and result[0] == 200:
-            print("[PASS] H2 database console is accessible")
-            vprint("H2 database console is available for manual verification")
-            return True
-        else:
-            print("[WARN] Cannot verify database tables - H2 console not accessible")
-            vprint(
-                f"H2 console check failed: {error if error else f'Status {result[0] if result else "unknown"}'}"
-            )
-            return True
-
-    except Exception as e:
-        print(f"[WARN] Database verification failed: {e}")
-        return True
+# ---------------------------------------------------------------------------
+# League management
+# ---------------------------------------------------------------------------
 
 
-def _run_smoke():
-    """Main black-box smoke test following EAR deployment pattern"""
-    print("Starting Roster application black-box smoke test...")
-    print("Pattern: Boot server → Deploy EAR → Run app client → Verify DB")
-
-    app_url = f"http://localhost:{APP_PORT}"
-    vprint(f"Testing application at {app_url}")
-
-    result, error = http_request("GET", app_url)
-    if error:
-        pytest.fail(f"[FAIL] Application not accessible: {error}")
-
-    if result[0] in [200, 404]:
-        print("[PASS] Application is running")
-    else:
-        pytest.fail(f"[FAIL] Application returned status {result[0]}")
-
-    if not check_application_deployment():
-        print("[FAIL] Application not deployed")
-        pytest.fail("smoke test failed with code 2")
-    print("[PASS] Application is deployed")
-
-    print("\n[INFO] Running application client test driver...")
-    if not test_ejb_functionality():
-        print("[FAIL] EJB functionality test failed")
-        pytest.fail("smoke test failed with code 2")
-
-    print("\n[INFO] Verifying database persistence...")
-    db_verified = verify_database_tables()
-    if not db_verified:
-        print("[WARN] Database verification failed - continuing anyway")
-
-    print("\n[PASS] Black-box smoke test completed successfully")
-    print("[INFO] All core functionality verified:")
-    print("  ✓ Application server running")
-    print("  ✓ Application deployed")
-    print("  ✓ Application client executed successfully")
-    if db_verified:
-        print("  ✓ Database tables verified")
-    else:
-        print("  ⚠ Database verification skipped/failed")
-
-    return 0
+def test_application_is_running():
+    """Application should be accessible."""
+    status, _ = http("GET", "/league/L1")
+    assert status == 200
 
 
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
+def test_canonical_leagues_seeded():
+    """Scenario: Canonical leagues are seeded on startup."""
+    for lid, name, sport in [
+        ("L1", "Mountain", "Soccer"),
+        ("L2", "Valley", "Basketball"),
+        ("L3", "Foothills", "Soccer"),
+        ("L4", "Alpine", "Snowboarding"),
+    ]:
+        data = json_get(f"/league/{lid}")
+        assert data["id"] == lid
+        assert data["name"] == name
+        assert data["sport"] == sport
+    print("[PASS] Canonical leagues verified")
+
+
+def test_create_summer_league():
+    """Scenario: Create a summer league (swimming is a summer sport)."""
+    status, _ = http("POST", "/league", body={"id": "L5", "name": "Coastal", "sport": "Swimming"})
+    assert status in [200, 204], f"Create summer league failed: {status}"
+
+    data = json_get("/league/L5")
+    assert data["name"] == "Coastal"
+    print("[PASS] Summer league created")
+
+
+def test_create_winter_league():
+    """Scenario: Create a winter league (skiing is a winter sport)."""
+    status, _ = http("POST", "/league", body={"id": "L6", "name": "Nordic", "sport": "Skiing"})
+    assert status in [200, 204], f"Create winter league failed: {status}"
+
+    data = json_get("/league/L6")
+    assert data["name"] == "Nordic"
+    print("[PASS] Winter league created")
+
+
+def test_invalid_sport_rejected():
+    """Scenario: Invalid sport throws IncorrectSportException."""
+    status, _ = http("POST", "/league", body={"id": "LX", "name": "Bad", "sport": "Cricket"})
+    assert status == 400, f"Expected 400 for invalid sport, got {status}"
+    print("[PASS] Invalid sport correctly rejected")
+
+
+def test_remove_league():
+    """Scenario: Remove a league."""
+    # Create a disposable league
+    http("POST", "/league", body={"id": "LDEL", "name": "Disposable", "sport": "Soccer"})
+    status, _ = http("DELETE", "/league/LDEL")
+    assert status in [200, 204], f"Remove league failed: {status}"
+
+    status, _ = http("GET", "/league/LDEL")
+    assert status in [404, 500], "Removed league should not exist"
+    print("[PASS] League removed")
+
+
+# ---------------------------------------------------------------------------
+# Team management
+# ---------------------------------------------------------------------------
+
+
+def test_create_team_in_league():
+    """Scenario: Create a team in a league."""
+    status, _ = http("POST", "/team/league/L1", body={"id": "T10", "name": "Eagles", "city": "Denver"})
+    assert status in [200, 204], f"Create team failed: {status}"
+
+    data = json_get("/team/T10")
+    assert data["name"] == "Eagles"
+    assert data["city"] == "Denver"
+    print("[PASS] Team created in league")
+
+
+def test_get_team_details():
+    """Scenario: Get team details by ID."""
+    data = json_get("/team/T1")
+    assert data["id"] == "T1"
+    assert "name" in data
+    assert "city" in data
+    print("[PASS] Team details retrieved")
+
+
+def test_get_teams_of_league():
+    """Scenario: Get teams of a league."""
+    teams = json_get("/league/L1/teams")
+    assert isinstance(teams, list)
+    team_ids = [t["id"] for t in teams]
+    assert "T1" in team_ids
+    assert "T2" in team_ids
+    print("[PASS] Teams of league retrieved")
+
+
+def test_remove_team():
+    """Scenario: Remove a team drops all player associations."""
+    # Create a temp team and player
+    http("POST", "/team/league/L2", body={"id": "TDEL", "name": "Temp", "city": "Nowhere"})
+    http("POST", "/player", body={"id": "PDEL", "name": "Temp Player", "position": "sub", "salary": "100"},
+         content_type="application/x-www-form-urlencoded")
+    http("POST", "/player/PDEL/team/TDEL", body="")
+
+    status, _ = http("DELETE", "/team/TDEL")
+    assert status in [200, 204], f"Remove team failed: {status}"
+
+    status, _ = http("GET", "/team/TDEL")
+    assert status in [404, 500], "Removed team should not exist"
+
+    # Clean up player
+    http("DELETE", "/player/PDEL")
+    print("[PASS] Team removed, player associations dropped")
+
+
+# ---------------------------------------------------------------------------
+# Player management
+# ---------------------------------------------------------------------------
+
+
+def test_create_player():
+    """Scenario: Create a new player."""
+    data = json_get("/player/P1")
+    assert data["id"] == "P1"
+    assert data["name"] == "Duke"
+    assert data["position"] == "forward"
+    assert data["salary"] == 50000.0
+    print("[PASS] Player details verified")
+
+
+def test_add_player_to_team():
+    """Scenario: Add a player to a team."""
+    players = json_get("/team/T1/players")
+    player_ids = [p["id"] for p in players]
+    assert "P1" in player_ids
+    print("[PASS] Player is on team")
+
+
+def test_drop_player_from_team():
+    """Scenario: Drop a player from a team."""
+    # Create a temp player on T2
+    http("POST", "/player", body={"id": "PDROP", "name": "Dropper", "position": "sub", "salary": "100"},
+         content_type="application/x-www-form-urlencoded")
+    http("POST", "/player/PDROP/team/T2", body="")
+
+    status, _ = http("DELETE", "/player/PDROP/team/T2")
+    assert status in [200, 204], f"Drop player failed: {status}"
+
+    players = json_get("/team/T2/players")
+    player_ids = [p["id"] for p in players]
+    assert "PDROP" not in player_ids
+
+    http("DELETE", "/player/PDROP")
+    print("[PASS] Player dropped from team")
+
+
+def test_remove_player():
+    """Scenario: Remove a player from the system."""
+    http("POST", "/player", body={"id": "PREM", "name": "Removable", "position": "sub", "salary": "100"},
+         content_type="application/x-www-form-urlencoded")
+    http("POST", "/player/PREM/team/T1", body="")
+
+    status, _ = http("DELETE", "/player/PREM")
+    assert status in [200, 204], f"Remove player failed: {status}"
+
+    status, _ = http("GET", "/player/PREM")
+    assert status in [404, 500], "Removed player should not exist"
+    print("[PASS] Player removed")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by position
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_position():
+    """Scenario: Get players by position."""
+    players = json_get("/players/position/forward")
+    assert len(players) > 0
+    for p in players:
+        assert p["position"] == "forward"
+    print("[PASS] Players by position query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by salary
+# ---------------------------------------------------------------------------
+
+
+def test_players_salary_higher_than():
+    """Scenario: Get players with salary higher than a named player."""
+    players = json_get("/players/salary/higher/Alice")
+    assert len(players) > 0
+    # Duke (50000) should be in results since Alice is 30000
+    names = [p["name"] for p in players]
+    assert "Duke" in names
+    print("[PASS] Salary higher-than query works")
+
+
+def test_players_by_salary_range():
+    """Scenario: Get players by salary range."""
+    players = json_get("/players/salary/range", query={"low": "40000", "high": "60000"})
+    assert len(players) > 0
+    for p in players:
+        assert 40000 <= p["salary"] <= 60000
+    print("[PASS] Salary range query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by league and sport
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_league():
+    """Scenario: Get players by league ID."""
+    players = json_get("/players/league/L1")
+    assert len(players) > 0
+    player_ids = [p["id"] for p in players]
+    assert "P1" in player_ids
+    print("[PASS] Players by league query works")
+
+
+def test_players_by_sport():
+    """Scenario: Get players by sport."""
+    players = json_get("/players/sport/Soccer")
+    assert len(players) > 0
+    print("[PASS] Players by sport query works")
+
+
+# ---------------------------------------------------------------------------
+# Criteria queries — by city and team
+# ---------------------------------------------------------------------------
+
+
+def test_players_by_city():
+    """Scenario: Get players by city."""
+    players = json_get("/players/city/Visalia")
+    assert len(players) > 0
+    print("[PASS] Players by city query works")
+
+
+def test_players_not_on_team():
+    """Scenario: Get players not on any team."""
+    players = json_get("/players/not-on-team")
+    assert len(players) > 0
+    player_ids = [p["id"] for p in players]
+    assert "P5" in player_ids
+    print("[PASS] Players not on team query works")
+
+
+# ---------------------------------------------------------------------------
+# Cross-entity queries
+# ---------------------------------------------------------------------------
+
+
+def test_leagues_of_player():
+    """Scenario: Get leagues of a specific player."""
+    leagues = json_get("/player/P1/leagues")
+    assert leagues is not None
+    league_ids = [lg["id"] for lg in leagues]
+    # P1 is on T1 (L1) and T3 (L2)
+    assert "L1" in league_ids
+    assert "L2" in league_ids
+    print("[PASS] Leagues of player query works")
+
+
+def test_sports_of_player():
+    """Scenario: Get sports of a specific player."""
+    sports = json_get("/player/P1/sports")
+    assert "Soccer" in sports
+    assert "Basketball" in sports
+    print("[PASS] Sports of player query works")
+
+
+# ---------------------------------------------------------------------------
+# Health endpoints
+# ---------------------------------------------------------------------------
+
+
+def test_actuator_health():
+    """Actuator health endpoint should respond."""
+    status, _ = http("GET", "/../actuator/health")
+    assert status in [200, 404], f"Unexpected status {status}"
 
 
 def main():

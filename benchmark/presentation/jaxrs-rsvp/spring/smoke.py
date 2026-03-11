@@ -230,72 +230,128 @@ def get_response_status(event_id: int, person_id: int):
         vprint(f"Error parsing response data: {e}")
         return None
 
-def _run_smoke():
+def test_index_page():
+    """Index page should load successfully."""
     must_get("/index.xhtml", 2)
+
+
+def test_css_resource():
+    """CSS resource should be accessible."""
     soft_get("/css/default.css")
+
+
+def test_get_status_all():
+    """GET /webapi/status/all should return event data."""
     ids, fmt, events_resp = get_status_all()
-    
-    event_found = False
-    test_eid = None
-    
+    assert events_resp is not None, "Failed to get events"
+
+
+def test_get_event_by_id():
+    """GET /webapi/status/{id} should return event details."""
+    ids, fmt, events_resp = get_status_all()
+    if not ids:
+        pytest.skip("No event IDs found")
     for eid in ids[:3]:
         resp = get_event_by_id(eid)
         if resp["status"] == 200:
             print(f"[PASS] GET /webapi/status/{eid}/ -> 200")
-            event_found = True
-            test_eid = eid
-            break
-        elif resp["status"] == 204:
-            print(f"[WARN] GET /webapi/status/{eid}/ -> 204 (No Content - event may not exist)")
-        else:
-            print(f"[WARN] GET /webapi/status/{eid}/ -> HTTP {resp['status']}")
-    
-    if not event_found:
-        print("[WARN] No valid events found; skipping per-event tests")
-        return 0
-    invitees = parse_event_data(resp)
-    if invitees:
-        test_invitee = None
-        for invitee in invitees:
-            if invitee["current_response"] != "ATTENDING":
-                test_invitee = invitee
-                break
-        if not test_invitee:
-            test_invitee = invitees[0]  
-        
-        person_id = test_invitee["person_id"]
-        original_status = test_invitee["current_response"]
-        
-        if update_invite_status(test_eid, person_id, "Attending"):
-            new_status = get_response_status(test_eid, person_id)
-            if new_status == "ATTENDING":
-                print(f"[PASS] Status successfully updated to ATTENDING")
-            else:
-                print(f"[WARN] Status update may not have worked. Expected ATTENDING, got {new_status}")
-            
-            if original_status != "ATTENDING":
-                revert_status = "Not attending" if original_status == "NOT_RESPONDED" else original_status
-                if update_invite_status(test_eid, person_id, revert_status):
-                    final_status = get_response_status(test_eid, person_id)
-                    expected_status = "NOT_ATTENDING" if original_status == "NOT_RESPONDED" else original_status
-                    if final_status == expected_status:
-                        print(f"[PASS] Status successfully changed to {expected_status}")
-                    else:
-                        print(f"[WARN] Status change may not have worked. Expected {expected_status}, got {final_status}")
-                else:
-                    print(f"[WARN] Could not change status to {revert_status}")
-        else:
-            print(f"[WARN] Could not update status for person {person_id}")
+            return
+    pytest.skip("No valid events found")
+
+
+def test_update_invite_status():
+    """POST /webapi/{eventId}/{personId} should update invite status."""
+    ids, fmt, events_resp = get_status_all()
+    if not ids:
+        pytest.skip("No event IDs found")
+    for eid in ids[:3]:
+        resp = get_event_by_id(eid)
+        if resp["status"] == 200:
+            invitees = parse_event_data(resp)
+            if invitees:
+                person_id = invitees[0]["person_id"]
+                assert update_invite_status(eid, person_id, "Attending"), \
+                    f"Failed to update status for person {person_id}"
+                return
+    pytest.skip("No events with invitees found")
+
+
+def test_events_contain_fields():
+    """Scenario: Events contain name, location, and date."""
+    ids, fmt, resp = get_status_all()
+    if fmt == "json":
+        try:
+            data = json.loads(resp["body"])
+            events = data if isinstance(data, list) else [data]
+            if events:
+                event = events[0]
+                has_name = "name" in event or "eventName" in event
+                has_location = "location" in event or "eventLocation" in event
+                has_date = "eventDate" in event or "date" in event
+                assert has_name, f"Event missing name field: {list(event.keys())}"
+                assert has_location, f"Event missing location field: {list(event.keys())}"
+                assert has_date, f"Event missing date field: {list(event.keys())}"
+                print("[PASS] Events contain name, location, date fields")
+                return
+        except (json.JSONDecodeError, IndexError):
+            pass
+    body = resp["body"]
+    assert "name" in body.lower() or "location" in body.lower(), \
+        "Expected event fields in response"
+    print("[PASS] Events contain expected fields (XML)")
+
+
+def test_events_contain_invitees():
+    """Scenario: Events contain invitees list."""
+    ids, fmt, resp = get_status_all()
+    if not ids:
+        pytest.skip("No events to check")
+    event_resp = get_event_by_id(ids[0])
+    if event_resp["status"] != 200:
+        pytest.skip("Could not retrieve event details")
+    body = event_resp["body"].lower()
+    assert "invitee" in body or "person" in body or "response" in body, \
+        f"Expected invitees/person data in event response"
+    print("[PASS] Event contains invitees data")
+
+
+def test_nonexistent_event():
+    """Scenario: Request for non-existent event returns null/empty."""
+    path = "/webapi/status/99999"
+    url = join(BASE, path)
+    vprint(f"GET {url}")
+    resp, err = http("GET", url, headers={"Accept": "application/json"})
+    assert err is None, f"GET {path} -> {err}"
+    if resp["status"] == 200:
+        body = resp["body"].strip()
+        assert not body or body == "null" or body == "[]", \
+            f"Expected empty/null body for non-existent event, got: {body[:100]}"
     else:
-        print("[WARN] No invitees found in event data; skipping status update test")
+        assert resp["status"] in [404, 204], \
+            f"Expected 404 or 204 for non-existent event, got {resp['status']}"
+    print(f"[PASS] GET non-existent event -> {resp['status']}")
 
-    print("\n[PASS] Smoke sequence complete")
-    return 0
+
+def test_content_negotiation_json():
+    """Scenario: Status endpoint supports JSON format."""
+    url = join(BASE, "/webapi/status/all")
+    resp, err = http("GET", url, headers={"Accept": "application/json"})
+    assert err is None, f"GET /webapi/status/all (JSON) -> {err}"
+    assert resp["status"] == 200, f"Expected 200, got {resp['status']}"
+    ctype = resp["content_type"].lower()
+    assert "json" in ctype, f"Expected JSON content type, got: {ctype}"
+    print(f"[PASS] Content negotiation JSON: {resp['content_type']}")
 
 
-def test_smoke():
-    rc = _run_smoke()
-    assert rc == 0, f"Smoke test failed with return code {rc}"
+def test_content_negotiation_xml():
+    """Scenario: Status endpoint supports XML format."""
+    url = join(BASE, "/webapi/status/all")
+    resp, err = http("GET", url, headers={"Accept": "application/xml"})
+    assert err is None, f"GET /webapi/status/all (XML) -> {err}"
+    assert resp["status"] == 200, f"Expected 200, got {resp['status']}"
+    ctype = resp["content_type"].lower()
+    assert "xml" in ctype, f"Expected XML content type, got: {ctype}"
+    print(f"[PASS] Content negotiation XML: {resp['content_type']}")
 
 
 def main():

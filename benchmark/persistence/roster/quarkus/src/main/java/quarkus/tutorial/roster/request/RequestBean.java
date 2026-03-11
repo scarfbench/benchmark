@@ -29,6 +29,7 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
@@ -62,10 +63,10 @@ public class RequestBean implements Request, Serializable {
     @Produces(MediaType.APPLICATION_JSON)
     @Transactional
     public void createPlayer(
-            @QueryParam("id") String id,
-            @QueryParam("name") String name,
-            @QueryParam("position") String position,
-            @QueryParam("salary") double salary) {
+            @FormParam("id") String id,
+            @FormParam("name") String name,
+            @FormParam("position") String position,
+            @FormParam("salary") double salary) {
         logger.info("createPlayer");
         try {
             Player player = new Player(id, name, position, salary);

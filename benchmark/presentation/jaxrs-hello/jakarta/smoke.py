@@ -71,7 +71,84 @@ def must_get_helloworld():
 
 
 def test_must_get_helloworld():
+    """GET /helloworld should return 200 with text/html."""
     must_get_helloworld()
+
+
+def test_helloworld_body_content():
+    """Response body should contain 'Hello, World!!'."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200, f"GET /helloworld -> HTTP {resp['status']}"
+    assert "Hello" in resp["body"], f"Expected 'Hello' in body, got: {resp['body'][:100]}"
+
+
+def test_response_contains_html_document():
+    """Scenario: Response contains a complete HTML document."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200
+    body = resp["body"]
+    assert "<html" in body, "Expected <html in body"
+    assert "<body>" in body or "<body " in body, "Expected <body> in body"
+    assert "</body>" in body, "Expected </body> in body"
+    assert "</html>" in body, "Expected </html> in body"
+    print("[PASS] Response contains complete HTML document")
+
+
+def test_response_h1_heading():
+    """Scenario: Response contains an H1 heading with the greeting."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200
+    assert "<h1>" in resp["body"].lower() or "<h1 " in resp["body"].lower(), \
+        "Expected H1 heading in response"
+    print("[PASS] Response contains H1 heading")
+
+
+def test_response_not_empty():
+    """Scenario: Response body is not empty."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200
+    assert resp["body"].strip(), "Expected non-empty response body"
+    print("[PASS] Response body is not empty")
+
+
+def test_put_method_supported():
+    """Scenario: PUT method is supported."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("PUT", url, headers={"Content-Type": "text/html"})
+    assert err is None, f"PUT /helloworld -> {err}"
+    assert resp["status"] in [200, 204], \
+        f"Expected 200 or 204 for PUT, got {resp['status']}"
+    print(f"[PASS] PUT /helloworld -> {resp['status']}")
+
+
+def test_no_error_messages_in_response():
+    """Scenario: Response does not contain error messages."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200
+    assert "Exception" not in resp["body"], "Response should not contain 'Exception'"
+    assert "Error" not in resp["body"], "Response should not contain 'Error'"
+    print("[PASS] No error messages in response")
+
+
+def test_html_lang_attribute():
+    """Scenario: HTML includes lang attribute."""
+    url = join(BASE, "/helloworld")
+    resp, err = http("GET", url)
+    assert err is None, f"GET /helloworld -> {err}"
+    assert resp["status"] == 200
+    assert 'lang="en"' in resp["body"] or "lang='en'" in resp["body"], \
+        f"Expected lang=\"en\" in HTML, got: {resp['body'][:200]}"
+    print("[PASS] HTML includes lang attribute")
 
 
 def main():

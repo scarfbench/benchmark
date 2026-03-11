@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/rkrsn/workspace/scarfbench/benchmark/benchmark/whole_applications/cargotracker/jakarta/smoke && uv run pytest smoke.py -v 2>&1)",
+      "Bash(cd /Users/rkrsn/workspace/scarfbench/benchmark/benchmark/whole_applications/cargotracker/jakarta/smoke && uv run playwright install chromium 2>&1)",
+      "Bash(uv run:*)"
+    ]
+  }
+}

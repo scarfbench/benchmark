@@ -41,8 +41,30 @@ session = APISession()
 comment_id = None
 
 
+def no_auth_get(path):
+    return requests.get(f"{BASE_URL}{path}", headers={"Content-Type": "application/json"})
+
+
+def no_auth_post(path, json=None):
+    return requests.post(
+        f"{BASE_URL}{path}", json=json, headers={"Content-Type": "application/json"}
+    )
+
+
+def no_auth_put(path, json=None):
+    return requests.put(
+        f"{BASE_URL}{path}", json=json, headers={"Content-Type": "application/json"}
+    )
+
+
+def no_auth_delete(path):
+    return requests.delete(
+        f"{BASE_URL}{path}", headers={"Content-Type": "application/json"}
+    )
+
+
 # -------------------------
-# AUTH
+# AUTH - Registration
 # -------------------------
 
 
@@ -62,6 +84,95 @@ def test_register():
 
 
 @pytest.mark.order(2)
+def test_register_duplicate_username():
+    r = no_auth_post(
+        "/users",
+        json={
+            "user": {
+                "username": USERNAME,
+                "password": "other123",
+                "email": "other@example.com",
+            }
+        },
+    )
+    assert r.status_code == 409
+
+
+@pytest.mark.order(3)
+def test_register_duplicate_email():
+    r = no_auth_post(
+        "/users",
+        json={
+            "user": {
+                "username": "otheruser",
+                "password": "other123",
+                "email": EMAIL,
+            }
+        },
+    )
+    assert r.status_code == 409
+
+
+@pytest.mark.order(4)
+def test_register_blank_username():
+    r = no_auth_post(
+        "/users",
+        json={
+            "user": {
+                "username": "",
+                "password": "pass123",
+                "email": "blank@example.com",
+            }
+        },
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(5)
+def test_register_blank_email():
+    r = no_auth_post(
+        "/users",
+        json={"user": {"username": "blankuser", "password": "pass123", "email": ""}},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(6)
+def test_register_blank_password():
+    r = no_auth_post(
+        "/users",
+        json={
+            "user": {
+                "username": "blankpass",
+                "password": "",
+                "email": "blankpass@example.com",
+            }
+        },
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(7)
+def test_register_invalid_email():
+    r = no_auth_post(
+        "/users",
+        json={
+            "user": {
+                "username": "invalidemail",
+                "password": "pass123",
+                "email": "not-an-email",
+            }
+        },
+    )
+    assert r.status_code == 422
+
+
+# -------------------------
+# AUTH - Login
+# -------------------------
+
+
+@pytest.mark.order(8)
 def test_login_and_remember_token():
     r = session.post(
         "/users/login",
@@ -76,7 +187,48 @@ def test_login_and_remember_token():
     session.add_token(token)
 
 
-@pytest.mark.order(3)
+@pytest.mark.order(9)
+def test_login_wrong_password():
+    r = no_auth_post(
+        "/users/login",
+        json={"user": {"email": EMAIL, "password": "wrongpassword"}},
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.order(10)
+def test_login_nonexistent_email():
+    r = no_auth_post(
+        "/users/login",
+        json={"user": {"email": "noone@example.com", "password": "secret123"}},
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.order(11)
+def test_login_blank_email():
+    r = no_auth_post(
+        "/users/login",
+        json={"user": {"email": "", "password": "secret123"}},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(12)
+def test_login_blank_password():
+    r = no_auth_post(
+        "/users/login",
+        json={"user": {"email": EMAIL, "password": ""}},
+    )
+    assert r.status_code == 422
+
+
+# -------------------------
+# Current User
+# -------------------------
+
+
+@pytest.mark.order(13)
 def test_current_user():
     r = session.get("/user")
     assert r.status_code == 200
@@ -86,7 +238,30 @@ def test_current_user():
     assert user["token"]
 
 
-@pytest.mark.order(4)
+@pytest.mark.order(14)
+def test_current_user_no_auth():
+    r = no_auth_get("/user")
+    assert r.status_code == 401
+
+
+@pytest.mark.order(15)
+def test_current_user_invalid_token():
+    r = requests.get(
+        f"{BASE_URL}/user",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer invalid.jwt.token",
+        },
+    )
+    assert r.status_code == 401
+
+
+# -------------------------
+# Update User
+# -------------------------
+
+
+@pytest.mark.order(16)
 def test_update_user():
     r = session.put("/user", json={"user": {"bio": "my-new-bio"}})
     assert r.status_code == 200
@@ -94,33 +269,51 @@ def test_update_user():
     assert user["bio"] == "my-new-bio"
 
 
+@pytest.mark.order(17)
+def test_update_user_bio_and_image():
+    r = session.put(
+        "/user",
+        json={"user": {"bio": "Hello world", "image": "http://img.com/me.jpg"}},
+    )
+    assert r.status_code == 200
+    user = r.json()["user"]
+    assert user["bio"] == "Hello world"
+    assert user["image"] == "http://img.com/me.jpg"
+
+
+@pytest.mark.order(18)
+def test_update_user_no_auth():
+    r = no_auth_put("/user", json={"user": {"bio": "hacked"}})
+    assert r.status_code == 401
+
+
 # -------------------------
-# ARTICLES
+# ARTICLES - empty state
 # -------------------------
 
 
-@pytest.mark.order(5)
+@pytest.mark.order(19)
 def test_get_all_articles():
     r = session.get("/articles")
     assert r.status_code == 200
     assert r.json()["articlesCount"] == 0
 
 
-@pytest.mark.order(6)
+@pytest.mark.order(20)
 def test_get_articles_by_author():
     r = session.get("/articles?author=johnjacob")
     assert r.status_code == 200
     assert r.json()["articlesCount"] == 0
 
 
-@pytest.mark.order(7)
+@pytest.mark.order(21)
 def test_get_articles_favorited_by_username():
     r = session.get("/articles?favorited=jane")
     assert r.status_code == 200
     assert r.json()["articlesCount"] == 0
 
 
-@pytest.mark.order(8)
+@pytest.mark.order(22)
 def test_get_articles_by_tag():
     r = session.get("/articles?tag=dragons")
     assert r.status_code == 200
@@ -130,7 +323,6 @@ def test_get_articles_by_tag():
 def validate_article(article, body="Very carefully.", favorites_count=0):
     assert isinstance(article, dict), "article"
 
-    # Required keys
     expected_keys = {
         "title",
         "slug",
@@ -145,7 +337,6 @@ def validate_article(article, body="Very carefully.", favorites_count=0):
     }
     assert expected_keys.issubset(article.keys())
 
-    # Field assertions
     assert article["title"] == "How to train your dragon"
     assert article["slug"] == SLUG
     assert article["body"] == body
@@ -154,16 +345,19 @@ def validate_article(article, body="Very carefully.", favorites_count=0):
     assert ISO_8601_REGEX.match(article["createdAt"])
     assert ISO_8601_REGEX.match(article["updatedAt"])
 
-    # tagList
     assert isinstance(article["tagList"], list)
     assert set(article["tagList"]) == {"training", "dragons"}
 
-    # favoritesCount
     assert isinstance(article["favoritesCount"], int)
     assert article["favoritesCount"] == favorites_count
 
 
-@pytest.mark.order(9)
+# -------------------------
+# ARTICLES - create
+# -------------------------
+
+
+@pytest.mark.order(23)
 def test_create_article():
     article = {
         "title": "How to train your dragon",
@@ -171,76 +365,104 @@ def test_create_article():
         "body": "Very carefully.",
         "tagList": ["dragons", "training"],
     }
-    r = session.post(
-        "/articles",
-        json={"article": article},
-    )
-    # Status code
+    r = session.post("/articles", json={"article": article})
     assert r.status_code == 201, "create status"
-
-    # Valid JSON body
     data = r.json()
     assert isinstance(data, dict)
-
-    # Article object
     article_resp = data.get("article")
     validate_article(article_resp)
 
 
-@pytest.mark.order(10)
+@pytest.mark.order(24)
+def test_create_article_no_auth():
+    r = no_auth_post(
+        "/articles",
+        json={
+            "article": {"title": "No auth", "description": "test", "body": "test"}
+        },
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.order(25)
+def test_create_article_blank_title():
+    r = session.post(
+        "/articles",
+        json={"article": {"title": "", "description": "desc", "body": "body"}},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(26)
+def test_create_article_blank_description():
+    r = session.post(
+        "/articles",
+        json={"article": {"title": "Title", "description": "", "body": "body"}},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(27)
+def test_create_article_blank_body():
+    r = session.post(
+        "/articles",
+        json={"article": {"title": "Title", "description": "desc", "body": ""}},
+    )
+    assert r.status_code == 422
+
+
+# -------------------------
+# ARTICLES - feed
+# -------------------------
+
+
+@pytest.mark.order(28)
 def test_get_feed():
     r = session.get("/articles/feed")
     assert r.status_code == 200
     assert r.json()["articlesCount"] == 0
 
 
-@pytest.mark.order(11)
+@pytest.mark.order(29)
+def test_feed_no_auth():
+    r = no_auth_get("/articles/feed")
+    assert r.status_code == 401
+
+
+# -------------------------
+# ARTICLES - list / get
+# -------------------------
+
+
+@pytest.mark.order(30)
 def test_get_all_articles_after_creation():
     r = session.get("/articles")
-
-    # Status code
     assert r.status_code == 200, "get all articles status"
-
-    # Valid JSON body
     data = r.json()
     assert isinstance(data, dict)
-
-    # Articles array
     articles = data.get("articles")
     assert isinstance(articles, list), "articles"
-
-    # Articles count
     articles_count = data.get("articlesCount")
     assert isinstance(articles_count, int), "articlesCount"
     assert articles_count == 1
-
     validate_article(articles[0])
 
 
-@pytest.mark.order(12)
+@pytest.mark.order(31)
 def test_get_articles_by_author_after_creation():
     r = session.get(f"/articles?author={USERNAME}")
-
-    # Status code
     assert r.status_code == 200, "get all articles status"
-
-    # Valid JSON body
     data = r.json()
     assert isinstance(data, dict)
-
-    # Articles array
     articles = data.get("articles")
     assert isinstance(articles, list), "articles"
-
-    # Articles count
     articles_count = data.get("articlesCount")
     assert isinstance(articles_count, int), "articlesCount"
     assert articles_count == 1
-
     validate_article(articles[0])
 
 
-@pytest.mark.order(13)
+@pytest.mark.order(32)
 def test_get_article_by_slug():
     r = session.get(f"/articles/{SLUG}")
     assert r.status_code == 200
@@ -248,30 +470,41 @@ def test_get_article_by_slug():
     validate_article(article)
 
 
-@pytest.mark.order(14)
+@pytest.mark.order(33)
+def test_get_nonexistent_article():
+    r = session.get("/articles/nonexistent-slug")
+    assert r.status_code == 404
+
+
+@pytest.mark.order(34)
 def test_get_articles_by_tag_after_creation():
     r = session.get("/articles?tag=dragons")
-
-    # Status code
     assert r.status_code == 200, "get all articles status"
-
-    # Valid JSON body
     data = r.json()
     assert isinstance(data, dict)
-
-    # Articles array
     articles = data.get("articles")
     assert isinstance(articles, list), "articles"
-
-    # Articles count
     articles_count = data.get("articlesCount")
     assert isinstance(articles_count, int), "articlesCount"
     assert articles_count == 1
-
     validate_article(articles[0])
 
 
-@pytest.mark.order(15)
+@pytest.mark.order(35)
+def test_list_articles_with_limit():
+    r = session.get("/articles?limit=5&offset=0")
+    assert r.status_code == 200
+    data = r.json()
+    assert isinstance(data["articles"], list)
+    assert len(data["articles"]) <= 5
+
+
+# -------------------------
+# ARTICLES - update
+# -------------------------
+
+
+@pytest.mark.order(36)
 def test_update_article():
     r = session.put(
         f"/articles/{SLUG}",
@@ -281,7 +514,30 @@ def test_update_article():
     validate_article(article, body="With two hands")
 
 
-@pytest.mark.order(16)
+@pytest.mark.order(37)
+def test_update_article_no_auth():
+    r = no_auth_put(
+        f"/articles/{SLUG}",
+        json={"article": {"body": "hacked"}},
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.order(38)
+def test_update_nonexistent_article():
+    r = session.put(
+        "/articles/nonexistent-slug",
+        json={"article": {"body": "updated"}},
+    )
+    assert r.status_code == 404
+
+
+# -------------------------
+# FAVORITES
+# -------------------------
+
+
+@pytest.mark.order(39)
 def test_favorite_article():
     r = session.post(f"/articles/{SLUG}/favorite")
     assert r.status_code == 200
@@ -290,7 +546,15 @@ def test_favorite_article():
     assert article["favorited"] is True
 
 
-@pytest.mark.order(17)
+@pytest.mark.order(40)
+def test_favorite_idempotent():
+    r = session.post(f"/articles/{SLUG}/favorite")
+    assert r.status_code == 200
+    article = r.json()["article"]
+    assert article["favoritesCount"] == 1
+
+
+@pytest.mark.order(41)
 def test_unfavorite_article():
     r = session.delete(f"/articles/{SLUG}/favorite")
     assert r.status_code == 200
@@ -299,21 +563,35 @@ def test_unfavorite_article():
     assert article["favorited"] is False
 
 
+@pytest.mark.order(42)
+def test_unfavorite_when_not_favorited():
+    r = session.delete(f"/articles/{SLUG}/favorite")
+    assert r.status_code == 200
+    article = r.json()["article"]
+    assert article["favoritesCount"] == 0
+
+
+@pytest.mark.order(43)
+def test_favorite_no_auth():
+    r = no_auth_post(f"/articles/{SLUG}/favorite")
+    assert r.status_code == 401
+
+
+# -------------------------
+# COMMENTS
+# -------------------------
+
+
 def validate_comment(comment):
     assert isinstance(comment, dict), "comment"
-
-    # Required keys
     expected_keys = {"id", "body", "createdAt", "updatedAt", "author"}
     assert expected_keys.issubset(comment.keys())
-
-    # Field assertions
     assert comment["body"] == "Thank you so much!"
-
     assert ISO_8601_REGEX.match(comment["createdAt"])
     assert ISO_8601_REGEX.match(comment["updatedAt"])
 
 
-@pytest.mark.order(18)
+@pytest.mark.order(44)
 def test_create_comment():
     global comment_id
     r = session.post(
@@ -326,33 +604,68 @@ def test_create_comment():
     comment_id = comment["id"]
 
 
-@pytest.mark.order(19)
+@pytest.mark.order(45)
 def test_get_comments():
     r = session.get(f"/articles/{SLUG}/comments")
-
     assert r.status_code == 200
-
-    # Valid JSON body
     data = r.json()
     assert isinstance(data, dict)
-
-    # Comments array
     comments = data.get("comments")
     assert isinstance(comments, list), "comments"
-
     validate_comment(comments[0])
 
 
-@pytest.mark.order(20)
+@pytest.mark.order(46)
+def test_create_comment_blank_body():
+    r = session.post(
+        f"/articles/{SLUG}/comments",
+        json={"comment": {"body": ""}},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.order(47)
+def test_create_comment_no_auth():
+    r = no_auth_post(
+        f"/articles/{SLUG}/comments",
+        json={"comment": {"body": "No auth comment"}},
+    )
+    assert r.status_code == 401
+
+
+@pytest.mark.order(48)
+def test_delete_comment_no_auth():
+    r = no_auth_delete(f"/articles/{SLUG}/comments/{comment_id}")
+    assert r.status_code == 401
+
+
+@pytest.mark.order(49)
 def test_delete_comment():
     r = session.delete(f"/articles/{SLUG}/comments/{comment_id}")
     assert r.status_code == 200
 
 
-@pytest.mark.order(21)
+# -------------------------
+# ARTICLES - delete
+# -------------------------
+
+
+@pytest.mark.order(50)
+def test_delete_article_no_auth():
+    r = no_auth_delete(f"/articles/{SLUG}")
+    assert r.status_code == 401
+
+
+@pytest.mark.order(51)
 def test_delete_article():
     r = session.delete(f"/articles/{SLUG}")
     assert r.status_code == 200
+
+
+@pytest.mark.order(52)
+def test_deleted_article_not_found():
+    r = session.get(f"/articles/{SLUG}")
+    assert r.status_code == 404
 
 
 # -------------------------
@@ -362,12 +675,8 @@ def test_delete_article():
 
 def validate_user(user):
     assert isinstance(user, dict), "user"
-
-    # Required keys
     expected_keys = {"email", "username", "bio", "image", "token"}
     assert expected_keys.issubset(user.keys())
-
-    # Field assertions
     assert user["email"] == f"celeb_{EMAIL}"
     assert user["username"] == f"celeb_{USERNAME}"
     assert user["bio"] is None
@@ -377,19 +686,15 @@ def validate_user(user):
 
 def validate_profile(profile, following=False):
     assert isinstance(profile, dict), "profile"
-
-    # Required keys
     expected_keys = {"username", "bio", "image", "following"}
     assert expected_keys.issubset(profile.keys())
-
-    # Field assertions
     assert profile["username"] == f"celeb_{USERNAME}"
     assert profile["bio"] is None
     assert profile["image"] is None
     assert profile["following"] is following
 
 
-@pytest.mark.order(22)
+@pytest.mark.order(53)
 def test_register_celeb():
     r = session.post(
         "/users",
@@ -406,16 +711,30 @@ def test_register_celeb():
     validate_user(user)
 
 
-@pytest.mark.order(23)
+@pytest.mark.order(54)
 def test_get_celeb_profile():
     r = session.get(f"/profiles/celeb_{USERNAME}")
-
     assert r.status_code == 200
     profile = r.json()["profile"]
     validate_profile(profile)
 
 
-@pytest.mark.order(24)
+@pytest.mark.order(55)
+def test_get_celeb_profile_unauthenticated():
+    r = no_auth_get(f"/profiles/celeb_{USERNAME}")
+    assert r.status_code == 200
+    profile = r.json()["profile"]
+    assert profile["username"] == f"celeb_{USERNAME}"
+    assert profile["following"] is False
+
+
+@pytest.mark.order(56)
+def test_get_nonexistent_profile():
+    r = session.get("/profiles/nonexistent")
+    assert r.status_code == 404
+
+
+@pytest.mark.order(57)
 def test_follow_celeb_profile():
     r = session.post(f"/profiles/celeb_{USERNAME}/follow")
     assert r.status_code == 200
@@ -423,7 +742,7 @@ def test_follow_celeb_profile():
     validate_profile(profile, following=True)
 
 
-@pytest.mark.order(25)
+@pytest.mark.order(58)
 def test_unfollow_celeb_profile():
     r = session.delete(f"/profiles/celeb_{USERNAME}/follow")
     assert r.status_code == 200
@@ -431,17 +750,37 @@ def test_unfollow_celeb_profile():
     validate_profile(profile)
 
 
+@pytest.mark.order(59)
+def test_follow_no_auth():
+    r = no_auth_post(f"/profiles/celeb_{USERNAME}/follow")
+    assert r.status_code == 401
+
+
+@pytest.mark.order(60)
+def test_unfollow_no_auth():
+    r = no_auth_delete(f"/profiles/celeb_{USERNAME}/follow")
+    assert r.status_code == 401
+
+
 # -------------------------
 # TAGS
 # -------------------------
 
 
-@pytest.mark.order(26)
+@pytest.mark.order(61)
 def test_get_tags():
     r = session.get("/tags")
     assert r.status_code == 200
     tags = r.json()["tags"]
     assert set(tags) == {"training", "dragons"}
+
+
+@pytest.mark.order(62)
+def test_get_tags_no_auth():
+    r = no_auth_get("/tags")
+    assert r.status_code == 200
+    tags = r.json()["tags"]
+    assert isinstance(tags, list)
 
 
 if __name__ == "__main__":

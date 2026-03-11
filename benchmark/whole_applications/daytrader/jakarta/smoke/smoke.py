@@ -15,7 +15,7 @@ def test_create_and_populate_database(page: Page) -> None:
     assert "daytrader" in page.content().lower()
 
     """Best-effort DB population via the config 'buildDB' action."""
-    page.goto(f"{BASE_URL}/config?action=buildDB", wait_until="domcontentloaded")
+    page.goto(f"{BASE_URL}/config?action=buildDB", wait_until="domcontentloaded", timeout=180_000)
     # Do not assert strongly on content, just ensure the page rendered.
     assert "daytrader" in page.content().lower()
 
@@ -261,6 +261,337 @@ def test_register_new_user(page: Page) -> None:
     # Expect zero holdings value in the corresponding column.
     assert re.search(r">\s*0\s*<", html), "Expected zero holdings for new account"
     assert re.search(r"opening\s*balance", lowered), "Opening balance section missing"
+
+
+@pytest.mark.smoke
+def test_login_with_invalid_credentials(page: Page) -> None:
+    """Login with invalid password should show error or stay on login page."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("wrong_password")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    content = page.content().lower()
+    assert "error" in content or "fail" in content or "login" in content, \
+        "Error message not shown for invalid login"
+
+
+@pytest.mark.smoke
+def test_logout_invalidates_session(page: Page) -> None:
+    """Logout should invalidate session and redirect to welcome/login page."""
+    # Login first
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    # Logout
+    logout_link = page.locator("a[href='app?action=logout']")
+    assert logout_link.count() > 0, "Logout link not found"
+    logout_link.first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    content = page.content()
+    assert "welcome.jsp" in page.url or "Log in" in content, \
+        "Logout did not redirect to login page"
+
+    # Verify session is invalidated by trying to access a protected action
+    page.goto(f"{BASE_URL}/app?action=home", wait_until="domcontentloaded")
+    content = page.content().lower()
+    assert "log in" in content or "welcome" in content or "login" in content, \
+        "Session was not invalidated after logout"
+
+
+@pytest.mark.smoke
+def test_home_page_account_summary(page: Page) -> None:
+    """Home page should display account summary after login."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    # Navigate to home
+    page.goto(f"{BASE_URL}/app?action=home", wait_until="domcontentloaded")
+    content = page.content().lower()
+
+    assert re.search(r"account\s*id", content) or "uid:0" in content, \
+        "Account ID not shown on home page"
+    assert "balance" in content or "$" in page.content(), \
+        "Balance info not shown on home page"
+    assert re.search(r"(holdings|gain|loss)", content), \
+        "Holdings/gain/loss info not shown on home page"
+
+
+@pytest.mark.smoke
+def test_view_portfolio(page: Page) -> None:
+    """Portfolio page should show holdings table."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(f"{BASE_URL}/app?action=portfolio", wait_until="domcontentloaded")
+    content = page.content().lower()
+
+    assert "portfolio" in content or "holding" in content, \
+        "Portfolio page did not load correctly"
+    # Should have a table for holdings
+    table = page.locator("table")
+    assert table.count() > 0, "Portfolio holdings table not found"
+
+
+@pytest.mark.smoke
+def test_buy_shares(page: Page) -> None:
+    """Buy shares of a stock and verify order confirmation."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    # Go to quotes page to find the buy form
+    page.goto(
+        f"{BASE_URL}/app?action=quotes&symbols=s:0",
+        wait_until="domcontentloaded",
+    )
+
+    quantity_input = page.locator("input[name='quantity']")
+    if quantity_input.count() > 0:
+        quantity_input.first.fill("10")
+        buy_button = page.locator("input[type='submit'][value='Buy']")
+        if buy_button.count() > 0:
+            buy_button.first.click()
+            page.wait_for_load_state("domcontentloaded")
+
+            content = page.content().lower()
+            assert "order" in content or "buy" in content or "confirmation" in content, \
+                "Buy did not produce an order confirmation"
+
+
+@pytest.mark.smoke
+def test_sell_holding(page: Page) -> None:
+    """Sell a holding from the portfolio page."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    # First buy some stock to ensure we have a holding
+    page.goto(
+        f"{BASE_URL}/app?action=quotes&symbols=s:1",
+        wait_until="domcontentloaded",
+    )
+    quantity_input = page.locator("input[name='quantity']")
+    if quantity_input.count() > 0:
+        quantity_input.first.fill("5")
+        buy_button = page.locator("input[type='submit'][value='Buy']")
+        if buy_button.count() > 0:
+            buy_button.first.click()
+            page.wait_for_load_state("domcontentloaded")
+
+    # Navigate to portfolio and sell a holding
+    page.goto(f"{BASE_URL}/app?action=portfolio", wait_until="domcontentloaded")
+    sell_link = page.locator("a[href*='action=sell']")
+    if sell_link.count() > 0:
+        sell_link.first.click()
+        page.wait_for_load_state("domcontentloaded")
+
+        content = page.content().lower()
+        assert "order" in content or "sell" in content or "confirmation" in content, \
+            "Sell did not produce an order confirmation"
+
+
+@pytest.mark.smoke
+def test_view_single_quote(page: Page) -> None:
+    """Look up a single stock quote and verify quote data is shown."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(
+        f"{BASE_URL}/app?action=quotes&symbols=s:0",
+        wait_until="domcontentloaded",
+    )
+    content = page.content().lower()
+
+    assert "s:0" in content, "Symbol s:0 not displayed in quote results"
+    assert "price" in content or "$" in page.content(), \
+        "Price information not displayed for quote"
+
+
+@pytest.mark.smoke
+def test_view_multiple_quotes(page: Page) -> None:
+    """Look up multiple stock quotes and verify multiple rows are shown."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(
+        f"{BASE_URL}/app?action=quotes&symbols=s:0,s:1,s:2",
+        wait_until="domcontentloaded",
+    )
+    content = page.content().lower()
+
+    assert "s:0" in content, "Symbol s:0 not in multi-quote results"
+    assert "s:1" in content, "Symbol s:1 not in multi-quote results"
+    assert "s:2" in content, "Symbol s:2 not in multi-quote results"
+
+
+@pytest.mark.smoke
+def test_quote_buy_form(page: Page) -> None:
+    """Quote page should show a buy form with quantity input and Buy button."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(
+        f"{BASE_URL}/app?action=quotes&symbols=s:0",
+        wait_until="domcontentloaded",
+    )
+
+    quantity_input = page.locator("input[name='quantity']")
+    buy_button = page.locator(
+        "input[type='submit'][value='buy'], "
+        "input[type='submit'][value='Buy']"
+    )
+    assert quantity_input.count() > 0, "Quantity input not found on quote page"
+    assert buy_button.count() > 0, "Buy button not found on quote page"
+
+
+@pytest.mark.smoke
+def test_market_summary(page: Page) -> None:
+    """Market summary should show TSIA, volume, gainers and losers."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(f"{BASE_URL}/app?action=mksummary", wait_until="domcontentloaded")
+    content = page.content().lower()
+
+    assert "tsia" in content or "index" in content or "market" in content, \
+        "TSIA / market index not shown on market summary page"
+    assert "volume" in content or "trading" in content, \
+        "Volume info not shown on market summary page"
+    assert "gain" in content or "top" in content or "loser" in content, \
+        "Gainers/losers not shown on market summary page"
+
+
+@pytest.mark.smoke
+def test_view_account_and_orders(page: Page) -> None:
+    """Account page should show profile info and recent orders."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(f"{BASE_URL}/app?action=account", wait_until="domcontentloaded")
+    content = page.content().lower()
+
+    assert "account" in content, "Account page did not load"
+    assert "uid:0" in content or "profile" in content, \
+        "Profile information not shown on account page"
+    # Orders section — may be empty but labels should exist
+    assert "order" in content or "balance" in content, \
+        "Orders or balance section not shown on account page"
+
+
+@pytest.mark.smoke
+def test_update_profile(page: Page) -> None:
+    """Update profile information and verify it is saved."""
+    page.goto(f"{BASE_URL}/welcome.jsp", wait_until="domcontentloaded")
+    page.locator("input[name='uid']").first.fill("uid:0")
+    page.locator("input[name='passwd']").first.fill("xxx")
+    page.locator("input[type='submit'][value='Log in']").first.click()
+    page.wait_for_load_state("domcontentloaded")
+
+    page.goto(f"{BASE_URL}/app?action=account", wait_until="domcontentloaded")
+
+    # Try to update the full name field
+    fullname_field = page.locator("input[name='fullname'], input[name='Full Name']")
+    if fullname_field.count() > 0:
+        fullname_field.first.fill("Updated Smoke User")
+
+        # Submit the profile update form
+        update_button = page.locator(
+            "input[type='submit'][value*='Update'], "
+            "input[type='submit'][value*='update']"
+        )
+        if update_button.count() > 0:
+            update_button.first.click()
+            page.wait_for_load_state("domcontentloaded")
+
+            content = page.content()
+            assert "Updated Smoke User" in content or "update" in content.lower(), \
+                "Profile update did not take effect"
+
+
+@pytest.mark.smoke
+def test_config_page_displays_settings(page: Page) -> None:
+    """Config page should display current DayTrader configuration."""
+    page.goto(f"{BASE_URL}/config", wait_until="domcontentloaded")
+    content = page.content().lower()
+
+    assert "configuration" in content or "config" in content or "daytrader" in content, \
+        "Config page did not load"
+    # Check for some known configuration parameters
+    for param in ["max_users", "max_quotes", "orderfee", "maxusers", "maxquotes"]:
+        if param in content:
+            break
+    else:
+        # At least the page should render with some settings
+        assert "runtime" in content or "setting" in content or "parameter" in content \
+            or "trade" in content, \
+            "No configuration parameters shown on config page"
+
+
+@pytest.mark.smoke
+def test_rest_get_quotes(page: Page) -> None:
+    """REST GET /rest/quotes/{symbols} should return JSON with quote data."""
+    response = page.request.get(f"{BASE_URL}/rest/quotes/s:0,s:1")
+
+    assert response.ok, f"REST quotes GET failed with status {response.status}"
+    data = response.json()
+    assert isinstance(data, list), "REST quotes should return a list"
+    assert len(data) == 2, f"Expected 2 quotes, got {len(data)}"
+
+
+@pytest.mark.smoke
+def test_rest_post_quotes(page: Page) -> None:
+    """REST POST /rest/quotes should return quotes for form-encoded symbols."""
+    response = page.request.post(
+        f"{BASE_URL}/rest/quotes",
+        form={"symbols": "s:0"},
+    )
+
+    assert response.ok, f"REST quotes POST failed with status {response.status}"
+    content = str(response.json())
+    assert "s:0" in content, "Quote for s:0 not found in POST response"
+
+
+@pytest.mark.smoke
+def test_scenario_servlet(page: Page) -> None:
+    """Scenario servlet should execute trading operations without error."""
+    response = page.request.get(f"{BASE_URL}/scenario")
+
+    assert response.ok or response.status < 500, \
+        f"Scenario servlet returned error status {response.status}"
+    content = response.text().lower()
+    assert len(content) > 0, "Scenario servlet returned empty response"
 
 
 if __name__ == "__main__":

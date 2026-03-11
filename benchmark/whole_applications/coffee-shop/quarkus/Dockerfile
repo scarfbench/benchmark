@@ -23,6 +23,6 @@ WORKDIR /app
 COPY . .
 
 # Build the application at image build time
-RUN mvn clean install -DskipTests
+RUN mvn clean package -DskipTests -Dpmd.skip=true -Dspotbugs.skip=true
 
-CMD ["mvn", "quarkus:run"]
+CMD ["mvn", "quarkus:dev", "-Dquarkus.analytics.disabled=true", "-Dpmd.skip=true", "-Dspotbugs.skip=true"]

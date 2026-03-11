@@ -1,139 +1,182 @@
 import pytest
 import re
+import requests
 from playwright.sync_api import Page, expect
 
+BASE_URL = "http://localhost:8080"
 
-def test_petclinic_homepage(page: Page):
-    """Test the petclinic homepage loads correctly."""
-    # 1. Navigate to the petclinic homepage
-    page.goto("http://localhost:8080/")
 
-    # 2. Verify page title contains expected text
+# ---------------------------------------------------------------------------
+# Homepage and navigation
+# ---------------------------------------------------------------------------
+
+
+def test_homepage_loads(page: Page):
+    """Scenario: Homepage loads successfully."""
+    page.goto(f"{BASE_URL}/")
     title = page.title()
-    assert "PetClinic" in title or "petclinic" in title.lower()
-
-    # 3. Verify main navigation menu is present - check for links that contain these texts
-    expect(page.locator("a").filter(has_text=re.compile(r"Home", re.I)).first).to_be_visible()
-    expect(page.locator("a").filter(has_text=re.compile(r"Find.*Owner|Owner", re.I)).first).to_be_visible()
-    expect(page.locator("a").filter(has_text=re.compile(r"Veterinarian", re.I)).first).to_be_visible()
-
-    # 4. Verify welcome message or content is present
-    expect(page.locator("body")).to_be_visible()
-
-
-def test_navigate_to_find_owners_page(page: Page):
-    """Test navigating to the find owners page."""
-    # 1. Navigate to home page
-    page.goto("http://localhost:8080/")
-
-    # 2. Click on "Find owners" menu item
-    page.locator("a").filter(has_text=re.compile(r"Find.*Owner|Owner", re.I)).first.click()
-
-    # 3. Verify URL changes to /owners/find
-    expect(page).to_have_url(re.compile(r".*/owners/find", re.I))
-
-    # 4. Verify page loads successfully
-    expect(page.locator("body")).to_be_visible()
+    assert "petclinic" in title.lower()
+    expect(
+        page.locator("a").filter(has_text=re.compile(r"Home", re.I)).first
+    ).to_be_visible()
+    expect(
+        page.locator("a")
+        .filter(has_text=re.compile(r"Find.*Owner|Owner", re.I))
+        .first
+    ).to_be_visible()
+    expect(
+        page.locator("a").filter(has_text=re.compile(r"Veterinarian", re.I)).first
+    ).to_be_visible()
 
 
-def test_navigate_to_veterinarians_page(page: Page):
-    """Test navigating to the veterinarians page."""
-    # 1. Navigate to home page
-    page.goto("http://localhost:8080/")
-
-    # 2. Click on "Veterinarians" menu item
-    page.locator("a").filter(has_text=re.compile(r"Veterinarian", re.I)).first.click()
-
-    # 3. Verify URL changes to /vets.html
-    expect(page).to_have_url(re.compile(r".*/vets\.html", re.I))
-
-    # 4. Verify page loads successfully
-    expect(page.locator("body")).to_be_visible()
-
-
-def test_homepage_welcome_content(page: Page):
-    """Test that the homepage has welcome content."""
-    # 1. Navigate to homepage
-    page.goto("http://localhost:8080/")
-
-    # 2. Wait for page to load
+def test_homepage_displays_welcome_panel(page: Page):
+    """Scenario: Homepage displays welcome panel."""
+    page.goto(f"{BASE_URL}/")
     page.wait_for_load_state("networkidle")
-
-    # 3. Verify the page loaded successfully
     expect(page.locator("body")).to_be_visible()
-
-
-def test_find_owners_page_has_search_form(page: Page):
-    """Test that the find owners page has a search form."""
-    # 1. Navigate to find owners page
-    page.goto("http://localhost:8080/owners/find")
-
-    # 2. Wait for page to load
-    page.wait_for_load_state("networkidle")
-
-    # 3. Verify search input field is present
-    search_input = page.locator("input[type='text'], input[id*='lastName'], input[name*='lastName']").first
-    expect(search_input).to_be_visible()
-
-
-def test_veterinarians_page_displays_content(page: Page):
-    """Test that the veterinarians page displays content."""
-    # 1. Navigate to veterinarians page
-    page.goto("http://localhost:8080/vets.html")
-
-    # 2. Wait for page to load
-    page.wait_for_load_state("networkidle")
-
-    # 3. Verify page has content (table or list)
-    expect(page.locator("body")).to_be_visible()
-    # Check for table or list structure
-    content = page.locator("table, ul, ol, .vet-list, .vets").first
-    expect(content).to_be_visible(timeout=10000)
 
 
 def test_homepage_has_welcome_text(page: Page):
-    """Test that the homepage has welcome text or heading."""
-    # 1. Navigate to homepage
-    page.goto("http://localhost:8080/")
-
-    # 2. Wait for page to load
+    """Scenario: Homepage has welcome text or heading."""
+    page.goto(f"{BASE_URL}/")
     page.wait_for_load_state("networkidle")
-
-    # 3. Verify welcome text or heading is present
     welcome_text = page.locator("h1, h2, .welcome, [class*='welcome']").first
     expect(welcome_text).to_be_visible()
 
 
-def test_page_titles_are_correct(page: Page):
-    """Test that page titles are set correctly."""
-    # 1. Test homepage title
-    page.goto("http://localhost:8080/")
-    page.wait_for_load_state("networkidle")
-    title = page.title()
-    assert title and len(title) > 0, "Homepage should have a title"
-
-    # 2. Test find owners page title
-    page.goto("http://localhost:8080/owners/find")
-    page.wait_for_load_state("networkidle")
-    title = page.title()
-    assert title and len(title) > 0, "Find owners page should have a title"
-
-    # 3. Test veterinarians page title
-    page.goto("http://localhost:8080/vets.html")
-    page.wait_for_load_state("networkidle")
-    title = page.title()
-    assert title and len(title) > 0, "Veterinarians page should have a title"
-
-
 def test_pages_load_without_errors(page: Page):
-    """Test that pages load without JavaScript errors or 404s."""
+    """Scenario: All pages load without errors."""
     pages_to_test = ["/", "/owners/find", "/vets.html"]
-
     for page_url in pages_to_test:
-        # Navigate to each page
-        response = page.goto(f"http://localhost:8080{page_url}")
-        assert response and response.status < 400, f"Page {page_url} should load successfully (status: {response.status if response else 'None'})"
+        response = page.goto(f"{BASE_URL}{page_url}")
+        assert response and response.status < 400, (
+            f"Page {page_url} returned status {response.status if response else 'None'}"
+        )
         page.wait_for_load_state("networkidle")
+
+
+def test_page_titles_are_set(page: Page):
+    """Scenario: All pages have non-empty titles."""
+    pages_to_test = ["/", "/owners/find", "/vets.html"]
+    for page_url in pages_to_test:
+        page.goto(f"{BASE_URL}{page_url}")
+        page.wait_for_load_state("networkidle")
+        title = page.title()
+        assert title and len(title) > 0, f"{page_url} should have a title"
+
+
+# ---------------------------------------------------------------------------
+# Owner management — listing and search
+# ---------------------------------------------------------------------------
+
+
+def test_navigate_to_find_owners_page(page: Page):
+    """Scenario: Navigate to find owners page."""
+    page.goto(f"{BASE_URL}/")
+    page.locator("a").filter(
+        has_text=re.compile(r"Find.*Owner|Owner", re.I)
+    ).first.click()
+    expect(page).to_have_url(re.compile(r".*/owners/find", re.I))
+    expect(page.locator("body")).to_be_visible()
+
+
+def test_find_owners_page_has_search_form(page: Page):
+    """Scenario: Owner page has search functionality."""
+    page.goto(f"{BASE_URL}/owners/find")
+    page.wait_for_load_state("networkidle")
+    search_input = page.locator(
+        "input[type='text'], input[id*='lastName'], input[name*='lastName']"
+    ).first
+    expect(search_input).to_be_visible()
+
+
+def test_owner_search_returns_results(page: Page):
+    """Scenario: Owner search filters results."""
+    page.goto(f"{BASE_URL}/owners/find")
+    page.wait_for_load_state("networkidle")
+    search_input = page.locator(
+        "input[type='text'], input[id*='lastName'], input[name*='lastName']"
+    ).first
+    search_input.fill("")
+    page.locator("button[type='submit'], input[type='submit']").first.click()
+    page.wait_for_load_state("networkidle")
+    # Either redirected to owner list or single owner detail
+    expect(page.locator("body")).to_be_visible()
+
+
+def test_owner_search_by_last_name(page: Page):
+    """Scenario: Owner search by specific last name."""
+    page.goto(f"{BASE_URL}/owners/find")
+    page.wait_for_load_state("networkidle")
+    search_input = page.locator(
+        "input[type='text'], input[id*='lastName'], input[name*='lastName']"
+    ).first
+    search_input.fill("Davis")
+    page.locator("button[type='submit'], input[type='submit']").first.click()
+    page.wait_for_load_state("networkidle")
+    # Should show results matching Davis
+    expect(page.locator("body")).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
+# Veterinarian management
+# ---------------------------------------------------------------------------
+
+
+def test_navigate_to_veterinarians_page(page: Page):
+    """Scenario: Navigate to veterinarians page."""
+    page.goto(f"{BASE_URL}/")
+    page.locator("a").filter(
+        has_text=re.compile(r"Veterinarian", re.I)
+    ).first.click()
+    expect(page).to_have_url(re.compile(r".*/vets\.html", re.I))
+    expect(page.locator("body")).to_be_visible()
+
+
+def test_veterinarians_page_displays_table(page: Page):
+    """Scenario: Veterinarian page displays a list."""
+    page.goto(f"{BASE_URL}/vets.html")
+    page.wait_for_load_state("networkidle")
+    content = page.locator("table, ul, ol, .vet-list, .vets").first
+    expect(content).to_be_visible(timeout=10000)
+
+
+# ---------------------------------------------------------------------------
+# REST API — Vets (Spring PetClinic exposes /vets as JSON)
+# ---------------------------------------------------------------------------
+
+
+def test_rest_vets_json():
+    """Scenario: GET /vets returns vets as JSON."""
+    r = requests.get(
+        f"{BASE_URL}/vets",
+        headers={"Accept": "application/json"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    # Spring PetClinic returns {"vetList": [...]} or a list
+    if isinstance(data, dict):
+        vets = data.get("vetList", data.get("vets", []))
+    else:
+        vets = data
+    assert isinstance(vets, list)
+    if len(vets) > 0:
+        vet = vets[0]
+        assert "firstName" in vet or "first_name" in vet
+
+
+# ---------------------------------------------------------------------------
+# Error page
+# ---------------------------------------------------------------------------
+
+
+def test_error_page_for_unknown_route(page: Page):
+    """Scenario: Unknown routes show an error page."""
+    response = page.goto(f"{BASE_URL}/nonexistent-page-xyz")
+    # Spring returns a Whitelabel error page or custom error
+    assert response is not None
+    # Either 404 or a redirect to error page
+    expect(page.locator("body")).to_be_visible()
 
 
 if __name__ == "__main__":

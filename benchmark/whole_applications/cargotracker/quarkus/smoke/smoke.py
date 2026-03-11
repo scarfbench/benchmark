@@ -273,6 +273,8 @@ def test_click_on_routed_cargo_details(page: Page):
 
     # 4. Verify cargo details are displayed
     expect(page.get_by_text("Routing Details for Cargo ABC123")).to_be_visible()
+    expect(page.get_by_text("Origin: Hong Kong  CNHKG")).to_be_visible()
+    expect(page.get_by_text("Destination: Helsinki  FIHEL")).to_be_visible()
 
     # 5. Now go back and click on the tracking ID link for cargo "JKL567"
     page.go_back()
@@ -281,6 +283,8 @@ def test_click_on_routed_cargo_details(page: Page):
 
     # 6. Verify cargo details are displayed for JKL567
     expect(page.get_by_text("Routing Details for Cargo JKL567")).to_be_visible()
+    expect(page.get_by_text("Origin: Hangzhou  CNHGH")).to_be_visible()
+    expect(page.get_by_text("Destination: Stockholm  SESTO")).to_be_visible()
 
     # 7. Finally go back and click on the not routed cargo "DEF789"
     page.go_back()
@@ -290,6 +294,11 @@ def test_click_on_routed_cargo_details(page: Page):
     expect(not_routed_cargo_table).to_be_visible()
     tracking_link_def = not_routed_cargo_table.get_by_role("link", name="DEF789")
     tracking_link_def.click()
+
+    # 8. Verify cargo details are displayed for DEF789
+    expect(page.get_by_text("Set Route for Cargo DEF789")).to_be_visible()
+    expect(page.get_by_text("Origin: Hong Kong  CNHKG")).to_be_visible()
+    expect(page.get_by_text("Destination: Melbourne  AUMEL")).to_be_visible()
 
 
 def test_tooltip_verification(page: Page):
@@ -320,6 +329,226 @@ def test_tooltip_verification(page: Page):
 
     expect(tooltip).to_be_visible()
     expect(tooltip).to_contain_text("Click to see itinerary's details.")
+
+
+def test_track_cargo_not_found_zzzzz(page: Page):
+    """Track a non-existent cargo shows 'not found'."""
+    page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
+    page.get_by_placeholder("XYZ789").fill("ZZZZZ")
+    page.get_by_role("button", name="Track!").click()
+    expect(page.locator("text=/not found|unknown|invalid/i")).to_be_visible()
+
+
+def test_tracking_shows_misdirection_warning_jkl567(page: Page):
+    """Tracking page shows misdirection warning for JKL567."""
+    page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
+    page.get_by_placeholder("XYZ789").fill("JKL567")
+    page.get_by_role("button", name="Track!").click()
+    expect(page.locator("text=/misdirected|Misdirected/i")).to_be_visible()
+
+
+def test_tracking_shows_handling_event_history(page: Page):
+    """Tracking page displays handling event history for ABC123."""
+    page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
+    page.get_by_placeholder("XYZ789").fill("ABC123")
+    page.get_by_role("button", name="Track!").click()
+    # Should show a table of handling events
+    event_table = page.locator("table").filter(has_text="Type")
+    expect(event_table).to_be_visible()
+    # Verify at least one event row exists
+    expect(event_table.locator("tbody tr").first).to_be_visible()
+
+
+def test_tracking_shows_map_iframe(page: Page):
+    """Tracking page includes a map iframe showing cargo location."""
+    page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
+    page.get_by_placeholder("XYZ789").fill("ABC123")
+    page.get_by_role("button", name="Track!").click()
+    map_iframe = page.locator("iframe")
+    expect(map_iframe).to_be_visible()
+
+
+def test_tracking_shows_eta_for_routed_cargo(page: Page):
+    """Tracking page shows ETA for routed, non-misdirected cargo."""
+    page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
+    page.get_by_placeholder("XYZ789").fill("ABC123")
+    page.get_by_role("button", name="Track!").click()
+    # ABC123 is routed and not misdirected, should show ETA
+    expect(page.locator("text=/ETA|Estimated|arrival/i")).to_be_visible()
+
+
+def test_cargo_details_shows_itinerary(page: Page):
+    """Cargo details page shows itinerary with voyage, load/unload locations, and times."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    routed_cargo_table = page.locator(
+        "//label[normalize-space(.)='Routed Cargo']/following::table[1]"
+    )
+    routed_cargo_table.get_by_role("link", name="ABC123").click()
+    expect(page.get_by_text("Routing Details for Cargo ABC123")).to_be_visible()
+    # Itinerary table should show voyage information
+    itinerary_table = page.locator("table").filter(has_text="Voyage")
+    expect(itinerary_table).to_be_visible()
+    # Verify at least one leg exists
+    expect(itinerary_table.locator("tbody tr").first).to_be_visible()
+
+
+def test_misrouted_cargo_shows_warning_and_reroute(page: Page):
+    """Cargo details page shows misrouted warning with reroute button for JKL567."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    routed_cargo_table = page.locator(
+        "//label[normalize-space(.)='Routed Cargo']/following::table[1]"
+    )
+    routed_cargo_table.get_by_role("link", name="JKL567").click()
+    # JKL567 is misdirected, should show warning and reroute option
+    expect(
+        page.locator("text=/misrouted|Misrouted|misdirected|Misdirected/i")
+    ).to_be_visible()
+    expect(page.locator("text=/reroute|Re-route|Reroute/i").first).to_be_visible()
+
+
+def test_not_routed_cargo_links_to_route_page(page: Page):
+    """Not routed cargo table links to route selection page."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    not_routed_table = page.locator(
+        "//label[normalize-space(.)='Not Routed Cargo']/following::table[1]"
+    )
+    expect(not_routed_table).to_be_visible()
+    not_routed_table.get_by_role("link", name="DEF789").click()
+    expect(page.get_by_text("Set Route for Cargo DEF789")).to_be_visible()
+    expect(page.get_by_text("Origin: Hong Kong  CNHKG")).to_be_visible()
+    expect(page.get_by_text("Destination: Melbourne  AUMEL")).to_be_visible()
+
+
+def test_claimed_cargo_on_dashboard(page: Page):
+    """Claimed cargo table shows MNO456."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    claimed_table = page.locator(
+        "//label[normalize-space(.)='Claimed Cargo']/following::table[1]"
+    )
+    expect(claimed_table).to_be_visible()
+    expect(claimed_table.locator("text=MNO456")).to_be_visible()
+
+
+def test_booking_flow_shows_location_dropdown(page: Page):
+    """Booking flow starts with origin selection showing all 13 locations."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    # Navigate to booking page via the Book link in the sidebar
+    page.locator(".ui-menu-list >> text=Book").click()
+    # Should see an origin dropdown with locations
+    origin_select = page.locator("select").first
+    expect(origin_select).to_be_visible()
+    options = origin_select.locator("option")
+    # Should have at least 13 locations (may include a blank/placeholder option)
+    assert options.count() >= 13
+
+
+def test_event_logger_wizard_structure(page: Page):
+    """Event Logger is a multi-step wizard with tracking ID, location, event type fields."""
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
+    with page.expect_popup() as popup_info:
+        page.get_by_role("link", name="Event Logging Interface").click()
+    popup = popup_info.value
+    # Verify the event logger has a tracking ID selection
+    expect(popup.locator("select").first).to_be_visible()
+
+
+def test_event_logger_tracking_id_dropdown(page: Page):
+    """Event Logger tracking ID dropdown shows routed unclaimed cargos."""
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
+    with page.expect_popup() as popup_info:
+        page.get_by_role("link", name="Event Logging Interface").click()
+    popup = popup_info.value
+    # The first dropdown should be tracking IDs
+    tracking_select = popup.locator("select").first
+    expect(tracking_select).to_be_visible()
+    # Should include routed, unclaimed cargos like ABC123 and JKL567
+    expect(tracking_select.locator("option", has_text="ABC123")).to_be_attached()
+    expect(tracking_select.locator("option", has_text="JKL567")).to_be_attached()
+
+
+def test_rest_handling_report_submission(page: Page):
+    """Submit a handling report via REST API."""
+    response = page.request.post(
+        "http://localhost:8080/cargo-tracker/rest/handling/reports",
+        data={
+            "completionTime": "2024-03-01 12:00",
+            "trackingId": "ABC123",
+            "eventType": "UNLOAD",
+            "unLocode": "USNYC",
+            "voyageNumber": "0100S",
+        },
+    )
+    assert response.status in (200, 204)
+
+
+def test_rest_handling_report_invalid_tracking_id(page: Page):
+    """Handling report with invalid tracking ID (< 4 chars) is rejected."""
+    response = page.request.post(
+        "http://localhost:8080/cargo-tracker/rest/handling/reports",
+        data={
+            "completionTime": "2024-03-01 12:00",
+            "trackingId": "XX",
+            "eventType": "UNLOAD",
+            "unLocode": "USNYC",
+            "voyageNumber": "0100S",
+        },
+    )
+    assert response.status >= 400
+
+
+def test_rest_handling_report_invalid_unlocode(page: Page):
+    """Handling report with invalid UN locode (not 5 chars) is rejected."""
+    response = page.request.post(
+        "http://localhost:8080/cargo-tracker/rest/handling/reports",
+        data={
+            "completionTime": "2024-03-01 12:00",
+            "trackingId": "ABC123",
+            "eventType": "UNLOAD",
+            "unLocode": "INVALID",
+            "voyageNumber": "0100S",
+        },
+    )
+    assert response.status >= 400
+
+
+def test_rest_handling_report_invalid_event_type(page: Page):
+    """Handling report with invalid event type is rejected."""
+    response = page.request.post(
+        "http://localhost:8080/cargo-tracker/rest/handling/reports",
+        data={
+            "completionTime": "2024-03-01 12:00",
+            "trackingId": "ABC123",
+            "eventType": "UNKNOWN",
+            "unLocode": "USNYC",
+            "voyageNumber": "0100S",
+        },
+    )
+    assert response.status >= 400
+
+
+def test_sse_cargo_endpoint(page: Page):
+    """SSE endpoint at /rest/cargo returns cargo positions."""
+    response = page.request.get(
+        "http://localhost:8080/cargo-tracker/rest/cargo",
+        headers={"Accept": "text/event-stream"},
+    )
+    assert response.status == 200
+
+
+def test_admin_tracking_page(page: Page):
+    """Admin tracking page is accessible and has tracking input."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    page.locator(".ui-menu-list >> text=Track").click()
+    # Should see a tracking input with autocomplete
+    expect(page.locator("input[role='textbox'], input[type='text']").first).to_be_visible()
+
+
+def test_admin_live_map_page(page: Page):
+    """Admin live map page is accessible."""
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    page.locator(".ui-menu-list >> text=Live").click()
+    # Should see a map or iframe for live cargo display
+    expect(page.locator("iframe, canvas, .map, #map").first).to_be_visible()
 
 
 if __name__ == "__main__":

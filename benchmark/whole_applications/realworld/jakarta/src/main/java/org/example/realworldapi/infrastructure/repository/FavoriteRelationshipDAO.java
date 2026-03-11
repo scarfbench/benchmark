@@ -61,5 +61,6 @@ public class FavoriteRelationshipDAO extends AbstractDAO<FavoriteRelationshipEnt
     public void delete(FavoriteRelationship favoriteRelationship) {
         final var favoriteRelationshipEntity = findFavoriteRelationshipEntityByKey(favoriteRelationship);
         em.remove(favoriteRelationshipEntity);
+        em.flush();
     }
 }

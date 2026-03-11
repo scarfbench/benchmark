@@ -1,8 +1,9 @@
 FROM maven:3.9.12-ibm-semeru-21-noble
 
 USER root
-# install uv
-RUN apt-get update && apt-get install -y --no-install-recommends curl lsof python3-venv python3-full     && curl -LsSf https://astral.sh/uv/install.sh | sh
+# install uv and PostgreSQL
+RUN apt-get update && apt-get install -y --no-install-recommends curl lsof python3-venv python3-full postgresql postgresql-client \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -23,8 +24,9 @@ WORKDIR /app
 COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+RUN chmod +x start.sh
 
 # Build the application at image build time
 RUN mvn clean install -DskipTests
 
-CMD ["java", "-jar", "target/quarkus-app/quarkus-run.jar"]
+CMD ["/app/start.sh"]

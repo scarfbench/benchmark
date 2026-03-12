@@ -45,7 +45,7 @@ public class PetEndpoint implements Serializable {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public PetListDto getList() {
+    public List<PetDto> getList() {
         log.info("------------------------------------------------------------");
         log.info("getList");
         log.info("------------------------------------------------------------");
@@ -53,13 +53,13 @@ public class PetEndpoint implements Serializable {
         PetListDto dto = this.petEndpointUtil.dtoListFactory(petList);
         log.info(dto.toString());
         log.info("------------------------------------------------------------");
-        return dto;
+        return dto.getPet();
     }
 
     @GET
     @Path("/list+json")
     @Produces(MediaType.APPLICATION_JSON)
-    public PetListDto getListAsJson() {
+    public List<PetDto> getListAsJson() {
         log.info("------------------------------------------------------------");
         log.info("getList");
         log.info("------------------------------------------------------------");
@@ -67,7 +67,7 @@ public class PetEndpoint implements Serializable {
         PetListDto dto = this.petEndpointUtil.dtoListFactory(petList);
         log.info(dto.toString());
         log.info("------------------------------------------------------------");
-        return dto;
+        return dto.getPet();
     }
 
     @GET

@@ -17,6 +17,7 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
 @Value
 class UserPostRequestDTO {
 
+    @NotBlank
     @javax.validation.constraints.Email
     String email;
     @NotBlank

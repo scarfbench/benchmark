@@ -1,4 +1,4 @@
-FROM maven:3.9.12-ibm-semeru-11-noble
+FROM maven:3.9.9-ibm-semeru-11-focal
 
 # We’ll work as root for package installs (this is the default in this image)
 USER root
@@ -10,16 +10,16 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 python3-venv python3-pip \
     curl \
-    chromium chromium-driver \
-    libglib2.0-0t64 \
+    chromium-browser chromium-chromedriver \
+    libglib2.0-0 \
     libnspr4 \
     libnss3 \
-    libatk1.0-0t64 \
-    libatk-bridge2.0-0t64 \
-    libcups2t64 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
     libxcb1 \
     libxkbcommon0 \
-    libatspi2.0-0t64 \
+    libatspi2.0-0 \
     libx11-6 \
     libxcomposite1 \
     libxdamage1 \
@@ -29,7 +29,7 @@ RUN apt-get update && \
     libgbm1 \
     libcairo2 \
     libpango-1.0-0 \
-    libasound2t64 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------

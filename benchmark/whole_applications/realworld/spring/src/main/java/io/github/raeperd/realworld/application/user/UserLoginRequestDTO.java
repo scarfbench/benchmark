@@ -15,6 +15,7 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
 @Value
 class UserLoginRequestDTO {
 
+    @NotBlank
     @Email
     String email;
     @NotBlank

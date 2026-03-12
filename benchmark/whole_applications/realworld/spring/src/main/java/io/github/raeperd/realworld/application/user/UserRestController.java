@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
 import static io.github.raeperd.realworld.application.user.UserModel.fromUserAndToken;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import static org.springframework.http.ResponseEntity.of;
+import static org.springframework.http.ResponseEntity.status;
 
 @RestController
 class UserRestController {
@@ -33,8 +35,10 @@ class UserRestController {
 
     @PostMapping("/users/login")
     public ResponseEntity<UserModel> loginUser(@Valid @RequestBody UserLoginRequestDTO dto) {
-        return of(userService.login(new Email(dto.getEmail()), dto.getPassword())
-                .map(user -> fromUserAndToken(user, jwtSerializer.jwtFromUser(user))));
+        return userService.login(new Email(dto.getEmail()), dto.getPassword())
+                .map(user -> fromUserAndToken(user, jwtSerializer.jwtFromUser(user)))
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> status(UNAUTHORIZED).build());
     }
 
     @GetMapping("/user")

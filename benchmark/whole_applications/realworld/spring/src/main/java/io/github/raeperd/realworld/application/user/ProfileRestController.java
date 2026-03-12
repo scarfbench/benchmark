@@ -7,11 +7,8 @@ import io.github.raeperd.realworld.infrastructure.jwt.UserJWTPayload;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.NoSuchElementException;
-
 import static io.github.raeperd.realworld.application.user.ProfileModel.fromProfile;
 import static java.util.Optional.ofNullable;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RequestMapping("/profiles")
 @RestController
@@ -48,9 +45,4 @@ class ProfileRestController {
         );
     }
 
-    @ResponseStatus(NOT_FOUND)
-    @ExceptionHandler(NoSuchElementException.class)
-    void handleNoSuchElementException(NoSuchElementException exception) {
-        // return NOT FOUND status
-    }
 }

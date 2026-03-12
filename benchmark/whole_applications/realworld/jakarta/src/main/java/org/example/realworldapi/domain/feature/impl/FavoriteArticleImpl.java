@@ -26,7 +26,7 @@ public class FavoriteArticleImpl implements FavoriteArticle {
         final var article = findArticleBySlug.handle(articleSlug);
         final var favoriteRelationshipOptional =
                 favoriteRelationshipRepository.findByArticleIdAndUserId(article.getId(), currentUserId);
-        return favoriteRelationshipOptional.orElse(createFavoriteRelationship(currentUserId, article));
+        return favoriteRelationshipOptional.orElseGet(() -> createFavoriteRelationship(currentUserId, article));
     }
 
     private FavoriteRelationship createFavoriteRelationship(UUID currentUserId, Article article) {

@@ -62,7 +62,7 @@
 								icon="fa fa-fw fa-info-circle"/>
 						<f:facet name="options">
 							<span class="ui-inputgroup">
-								<p:selectOneMenu value="#{languageView.localeSelected}">
+								<p:selectOneMenu id="languageSelector" value="#{languageView.localeSelected}">
 									<f:selectItems value="#{languageView.countries}"/>
 								</p:selectOneMenu>
 								<p:commandButton

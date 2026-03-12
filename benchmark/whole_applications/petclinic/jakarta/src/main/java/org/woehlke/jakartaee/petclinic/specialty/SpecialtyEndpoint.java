@@ -15,6 +15,7 @@ import org.woehlke.jakartaee.petclinic.specialty.api.SpecialtyListDto;
 import org.woehlke.jakartaee.petclinic.specialty.db.SpecialtyService;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  *
@@ -35,9 +36,9 @@ public class SpecialtyEndpoint implements Serializable {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public SpecialtyListDto getList() {
+    public List<SpecialtyDto> getList() {
         log.info("getList");
-        return this.specialtyEndpointUtil.dtoListFactory(specialtyService.getAll());
+        return this.specialtyEndpointUtil.dtoListFactory(specialtyService.getAll()).getSpecialty();
     }
 
     @GET
@@ -51,9 +52,9 @@ public class SpecialtyEndpoint implements Serializable {
     @GET
     @Path("/list+json")
     @Produces(MediaType.APPLICATION_JSON)
-    public SpecialtyListDto getListAsJson() {
+    public List<SpecialtyDto> getListAsJson() {
         log.info("getList");
-        return this.specialtyEndpointUtil.dtoListFactory(specialtyService.getAll());
+        return this.specialtyEndpointUtil.dtoListFactory(specialtyService.getAll()).getSpecialty();
     }
 
     @GET

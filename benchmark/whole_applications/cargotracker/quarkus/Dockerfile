@@ -16,6 +16,16 @@ RUN uv venv /opt/venv     && uv pip install --python /opt/venv/bin/python playwr
 ENV PATH="/opt/venv/bin:$PATH"
 RUN playwright install --with-deps chromium
 
+# Install ActiveMQ Artemis (required as AMQP broker for JMS messaging)
+ENV ARTEMIS_VERSION=2.31.2
+ENV ARTEMIS_HOME=/opt/artemis
+RUN curl -L -o /tmp/artemis.tar.gz "https://archive.apache.org/dist/activemq/activemq-artemis/${ARTEMIS_VERSION}/apache-artemis-${ARTEMIS_VERSION}-bin.tar.gz" \
+    && mkdir -p ${ARTEMIS_HOME} \
+    && tar xzf /tmp/artemis.tar.gz -C ${ARTEMIS_HOME} --strip-components=1 \
+    && rm /tmp/artemis.tar.gz \
+    && ${ARTEMIS_HOME}/bin/artemis create /var/lib/artemis-broker \
+       --user quarkus --password quarkus --allow-anonymous --no-web --silent
+
 # Set working directory
 WORKDIR /app
 
@@ -27,4 +37,5 @@ RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x 
 # Build the application at image build time
 RUN mvn clean install -DskipTests
 
-CMD ["mvn", "quarkus:run"]
+# Start Artemis broker in background, then run Quarkus
+CMD /var/lib/artemis-broker/bin/artemis-service start && mvn quarkus:run

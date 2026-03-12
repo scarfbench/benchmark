@@ -7,7 +7,7 @@ import java.util.Objects;
 @Embeddable
 public class UserName {
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     public UserName(String name) {

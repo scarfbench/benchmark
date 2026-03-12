@@ -15,6 +15,7 @@ import org.woehlke.jakartaee.petclinic.vet.api.VetEndpointUtil;
 
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created with IntelliJ IDEA.
@@ -39,9 +40,9 @@ public class VetEndpoint implements Serializable {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public VetListDto getList() {
+    public List<VetDto> getList() {
         log.info("getList");
-        return this.vetEndpointUtil.dtoListFactory(vetService.getAll());
+        return this.vetEndpointUtil.dtoListFactory(vetService.getAll()).getVetList();
     }
 
     @GET
@@ -55,9 +56,9 @@ public class VetEndpoint implements Serializable {
     @GET
     @Path("/list+json")
     @Produces(MediaType.APPLICATION_JSON)
-    public VetListDto getListAsJson() {
+    public List<VetDto> getListAsJson() {
         log.info("getList");
-        return this.vetEndpointUtil.dtoListFactory(vetService.getAll());
+        return this.vetEndpointUtil.dtoListFactory(vetService.getAll()).getVetList();
     }
 
     @GET

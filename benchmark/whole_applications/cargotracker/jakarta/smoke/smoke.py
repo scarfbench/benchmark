@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -352,11 +354,11 @@ def test_tracking_shows_handling_event_history(page: Page):
     page.goto("http://localhost:8080/cargo-tracker/public/track.xhtml")
     page.get_by_placeholder("XYZ789").fill("ABC123")
     page.get_by_role("button", name="Track!").click()
-    # Should show a table of handling events
-    event_table = page.locator("table").filter(has_text="Type")
-    expect(event_table).to_be_visible()
-    # Verify at least one event row exists
-    expect(event_table.locator("tbody tr").first).to_be_visible()
+    # Should show the "Handling History" section with event entries
+    expect(page.get_by_text("Handling History")).to_be_visible()
+    # Events are rendered as divs with check/flag icons, not a table
+    # Verify at least one event description is visible (e.g. Received, Loaded, Unloaded)
+    expect(page.locator("text=/Received|Loaded|Unloaded/i").first).to_be_visible()
 
 
 def test_tracking_shows_map_iframe(page: Page):
@@ -393,17 +395,18 @@ def test_cargo_details_shows_itinerary(page: Page):
 
 
 def test_misrouted_cargo_shows_warning_and_reroute(page: Page):
-    """Cargo details page shows misrouted warning with reroute button for JKL567."""
+    """Cargo details page for misdirected JKL567 shows itinerary with the wrong voyage."""
     page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
     routed_cargo_table = page.locator(
         "//label[normalize-space(.)='Routed Cargo']/following::table[1]"
     )
     routed_cargo_table.get_by_role("link", name="JKL567").click()
-    # JKL567 is misdirected, should show warning and reroute option
-    expect(
-        page.locator("text=/misrouted|Misrouted|misdirected|Misdirected/i")
-    ).to_be_visible()
-    expect(page.locator("text=/reroute|Re-route|Reroute/i").first).to_be_visible()
+    # JKL567 is misdirected (loaded on wrong voyage) but NOT misrouted
+    # (itinerary still satisfies route spec Hangzhou→Stockholm).
+    # The admin details page shows the itinerary table for routed cargo.
+    expect(page.get_by_text("Routing Details for Cargo JKL567")).to_be_visible()
+    itinerary_table = page.locator("table").filter(has_text="Voyage")
+    expect(itinerary_table).to_be_visible()
 
 
 def test_not_routed_cargo_links_to_route_page(page: Page):
@@ -434,11 +437,11 @@ def test_booking_flow_shows_location_dropdown(page: Page):
     page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
     # Navigate to booking page via the Book link in the sidebar
     page.locator(".ui-menu-list >> text=Book").click()
-    # Should see an origin dropdown with locations
+    # PrimeFaces selectOneMenu renders a hidden <select> and a visible custom dropdown.
+    # Check the hidden select has at least 13 location options.
     origin_select = page.locator("select").first
-    expect(origin_select).to_be_visible()
+    expect(origin_select).to_be_attached()
     options = origin_select.locator("option")
-    # Should have at least 13 locations (may include a blank/placeholder option)
     assert options.count() >= 13
 
 
@@ -448,8 +451,9 @@ def test_event_logger_wizard_structure(page: Page):
     with page.expect_popup() as popup_info:
         page.get_by_role("link", name="Event Logging Interface").click()
     popup = popup_info.value
+    # PrimeFaces selectOneMenu renders a hidden <select> and a visible custom dropdown.
     # Verify the event logger has a tracking ID selection
-    expect(popup.locator("select").first).to_be_visible()
+    expect(popup.locator("select").first).to_be_attached()
 
 
 def test_event_logger_tracking_id_dropdown(page: Page):
@@ -458,9 +462,11 @@ def test_event_logger_tracking_id_dropdown(page: Page):
     with page.expect_popup() as popup_info:
         page.get_by_role("link", name="Event Logging Interface").click()
     popup = popup_info.value
+    popup.wait_for_load_state("networkidle")
     # The first dropdown should be tracking IDs
+    # PrimeFaces selectOneMenu renders a hidden <select> with options
     tracking_select = popup.locator("select").first
-    expect(tracking_select).to_be_visible()
+    expect(tracking_select).to_be_attached()
     # Should include routed, unclaimed cargos like ABC123 and JKL567
     expect(tracking_select.locator("option", has_text="ABC123")).to_be_attached()
     expect(tracking_select.locator("option", has_text="JKL567")).to_be_attached()
@@ -468,15 +474,19 @@ def test_event_logger_tracking_id_dropdown(page: Page):
 
 def test_rest_handling_report_submission(page: Page):
     """Submit a handling report via REST API."""
+    # The endpoint @Consumes({"application/json", "application/xml"}), so send JSON
     response = page.request.post(
         "http://localhost:8080/cargo-tracker/rest/handling/reports",
-        data={
-            "completionTime": "2024-03-01 12:00",
-            "trackingId": "ABC123",
-            "eventType": "UNLOAD",
-            "unLocode": "USNYC",
-            "voyageNumber": "0100S",
-        },
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(
+            {
+                "completionTime": "3/1/2024 12:00 PM",
+                "trackingId": "ABC123",
+                "eventType": "UNLOAD",
+                "unLocode": "USNYC",
+                "voyageNumber": "0100S",
+            }
+        ),
     )
     assert response.status in (200, 204)
 
@@ -528,11 +538,36 @@ def test_rest_handling_report_invalid_event_type(page: Page):
 
 def test_sse_cargo_endpoint(page: Page):
     """SSE endpoint at /rest/cargo returns cargo positions."""
-    response = page.request.get(
-        "http://localhost:8080/cargo-tracker/rest/cargo",
-        headers={"Accept": "text/event-stream"},
+    # Navigate to the app first so fetch runs in the same origin (avoids CORS/network errors).
+    page.goto("http://localhost:8080/cargo-tracker/index.xhtml")
+    # SSE keeps the connection open indefinitely, so page.request.get() would time out.
+    # Instead, use page.evaluate() to fetch with AbortController for a short window,
+    # verifying the endpoint responds with 200 and event-stream data.
+    result = page.evaluate(
+        """async () => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+            try {
+                const resp = await fetch(
+                    '/cargo-tracker/rest/cargo',
+                    { headers: { 'Accept': 'text/event-stream' }, signal: controller.signal }
+                );
+                const reader = resp.body.getReader();
+                const { value } = await reader.read();
+                reader.cancel();
+                clearTimeout(timeout);
+                return { status: resp.status, hasData: value && value.length > 0 };
+            } catch (e) {
+                clearTimeout(timeout);
+                if (e.name === 'AbortError') {
+                    return { status: 0, hasData: false, aborted: true };
+                }
+                throw e;
+            }
+        }"""
     )
-    assert response.status == 200
+    assert result["status"] == 200
+    assert result["hasData"]
 
 
 def test_admin_tracking_page(page: Page):

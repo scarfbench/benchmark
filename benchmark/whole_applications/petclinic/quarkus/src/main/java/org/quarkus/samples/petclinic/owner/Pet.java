@@ -18,6 +18,7 @@ import jakarta.persistence.Transient;
 import jakarta.validation.constraints.NotEmpty;
 import org.quarkus.samples.petclinic.visit.Visit;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @Entity
@@ -37,6 +38,7 @@ public class Pet extends PanacheEntity {
 
 	@ManyToOne
 	@JoinColumn(name = "owner_id")
+	@JsonBackReference
 	public Owner owner;
 
 	@Transient

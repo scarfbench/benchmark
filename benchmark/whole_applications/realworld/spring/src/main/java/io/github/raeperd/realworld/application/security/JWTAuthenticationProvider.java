@@ -4,6 +4,7 @@ import io.github.raeperd.realworld.domain.jwt.JWTDeserializer;
 import io.github.raeperd.realworld.domain.jwt.JWTPayload;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,11 +22,17 @@ class JWTAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        return of(authentication).map(JWTAuthenticationFilter.JWT.class::cast)
-                .map(JWTAuthenticationFilter.JWT::getPrincipal)
-                .map(Object::toString)
-                .map(token -> new JWTAuthentication(token, jwtDeserializer.jwtPayloadFromJWT(token)))
-                .orElseThrow(IllegalStateException::new);
+        try {
+            return of(authentication).map(JWTAuthenticationFilter.JWT.class::cast)
+                    .map(JWTAuthenticationFilter.JWT::getPrincipal)
+                    .map(Object::toString)
+                    .map(token -> new JWTAuthentication(token, jwtDeserializer.jwtPayloadFromJWT(token)))
+                    .orElseThrow(() -> new BadCredentialsException("Invalid JWT token"));
+        } catch (AuthenticationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadCredentialsException("Invalid JWT token", e);
+        }
     }
 
     @Override

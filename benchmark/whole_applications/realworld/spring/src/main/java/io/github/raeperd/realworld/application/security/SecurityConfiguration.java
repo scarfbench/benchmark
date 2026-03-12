@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -19,6 +20,7 @@ import java.util.List;
 
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @EnableConfigurationProperties(SecurityConfigurationProperties.class)
 @Configuration
@@ -41,9 +43,12 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter implemen
         http.cors();
         http.formLogin().disable();
         http.logout().disable();
+        http.exceptionHandling()
+                .authenticationEntryPoint(new HttpStatusEntryPoint(UNAUTHORIZED));
         http.addFilterBefore(new JWTAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         http.authorizeRequests()
                 .antMatchers(GET, "/profiles/*").permitAll()
+                .antMatchers(GET, "/articles/feed").authenticated()
                 .antMatchers(GET, "/articles/**").permitAll()
                 .antMatchers(GET, "/tags/**").permitAll()
                 .anyRequest().authenticated();

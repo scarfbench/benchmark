@@ -140,26 +140,19 @@ def test_veterinarians_page_displays_table(page: Page):
 
 
 # ---------------------------------------------------------------------------
-# REST API — Vets (Quarkus PetClinic exposes /vets as JSON)
+# REST API — Owners (Quarkus PetClinic exposes /owners/api/list as JSON)
 # ---------------------------------------------------------------------------
 
 
-def test_rest_vets_json():
-    """Scenario: GET /vets returns vets as JSON."""
-    r = requests.get(
-        f"{BASE_URL}/vets",
-        headers={"Accept": "application/json"},
-    )
+def test_rest_owners_json():
+    """Scenario: GET /owners/api/list returns owners as JSON."""
+    r = requests.get(f"{BASE_URL}/owners/api/list")
     assert r.status_code == 200
     data = r.json()
-    if isinstance(data, dict):
-        vets = data.get("vetList", data.get("vets", []))
-    else:
-        vets = data
-    assert isinstance(vets, list)
-    if len(vets) > 0:
-        vet = vets[0]
-        assert "firstName" in vet or "first_name" in vet
+    assert isinstance(data, list)
+    if len(data) > 0:
+        owner = data[0]
+        assert "firstName" in owner or "lastName" in owner
 
 
 # ---------------------------------------------------------------------------

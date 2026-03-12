@@ -15,6 +15,7 @@ import org.woehlke.jakartaee.petclinic.pettype.api.PetTypeListDto;
 import org.woehlke.jakartaee.petclinic.pettype.db.PetTypeService;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Log
 @Path("/petType")
@@ -32,9 +33,9 @@ public class PetTypeEndpoint implements Serializable {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public PetTypeListDto getList() {
+    public List<PetTypeDto> getList() {
         log.info("getList");
-        return this.petTypeEndpointUtil.dtoListFactory(petTypeService.getAll());
+        return this.petTypeEndpointUtil.dtoListFactory(petTypeService.getAll()).getPetType();
     }
 
     @GET
@@ -48,9 +49,9 @@ public class PetTypeEndpoint implements Serializable {
     @GET
     @Path("/list+json")
     @Produces(MediaType.APPLICATION_JSON)
-    public PetTypeListDto getListAsJson() {
+    public List<PetTypeDto> getListAsJson() {
         log.info("getList");
-        return this.petTypeEndpointUtil.dtoListFactory(petTypeService.getAll());
+        return this.petTypeEndpointUtil.dtoListFactory(petTypeService.getAll()).getPetType();
     }
 
     @GET

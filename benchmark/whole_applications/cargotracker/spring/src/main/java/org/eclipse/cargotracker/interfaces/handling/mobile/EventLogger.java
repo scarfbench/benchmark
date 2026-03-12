@@ -31,7 +31,6 @@ import org.eclipse.cargotracker.infrastructure.persistence.jpa.JpaVoyageReposito
 import org.eclipse.cargotracker.interfaces.handling.HandlingEventRegistrationAttempt;
 import org.primefaces.event.FlowEvent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,9 +47,8 @@ public class EventLogger implements Serializable {
   private JpaVoyageRepository voyageRepository;
   @Autowired
   private ApplicationEvents applicationEvents;
-  @Autowired
-  @Qualifier("facesContext") // somehow multiple beans
-  private FacesContext context;
+  // FacesContext is a per-request JSF-managed object; use getCurrentInstance()
+  // instead of Spring injection to avoid ambiguity between beans.
 
   private List<SelectItem> trackingIds;
   private List<SelectItem> locations;
@@ -189,7 +187,7 @@ public class EventLogger implements Serializable {
               FacesMessage.SEVERITY_ERROR,
               "When a cargo is LOADed or UNLOADed a Voyage should be selected, please fix errors to continue.",
               "");
-      context.addMessage(null, message);
+      FacesContext.getCurrentInstance().addMessage(null, message);
       return false;
     }
 

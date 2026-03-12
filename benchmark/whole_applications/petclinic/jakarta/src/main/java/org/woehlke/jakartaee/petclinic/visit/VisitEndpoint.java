@@ -14,6 +14,7 @@ import org.woehlke.jakartaee.petclinic.visit.db.VisitService;
 import org.woehlke.jakartaee.petclinic.visit.api.VisitEndpointUtil;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  *
@@ -34,9 +35,9 @@ public class VisitEndpoint implements Serializable {
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
-    public VisitListDto getList() {
+    public List<VisitDto> getList() {
         log.info("getList");
-        return this.visitEndpointUtil.dtoListFactory(visitService.getAll());
+        return this.visitEndpointUtil.dtoListFactory(visitService.getAll()).getVisit();
     }
 
     @GET
@@ -50,9 +51,9 @@ public class VisitEndpoint implements Serializable {
     @GET
     @Path("/list+json")
     @Produces(MediaType.APPLICATION_JSON)
-    public VisitListDto getListAsJson() {
+    public List<VisitDto> getListAsJson() {
         log.info("getList");
-        return this.visitEndpointUtil.dtoListFactory(visitService.getAll());
+        return this.visitEndpointUtil.dtoListFactory(visitService.getAll()).getVisit();
     }
 
     @GET

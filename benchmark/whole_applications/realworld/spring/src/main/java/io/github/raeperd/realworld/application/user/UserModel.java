@@ -2,6 +2,7 @@ package io.github.raeperd.realworld.application.user;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.github.raeperd.realworld.domain.user.Image;
 import io.github.raeperd.realworld.domain.user.User;
 import lombok.Value;
 
@@ -21,12 +22,13 @@ class UserModel {
     String image;
 
     static UserModel fromUserAndToken(User user, String token) {
+        Image img = user.getProfile().getImage();
         return new UserModel(
                 valueOf(user.getEmail()),
                 valueOf(user.getName()),
                 token,
                 user.getProfile().getBio(),
-                "");
+                img != null ? img.toString() : "");
     }
 
 }

@@ -7,7 +7,7 @@ import java.util.Objects;
 @Embeddable
 public class Email {
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, unique = true)
     private String address;
 
     public Email(String address) {

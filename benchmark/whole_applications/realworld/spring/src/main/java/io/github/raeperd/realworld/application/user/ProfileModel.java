@@ -3,8 +3,6 @@ package io.github.raeperd.realworld.application.user;
 import io.github.raeperd.realworld.domain.user.Profile;
 import lombok.Value;
 
-import static java.lang.String.valueOf;
-
 @Value
 public class ProfileModel {
 
@@ -22,9 +20,9 @@ public class ProfileModel {
         boolean following;
 
         public static ProfileModelNested fromProfile(Profile profile) {
-            return new ProfileModelNested(valueOf(profile.getUserName()),
+            return new ProfileModelNested(String.valueOf(profile.getUserName()),
                     profile.getBio(),
-                    valueOf(profile.getImage()),
+                    String.valueOf(profile.getImage()),
                     profile.isFollowing());
         }
     }

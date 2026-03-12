@@ -2443,6 +2443,16 @@
                             </runtimeArtifact>
                             <!--<installDirectory>D:/appsvr/wlp</installDirectory>-->
                             <!--<installDirectory>${project.build.directory}/liberty/wlp</installDirectory>-->
+                            <copyDependencies>
+                                <dependencyGroup>
+                                    <location>${server.config.dir}</location>
+                                    <stripVersion>true</stripVersion>
+                                    <dependency>
+                                        <groupId>org.postgresql</groupId>
+                                        <artifactId>postgresql</artifactId>
+                                    </dependency>
+                                </dependencyGroup>
+                            </copyDependencies>
                         </configuration>
                     </plugin>
                     <plugin>

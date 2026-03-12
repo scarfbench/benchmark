@@ -67,7 +67,7 @@
 	            libraryRef="postgresqlLibrary"/>
 
 	<library id="postgresqlLibrary">
-		<file name="${server.config.dir}/postgresql.jar"/>
+		<file name="${server.config.dir}/lib/global/postgresql.jar"/>
 	</library>
 
 	<applicationManager autoExpand="true"/>

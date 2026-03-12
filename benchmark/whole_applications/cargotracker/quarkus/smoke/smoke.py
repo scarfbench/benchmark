@@ -443,18 +443,11 @@ def test_claimed_cargo_on_dashboard(page: Page):
 
 def test_booking_flow_shows_location_dropdown(page: Page):
     """Booking flow starts with origin selection showing all 13 locations."""
-    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
-    # "Book" menuitem uses PrimeFaces AJAX to enter a JSF Faces Flow.
-    # Listen for network responses to understand what happens after click.
-    responses = []
-    page.on("response", lambda r: responses.append(f"{r.status} {r.url}"))
-    page.locator(".ui-menu-list >> text=Book").click()
-    page.wait_for_load_state("networkidle")
-    import time
-    time.sleep(2)
-    print(f"URL after click: {page.url}")
-    for r in responses:
-        print(f"  RESPONSE: {r}")
+    # Try direct URL and debug what page renders
+    resp = page.goto("http://localhost:8080/cargo-tracker/booking/booking.xhtml")
+    print(f"Direct URL status: {resp.status}")
+    print(f"URL: {page.url}")
+    print(f"Title: {page.title()}")
     print(f"PAGE HTML (first 5000):\n{page.content()[:5000]}")
     assert False, "DEBUG STOP"
 

@@ -443,18 +443,20 @@ def test_claimed_cargo_on_dashboard(page: Page):
 
 def test_booking_flow_shows_location_dropdown(page: Page):
     """Booking flow starts with origin selection showing all 13 locations."""
-    # In Quarkus (MyFaces), the PrimeFaces AJAX-based Book menuitem doesn't
-    # trigger Faces Flow navigation, so navigate directly to the booking page.
-    page.goto("http://localhost:8080/cargo-tracker/booking/booking.xhtml")
-    # The form starts hidden and fades in after 1500ms (progress.js),
-    # so wait for the container to become visible first
-    page.locator("#container").wait_for(state="visible", timeout=10000)
-    # PrimeFaces selectOneMenu renders a hidden <select> inside the custom widget
-    origin_select = page.locator("select").first
-    expect(origin_select).to_be_attached(timeout=10000)
-    options = origin_select.locator("option")
-    # Should have at least 13 locations (may include a blank/placeholder option)
-    assert options.count() >= 13
+    page.goto("http://localhost:8080/cargo-tracker/admin/dashboard.xhtml")
+    # "Book" menuitem uses PrimeFaces AJAX to enter a JSF Faces Flow.
+    # Listen for network responses to understand what happens after click.
+    responses = []
+    page.on("response", lambda r: responses.append(f"{r.status} {r.url}"))
+    page.locator(".ui-menu-list >> text=Book").click()
+    page.wait_for_load_state("networkidle")
+    import time
+    time.sleep(2)
+    print(f"URL after click: {page.url}")
+    for r in responses:
+        print(f"  RESPONSE: {r}")
+    print(f"PAGE HTML (first 5000):\n{page.content()[:5000]}")
+    assert False, "DEBUG STOP"
 
 
 def test_event_logger_wizard_structure(page: Page):

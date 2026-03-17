@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Async EJB Example - Open Liberty">
+    <featureManager>
+        <feature>jakartaee-10.0</feature>
+    </featureManager>
+
+    <!-- Simple basic registry (kept; can be removed if not needed) -->
+    <basicRegistry id="basic" realm="BasicRealm">
+        <user name="appuser" password="changeMe123!"/>
+    </basicRegistry>
+
+    <!-- Mail session replacing former GlassFish asadmin-created resource -->
+    <mailSession id="myExampleSession"
+                 mailSessionID="myExampleSession"
+                 description="Local test SMTP session"
+                 jndiName="mail/myExampleSession"
+                 host="localhost"
+                 user="jack"
+                 password="changeMe"
+                 from="jack@localhost"
+                 transportProtocol="smtp">
+        <properties mail.smtp.port="3025" mail.smtp.auth="true" mail.smtp.starttls.enable="false"/>
+    </mailSession>
+
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+    <httpAccessLogging enabled="false"/>
+    <logging consoleLogLevel="INFO"/>
+</server>

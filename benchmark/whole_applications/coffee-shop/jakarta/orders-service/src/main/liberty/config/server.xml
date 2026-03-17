@@ -1,0 +1,50 @@
+<server>
+  <logging traceSpecification="JPA=all:com.ibm.ws.jpa.*=all"/>
+
+  <featureManager>
+    <feature>webProfile-10.0</feature>
+
+    <!-- JPA – BOTH are needed for @PersistenceContext -->
+    <feature>persistence-3.1</feature>
+    <feature>persistenceContainer-3.1</feature>
+
+    <!-- Validation is required because you use @Valid etc. -->
+    <feature>beanValidation-3.0</feature>
+
+    <!-- your MP features -->
+    <feature>mpConfig-3.1</feature>
+    <feature>mpHealth-4.0</feature>
+    <feature>mpOpenAPI-3.1</feature>
+    <feature>mpMetrics-5.1</feature>
+    <feature>mpRestClient-3.0</feature>
+    <feature>mpReactiveMessaging-3.0</feature>
+    <feature>mpJwt-2.1</feature>
+  </featureManager>
+
+  <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+
+  <basicRegistry id="basic" realm="defaultRealm">
+    <user name="admin" password="adminpwd"/>
+  </basicRegistry>
+
+  <!-- JDBC driver jar lives in /config/lib/global inside the container -->
+  <library id="jdbcLib">
+    <fileset dir="${server.config.dir}/lib/global" includes="*.jar"/>
+  </library>
+
+  <dataSource id="ordersDS" jndiName="jdbc/ordersDS">
+    <jdbcDriver libraryRef="jdbcLib"/>
+    <properties
+      databaseName="${env.DB_NAME}"
+      user="${env.DB_USER}"
+      password="${env.DB_PASSWORD}"
+      serverName="${env.DB_HOST}"
+      portNumber="${env.DB_PORT}"/>
+  </dataSource>
+
+  <webApplication id="orders-ui"
+                location="${server.config.dir}/apps/orders-service.war"
+                contextRoot="/"/>
+
+
+</server>

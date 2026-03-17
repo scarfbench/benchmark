@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="TaskCreator Jakarta EE App - Open Liberty">
+    <featureManager>
+        <feature>jakartaee-10.0</feature>
+    </featureManager>
+
+    <basicRegistry id="basic" realm="BasicRealm">
+    <user name="appuser" password="changeMe123!"/>
+    </basicRegistry>
+
+    <application contextRoot="/" id="taskcreator" location="taskcreator.war" type="war"/>
+    <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443"/>
+    <httpAccessLogging enabled="false"/>
+    <logging consoleLogLevel="INFO"/>
+</server>

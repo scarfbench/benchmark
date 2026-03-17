@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Duke's WebSocket ETF</title>
+  <link rel="stylesheet" href="/css/default.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin: 2rem; font-family: Georgia, serif; }
+    h1 { font-size: 4rem; margin-bottom: 2rem; }
+    .grid { display: grid; grid-template-columns: 200px 1fr; row-gap: 2rem; column-gap: 3rem; align-items: baseline; }
+    .ticker { font-size: 3rem; font-weight: 700; }
+    .value { font-size: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Duke's WebSocket ETF</h1>
+  <div class="grid">
+    <div>Ticker</div><div>Price <span id="price" class="value">--.--</span></div>
+    <div class="ticker">DKEJ</div><div>Volume <span id="volume" class="value">--</span></div>
+  </div>
+
+  <script>
+    const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/dukeetf';
+    const ws = new WebSocket(wsUrl);
+    ws.onmessage = (e) => {
+      const parts = e.data.split('/');
+      if (parts.length === 2) {
+        document.getElementById('price').textContent = parts[0].trim();
+        document.getElementById('volume').textContent = parts[1].trim();
+      }
+    };
+    ws.onclose = () => {
+      document.getElementById('price').textContent = '--.--';
+      document.getElementById('volume').textContent = '--';
+    };
+  </script>
+</body>
+</html>

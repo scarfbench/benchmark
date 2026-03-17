@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>String Encoder</title>
+    <link rel="stylesheet" th:href="@{/css/default.css}">
+</head>
+
+<body>
+    <h2>String Encoder</h2>
+    <p>Enter a string and an integer, then click Encode.</p>
+    <p>Depending on which alternative is enabled, the coder bean
+        will either display the argument values or return a string that
+        shifts the letters in the original string by the value you
+        specify. The value must be between 0 and 26.</p>
+
+    <form th:action="@{/encode}" th:object="${coderForm}" method="post">
+        <p>
+            <label for="inputString">Enter a string: </label>
+            <input type="text" id="inputString" th:field="*{inputString}" />
+            <label for="transVal">Enter the number of letters to shift by: </label>
+            <input type="text" id="transVal" th:field="*{transVal}" />
+        </p>
+        <p>
+            <button type="submit">Encode</button>
+        </p>
+
+        <div>
+            <p><strong>Result:</strong> <span style="color:blue" th:text="*{codedString}"></span></p>
+        </div>
+
+    </form>
+
+    <form th:action="@{/reset}" method="post">
+        <button type="submit">Reset</button>
+    </form>
+
+    <div th:object="${coderForm}">
+        <div th:if="${#fields.hasErrors()}">
+            <ul>
+                <li th:each="err : ${#fields.errors('*')}" th:text="${err}" style="color:red"></li>
+            </ul>
+        </div>
+    </div>
+</body>
+
+</html>

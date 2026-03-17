@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Project coordinates -->
+  <groupId>jakarta.examples.tutorial.persistence</groupId>
+  <artifactId>address-book</artifactId>
+  <version>10-SNAPSHOT</version>
+  <packaging>war</packaging>
+
+  <name>Jakarta EE Address Book Example</name>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <liberty.version>24.0.0.12</liberty.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.openliberty.features</groupId>
+        <artifactId>features-bom</artifactId>
+        <version>${liberty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.platform</groupId>
+      <artifactId>jakarta.jakartaee-web-api</artifactId>
+      <version>10.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>2.3.232</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <failOnMissingWebXml>false</failOnMissingWebXml>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>io.openliberty.tools</groupId>
+        <artifactId>liberty-maven-plugin</artifactId>
+        <version>3.11.1</version>
+        <configuration>
+          <copyDependencies>
+            <dependencyGroup>
+              <location>${project.build.directory}/liberty/wlp/usr/shared/resources</location>
+              <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+              </dependency>
+            </dependencyGroup>
+          </copyDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

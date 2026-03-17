@@ -1,0 +1,80 @@
+apiVersion: 1.0.0
+metadata:
+  generateName: quarkus-petclinic-
+projects:
+  - name: quarkus-petclinic
+    source:
+      type: git
+      location: 'https://github.com/redhat-developer-demos/quarkus-petclinic.git'
+      branch: master
+components:
+  - type: chePlugin
+    id: redhat/quarkus-java11/latest
+  - type: chePlugin
+    id: redhat/vscode-openshift-connector/latest
+  - type: dockerimage
+    alias: maven
+    image: 'registry.redhat.io/codeready-workspaces/plugin-java11-rhel8@sha256:641e223f5efbc32bab3461aa000e3a50a5dcca063331322158d1c959129ffd99'
+    env:
+      - name: JAVA_OPTS
+        value: '-XX:MaxRAMPercentage=50.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xms20m -Djava.security.egd=file:/dev/./urandom -Duser.home=/home/jboss'
+      - name: MAVEN_OPTS
+        value: $(JAVA_OPTS)
+    memoryLimit: 768Mi
+    mountSources: true
+    volumes:
+      - name: m2
+        containerPath: /home/jboss/.m2
+    endpoints:
+      - name: quarkus-development-server
+        port: 8080
+  - type: dockerimage
+    alias: postgresql
+    image: >-
+      registry.redhat.io/rhel8/postgresql-12@sha256:6fd58e4ede8e77b4ac434667df49150adac69273172764c54b1b0211612f51b5
+    memoryLimit: 512Mi
+    env:
+      - name: POSTGRESQL_USER
+        value: developer
+      - name: POSTGRESQL_PASSWORD
+        value: developer
+      - name: POSTGRESQL_DATABASE
+        value: mydb
+    volumes:
+      - name: postgres-storage
+        containerPath: /var/lib/pgsql/data
+    endpoints:
+      - name: postgresql
+        port: 5432
+        attributes:
+          discoverable: 'true'
+          public: 'false'
+commands:
+  - name: 1. Package the application
+    actions:
+      - type: exec
+        component: maven
+        command: mvn package
+        workdir: '${CHE_PROJECTS_ROOT}/quarkus-petclinic'
+  - name: 2. Start Quarkus in devmode (hot deploy + debug)
+    actions:
+      - type: exec
+        component: maven
+        command: 'mvn compile quarkus:dev'
+        workdir: '${CHE_PROJECTS_ROOT}/quarkus-petclinic'
+  - name: Attach remote debugger
+    actions:
+      - type: vscode-launch
+        referenceContent: |
+          {
+            "version": "0.2.0",
+            "configurations": [
+              {
+                "type": "java",
+                "request": "attach",
+                "name": "Attach to Remote Quarkus App",
+                "hostName": "localhost",
+                "port": 5005
+              }
+            ]
+          }

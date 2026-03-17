@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c), Eclipse Foundation, Inc. and its licensors.
+
+    All rights reserved.
+
+    This program and the accompanying materials are made available under the
+    terms of the Eclipse Distribution License v1.0, which is available at
+    https://www.eclipse.org/org/documents/edl-v10.php
+
+    SPDX-License-Identifier: BSD-3-Clause
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <groupId>jakarta.examples.tutorial.ejb.async</groupId>
+  <artifactId>parent</artifactId>
+  <version>10-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>async</name>
+  <description>Jakarta EE EJB Async Example Parent</description>
+
+  <properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Upgraded to Jakarta EE 10 to match server feature jakartaee-10.0 -->
+    <jakarta.jakartaee-api.version>10.0.0</jakarta.jakartaee-api.version>
+    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+    <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <!-- Liberty plugin central version + default skip at aggregator -->
+    <liberty-maven-plugin.version>3.10.3</liberty-maven-plugin.version>
+    <liberty.skip>false</liberty.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-api</artifactId>
+        <version>${jakarta.jakartaee-api.version}</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${maven.compiler.plugin.version}</version>
+          <configuration>
+            <source>11</source>
+            <target>11</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>${maven.war.plugin.version}</version>
+          <configuration>
+            <failOnMissingWebXml>false</failOnMissingWebXml>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <!-- Declare Liberty plugin so prefix 'liberty' resolves at root; skipped here -->
+      <plugin>
+        <groupId>io.openliberty.tools</groupId>
+        <artifactId>liberty-maven-plugin</artifactId>
+        <version>${liberty-maven-plugin.version}</version>
+        <configuration>
+          <skip>${liberty.skip}</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <modules>
+    <module>async-war</module>
+    <module>async-smtpd</module>
+  </modules>
+</project>

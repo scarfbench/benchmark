@@ -1,0 +1,127 @@
+
+networks:
+  coffee-net:
+
+volumes:
+  pgdata:
+  zkdata:
+  kdata:
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: zk
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks: [coffee-net]
+    volumes:
+      - zkdata:/var/lib/zookeeper/data
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"   # internal clients in compose can use kafka:9092
+      - "29092:29092" # host tools (kcat, etc.) can use localhost:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # 2 listeners: one for containers (kafka:9092), one for host (localhost:29092)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    # ✅ Healthcheck: mark healthy only when the broker responds
+    healthcheck:
+      # Either of these works; pick ONE test line and keep it.
+      # test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks: [coffee-net]
+    volumes:
+      - kdata:/var/lib/kafka/data
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: cafe
+      POSTGRES_PASSWORD: cafe
+      POSTGRES_DB: coffeeshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks: [coffee-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cafe -d coffeeshop"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  orders-service:
+    container_name: orders-service
+    build:
+      context: ../orders-service
+      dockerfile: Dockerfile
+    environment:
+      # Kafka for containers: use kafka:9092
+      KAFKA_BOOTSTRAP: kafka:9092
+      # DB settings used by server.xml
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: coffeeshop
+      DB_USER: cafe
+      DB_PASSWORD: cafe
+    ports:
+      - "8081:9080"   # http
+      - "9441:9443"   # https (optional)
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks: [coffee-net]
+
+  barista-service:
+    container_name: barista-service
+    build:
+      context: ../barista-service
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    ports:
+      - "8082:9080"
+      - "9442:9443"
+    depends_on:
+      - kafka
+    networks: [coffee-net]
+
+  kitchen-service:
+    container_name: kitchen-service
+    build:
+      context: ../kitchen-service
+      dockerfile: Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    ports:
+      - "8083:9080"
+      - "9443:9443"
+    depends_on:
+      - kafka
+    networks: [coffee-net]

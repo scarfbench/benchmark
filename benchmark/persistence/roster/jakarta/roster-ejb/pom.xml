@@ -1,0 +1,66 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>jakarta.tutorial</groupId>
+    <artifactId>roster</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  
+  <artifactId>roster-ejb</artifactId>
+  <packaging>ejb</packaging>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <name>roster-ejb</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.tutorial</groupId>
+      <artifactId>roster-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.platform</groupId>
+      <artifactId>jakarta.jakartaee-api</artifactId>
+      <version>10.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.13.0</version>
+      <configuration>
+        <annotationProcessorPaths>
+          <path>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
+            <version>4.0.5</version>
+          </path>
+        </annotationProcessorPaths>
+        <generatedSourcesDirectory>
+          ${project.build.directory}/generated-sources/annotations
+        </generatedSourcesDirectory>
+      </configuration>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-ejb-plugin</artifactId>
+      <version>3.2.1</version>
+      <configuration>
+        <ejbVersion>4.0</ejbVersion>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+</project>

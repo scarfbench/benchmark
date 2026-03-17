@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(title, head, section)">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" th:href="@{/css/default.css}" />
+    <title th:replace="${title}">Default Title</title>
+</head>
+
+<body>
+    <div id="container">
+        <div id="header">
+            <h2 th:replace="${head}">Head</h2>
+        </div>
+
+        <div id="space">
+            <p></p>
+        </div>
+
+        <div id="content">
+            <div th:replace="${section}" />
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Cart Application Server">
+
+    <!-- Enable features -->
+    <featureManager>
+        <feature>jakartaee-9.1</feature>
+        <feature>localConnector-1.0</feature>
+    </featureManager>
+
+    <!-- HTTP endpoint -->
+    <httpEndpoint id="defaultHttpEndpoint"
+                  httpPort="9080"
+                  httpsPort="9443"
+                  host="*" />
+
+    <!-- Automatically expand WAR files -->
+    <applicationManager autoExpand="true"/>
+
+    <!-- Application configuration -->
+    <webApplication id="cart-web"
+                    location="cart-web.war"
+                    name="cart-web"
+                    contextRoot="/cart">
+        <application-bnd>
+            <security-role name="**">
+                <special-subject type="ALL_AUTHENTICATED_USERS" />
+            </security-role>
+        </application-bnd>
+    </webApplication>
+
+    <!-- Basic user registry for development -->
+    <basicRegistry id="basic" realm="BasicRealm">
+        <user name="admin" password="admin" />
+    </basicRegistry>
+
+    <!-- Administrator role -->
+    <administrator-role>
+        <user>admin</user>
+    </administrator-role>
+
+    <!-- Logging configuration -->
+    <logging consoleLogLevel="INFO" 
+             consoleFormat="simple"
+             consoleSource="message,trace,accessLog,ffdc,audit" />
+
+</server>

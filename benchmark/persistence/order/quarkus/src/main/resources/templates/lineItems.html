@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Line Items for Order {currentOrder}</title>
+</head>
+<body>
+    {#include lineItemTemplate}
+        {#title}Line Items for Order {currentOrder}{/title}
+        {#body}
+        <form method="post">
+            <table rules="all" cellpadding="5">
+                <tr>
+                    <th>Item ID</th>
+                    <th>Quantity</th>
+                    <th>Vendor Part Number</th>
+                </tr>
+                {#for lineItem in lineItems}
+                <tr>
+                    <td>{lineItem.itemId}</td>
+                    <td>{lineItem.quantity}</td>
+                    <td>{lineItem.vendorPart?.vendorPartNumber ?: 'N/A'}</td>
+                </tr>
+                {/for}
+            </table>
+            <br/>
+            <table id="orderPartsTable" rules="all" cellpadding="5">
+                <tr>
+                    <th>Part Number</th>
+                    <th>Revision</th>
+                    <th>Vendor Part Number</th>
+                    <th>Add To Order</th>
+                </tr>
+                {#for part in newOrderParts}
+                <tr>
+                    <td>{part.partNumber}</td>
+                    <td>{part.revision}</td>
+                    <td>{part.vendorPart?.vendorPartNumber ?: 'N/A'}</td>
+                    <td>
+                        <form method="post" action="/addLineItem">
+                            <input type="hidden" name="currentOrder" value="{currentOrder}"/>
+                            <input type="hidden" name="selectedPartNumber" value="{part.partNumber}"/>
+                            <input type="hidden" name="selectedPartRevision" value="{part.revision}"/>
+                            <button type="submit">Add</button>
+                        </form>
+                    </td>
+                </tr>
+                {/for}
+            </table>
+            <br/>
+            <a href="/orders">Back to Orders</a>
+        </form>
+        {/body}
+    {/include}
+</body>
+</html>

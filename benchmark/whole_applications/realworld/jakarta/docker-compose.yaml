@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=S3cret
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_DB=postgres_db

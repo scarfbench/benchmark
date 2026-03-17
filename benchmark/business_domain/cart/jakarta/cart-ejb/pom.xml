@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c), Eclipse Foundation, Inc. and its licensors.
+
+    All rights reserved.
+
+    This program and the accompanying materials are made available under the
+    terms of the Eclipse Distribution License v1.0, which is available at
+    https://www.eclipse.org/org/documents/edl-v10.php
+
+    SPDX-License-Identifier: BSD-3-Clause
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>jakarta.examples.tutorial.ejb.cart</groupId>
+    <artifactId>cart</artifactId>
+    <version>10-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>cart-ejb</artifactId>
+  <version>10-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>cart-ejb</name>
+
+  <properties>
+    <jakarta.ejb.version>3.2</jakarta.ejb.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+</project>

@@ -1,0 +1,30 @@
+{#include base}
+{#body}
+<h2>{msg:veterinarians}</h2>
+
+<table id="vets" class="table table-striped">
+    <thead>
+        <tr>
+            <th>{msg:name}</th>
+            <th>{msg:specialties}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {#for vet in vets}
+        <tr>
+            <td>{vet.firstName} {vet.lastName}</td>
+            <td>
+                {#for s in vet.specialties}
+                <span>
+                    {s.name}&nbsp;
+                </span>
+                {/for}
+
+                <span>{#if vet.nrOfSpecialties == 0}{msg:none}{/if}</span>
+            </td>
+        </tr>
+        {/for}
+    </tbody>
+</table>
+{/body}
+{/include}

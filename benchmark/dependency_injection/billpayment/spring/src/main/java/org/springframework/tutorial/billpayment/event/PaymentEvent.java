@@ -1,0 +1,68 @@
+/*
+ * Copyright (c), Eclipse Foundation, Inc. and its licensors.
+ *
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Distribution License v1.0, which is available at
+ * https://www.eclipse.org/org/documents/edl-v10.php
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+package org.springframework.tutorial.billpayment.event;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Date;
+
+/**
+ * Common payment event that handles Debit and Credit payment types.
+ */
+public class PaymentEvent implements Serializable {
+
+    private static final long serialVersionUID = -6407967360613478424L;
+
+    private String paymentType;
+    private BigDecimal value;
+    private Date datetime;
+
+    public PaymentEvent() {
+    }
+
+    public PaymentEvent(String paymentType, BigDecimal value, Date datetime) {
+        this.paymentType = paymentType;
+        this.value = value;
+        this.datetime = datetime;
+    }
+
+    @Override
+    public String toString() {
+        return this.paymentType
+                + " = $" + this.value.toString()
+                + " at " + this.datetime.toString();
+    }
+
+    public String getPaymentType() {
+        return paymentType;
+    }
+
+    public void setPaymentType(String paymentType) {
+        this.paymentType = paymentType;
+    }
+
+    public BigDecimal getValue() {
+        return value;
+    }
+
+    public void setValue(BigDecimal value) {
+        this.value = value;
+    }
+
+    public Date getDatetime() {
+        return datetime;
+    }
+
+    public void setDatetime(Date datetime) {
+        this.datetime = datetime;
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard"
+  ],
+  "packageRules": [
+    {
+      "groupName": "Non-major dependency updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^src/test/java/org/example/realworldapi/AppDeploymentConfig\\.java$"],
+      "matchStrings": [
+        "// renovate: datasource=(?<datasource>[^ ]+) depName=(?<depName>[^\n]+)\n\tstatic String postgresVersion = (?<currentValue>.*);\n"
+      ]
+    }
+  ]
+}

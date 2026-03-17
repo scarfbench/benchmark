@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Bill Payment: Result</title>
+    <link rel="stylesheet"
+          th:href="@{/css/default.css}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #007cba;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005a87;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Bill Payment: Result</h2>
+    <h3 th:if="${result == 'success'}">
+        Amount Paid with
+        <span th:text="${paymentType}"></span> Card:
+        <span th:text="${#numbers.formatCurrency(value)}"></span>
+    </h3>
+    <h3 th:if="${result == 'error'}"
+        style="color: red;">
+        Payment failed. Please try again.
+    </h3>
+
+    <form th:action="@{/}"
+          method="get">
+        <p><button type="submit">Back</button></p>
+    </form>
+</body>
+
+</html>

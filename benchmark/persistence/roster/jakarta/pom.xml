@@ -1,0 +1,49 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>jakarta.tutorial</groupId>
+  <artifactId>roster</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>roster</name>
+
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <liberty.version>24.0.0.12</liberty.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.openliberty.features</groupId>
+        <artifactId>features-bom</artifactId>
+        <version>${liberty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <modules>
+    <module>roster-common</module>
+    <module>roster-ejb</module>
+    <module>roster-appclient</module>
+    <module>roster-web</module>
+    <module>roster-ear</module>
+  </modules>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.openliberty.tools</groupId>
+          <artifactId>liberty-maven-plugin</artifactId>
+          <version>3.11.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

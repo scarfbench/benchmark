@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+    th:replace="~{template :: layout (~{::title}, ~{::h2}, ~{::section})}">
+
+<head>
+    <title>Simple Greeting</title>
+</head>
+
+<body>
+    <h2>Simple Greeting</h2>
+    <section>
+        <form th:action="@{/create}" th:object="${printerForm}" method="post">
+            <p>
+                <label for="name">Enter your name:</label>
+                <input type="text" id="name" name="name" th:field="*{name}" />
+            </p>
+            <p>
+                <button type="submit">Say Hello</button>
+            </p>
+            <p th:if="*{salutation}" th:text="*{salutation}"></p>
+        </form>
+    </section>
+</body>
+
+</html>

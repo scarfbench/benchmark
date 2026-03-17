@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.coffeeshop</groupId>
+  <artifactId>coffeeshop-jakarta-liberty</artifactId>
+  <version>0.2.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>common</module>
+    <module>orders-service</module>
+    <module>barista-service</module>
+    <module>kitchen-service</module>
+  </modules>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jakartaee.api.version>10.0.0</jakartaee.api.version>
+    <microprofile.version>6.1</microprofile.version>
+    <liberty.maven.plugin.version>3.10.3</liberty.maven.plugin.version>
+    <kafka.clients.version>3.9.1</kafka.clients.version>
+    <hibernate.version>6.4.4.Final</hibernate.version>
+    <postgresql.version>42.7.7</postgresql.version>
+    <mp.reactive.messaging.api.version>3.0.1</mp.reactive.messaging.api.version>
+    <mp.health.api.version>4.0.1</mp.health.api.version>
+
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.microprofile</groupId>
+        <artifactId>microprofile</artifactId>
+        <version>${microprofile.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    <!-- Force patched LZ4 everywhere -->
+    <dependency>
+      <groupId>at.yawk.lz4</groupId>
+      <artifactId>lz4-java</artifactId>
+      <version>1.10.1</version>
+    </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.openliberty.tools</groupId>
+          <artifactId>liberty-maven-plugin</artifactId>
+          <version>${liberty.maven.plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,0 +1,84 @@
+{#include base}
+{#body}
+<h2>
+    {#if !visit}{msg:new_} {/if}
+    {msg:visit}
+</h2>
+
+<b>Pet</b>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>{msg:name}</th>
+            <th>{msg:birthdate}</th>
+            <th>{msg:type}</th>
+            <th>{msg:owner}</th>
+        </tr>
+    </thead>
+    <tr>
+        <td>{pet.name}</td>
+        <td>{pet.birthDate.format()}</td>
+        <td>{pet.type.name}</td>
+        <td>{pet.owner.firstName} {pet.owner.lastName}</td>
+    </tr>
+</table>
+
+<form class="form-horizontal" method="post">
+    <div class="form-group has-feedback">
+
+        <div class="form-group {#if errors.containsKey('date') != null} has-error {/if}">
+            <label class="col-sm-2 control-label">{msg:date}</label>
+            <div class="col-sm-10">
+                <div>
+                    <input class="form-control" type="text" placeholder="YYYY-MM-DD"
+                        id="date" name="date" value="{visit.date ?: ''}"/>
+                </div>
+                <span class="glyphicon {#if errors.containsKey('date') != null} glyphicon-remove {#else} glyphicon-ok {/if} form-control-feedback" aria-hidden="true"></span>
+                {#if errors.containsKey('date') != null}
+                    <span class="help-inline">{errors.containsKey('date')}</span>
+                {/if}
+            </div>
+        </div>
+
+
+        <div class="form-group {#if errors.containsKey('description') != null} has-error {/if}">
+            <label class="col-sm-2 control-label">{msg:description}</label>
+            <div class="col-sm-10">
+                <div>
+                    <input class="form-control" type="text" id="description" name="description" value="{visit.description ?: ''}" />
+                </div>
+                <span class="glyphicon {#if errors.containsKey('description') != null} glyphicon-remove {#else} glyphicon-ok {/if} form-control-feedback" aria-hidden="true"></span>
+                {#if errors.containsKey('description') != null}
+                    <span class="help-inline">{errors.containsKey('description')}</span>
+                {/if}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <input type="hidden" name="petId" value="1" />
+            <button class="btn btn-primary" type="submit">{msg:add_visit}</button>
+        </div>
+    </div>
+</form>
+
+<br />
+<b>{msg:previous_visits}</b>
+<table class="table table-striped">
+    <tr>
+        <th>{msg:date}</th>
+        <th>{msg:description}</th>
+    </tr>
+    <tr>
+        {#if visit}
+        {#for v in pet.sortedVisits}
+        <td>{v.date.format()}</td>
+        <td>{v.description}</td>
+        {/for}
+        {/if}
+    </tr>
+</table>
+{/body}
+{/include}

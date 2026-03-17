@@ -1,0 +1,88 @@
+# Build output
+dist/
+site/site/
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Java IDE / tooling
+.classpath
+.project
+.settings/
+.factorypath
+
+# Maven
+**/target/
+dependency-reduced-pom.xml
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+**/.gradle/
+**/build/
+gradle-app.setting
+
+# Docker
+*.tar
+*.tar.gz
+docker-compose.override.yml
+.env
+.env.*
+!.env.example
+
+# HTML / static build artifacts
+**/.sass-cache/
+**/.cache/
+
+# Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+**/*.egg-info/
+.tox/
+.nox/
+pip-wheel-metadata/
+**/__pypackages__/
+**/.ipynb_checkpoints/
+
+# MkDocs
+.mkdocs_cache/
+
+# VS Code
+.vscode/

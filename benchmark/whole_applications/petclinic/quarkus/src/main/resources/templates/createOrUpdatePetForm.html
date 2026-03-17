@@ -1,0 +1,76 @@
+{#include base}
+{#body}
+<h2>
+    {#if !pet}{msg:new_}{/if}
+    {msg:pet}
+  </h2>
+  <form class="form-horizontal" method="post">
+    <input type="hidden" name="id" value="" />
+    <div class="form-group has-feedback">
+      <div class="form-group">
+        <label class="col-sm-2 control-label">{msg:owner}</label>
+        <div class="col-sm-10">
+          <span>{owner.firstName}</span>
+        </div>
+      </div>
+      
+      <div class="form-group {#if errors.containsKey('name') != null} has-error {/if}">
+        <label class="col-sm-2 control-label">{msg:name}</label>
+        <div class="col-sm-10">
+            <div>
+                <input class="form-control" type="text" id="name" name="name" value="{pet.name ?: ''}"/>
+            </div>
+          <span class="glyphicon {#if errors.containsKey('name') != null} glyphicon-remove {#else} glyphicon-ok {/if} form-control-feedback"
+            aria-hidden="true"></span>
+            {#if errors.containsKey('name') != null}
+                    <span class="help-inline">{errors.containsKey('name')}</span>
+            {/if}
+        </div>
+      </div>
+      
+      <div class="form-group {#if errors.containsKey('birthDate') != null} has-error {/if}">
+        <label class="col-sm-2 control-label">{msg:birthdate}</label>
+        <div class="col-sm-10">
+            <div>
+                <input class="form-control" type="text" placeholder="YYYY-MM-DD" title="Enter a date in this format: YYYY-MM-DD" id="birthDate" name="birthDate" value="{pet.birthDate ?: ''}"/>
+            </div>
+          <span class="glyphicon {#if errors.containsKey('birthDate') != null} glyphicon-remove {#else} glyphicon-ok {/if} form-control-feedback"
+            aria-hidden="true"></span>
+            {#if errors.containsKey('birthDate') != null}
+              <span class="help-inline">{errors.containsKey('birthDate')}</span>
+            {/if}
+        </div>
+      </div>
+    
+      
+      <div class="form-group">
+        <label class="col-sm-2 control-label">{msg:type}</label>
+
+        <div class="col-sm-10">
+          <select id="type" name="type">
+            {#for petType in petTypes}
+            <option value="{petType.name}" {#if petType.name == pet.type.name} selected {/if}>{petType.name}</option>
+            {/for}
+          </select>
+          <span class="glyphicon glyphicon-ok form-control-feedback"
+            aria-hidden="true"></span>
+          
+        </div>
+      </div>
+    
+    </div>
+    <div class="form-group">
+      <div class="col-sm-offset-2 col-sm-10">
+        <button
+          class="btn btn-primary" type="submit">
+          {#if pet}
+          {msg:edit_pet}
+          {#else}
+          {msg:add_pet}
+          {/if}
+        </button>
+      </div>
+    </div>
+  </form>
+  {/body}
+  {/include}

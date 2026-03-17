@@ -1,0 +1,21 @@
+# Create folder db2jars/ and copy db2jcc4.jar and db2jcc_license_cu.jar to it.
+# Set Env below
+
+FROM open-liberty:full
+
+COPY --chown=1001:0 src/main/liberty/config/server.xml_db2 /config/server.xml
+COPY --chown=1001:0 src/main/liberty/config/bootstrap.properties /config/bootstrap.properties
+COPY --chown=1001:0 target/io.openliberty.sample.daytrader8.war /config/apps/
+
+# DB2 JARS
+COPY --chown=1001:0 /db2jars /opt/ol/wlp/usr/shared/resources/db2jars
+
+ENV contextRoot=daytrader
+ENV dbUser=
+ENV dbPass=
+ENV tradeDbHost=
+ENV tradeDbPort=
+ENV tradeDbName=
+
+
+#RUN configure.sh

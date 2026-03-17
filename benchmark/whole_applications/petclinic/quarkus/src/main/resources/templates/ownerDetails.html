@@ -1,0 +1,77 @@
+{#include base} 
+  {#body}
+<h2>Owner Information</h2>
+  
+  
+    <table class="table table-striped">
+      <tr>
+        <th>{msg:name}</th>
+        <td><b>{owner.firstName} {owner.lastName}</b></td>
+      </tr>
+      <tr>
+        <th>{msg:address}</th>
+        <td>{owner.address}</td>
+      </tr>
+      <tr>
+        <th>{msg:city}</th>
+        <td>{owner.city}</td>
+      </tr>
+      <tr>
+        <th>{msg:telephone}</th>
+        <td>{owner.telephone}</td>
+      </tr>
+    </table>
+  
+    <a href="/owners/{owner.id}/edit" class="btn btn-primary">Edit
+      Owner</a>
+    <a href="/owners/{owner.id}/pets/new" class="btn btn-primary">Add
+      New Pet</a>
+  
+    <br />
+    <br />
+    <br />
+    {#if owner.pets}
+    <h2>{msg:pets_and_visits}</h2>
+  
+    <table class="table table-striped">
+        
+      {#for pet in owner.pets}
+      <tr>
+        <td valign="top">
+          <dl class="dl-horizontal">
+            <dt>{msg:name}</dt>
+            <dd>{pet.name}</dd>
+            <dt>{msg:birthdate}</dt>
+            <dd>{pet.birthDate.format()}</dd>
+            <dt>{msg:type}</dt>
+            <dd>{pet.type.stringify}</dd>
+          </dl>
+        </td>
+        <td valign="top">
+          <table class="table-condensed">
+            <thead>
+              <tr>
+                <th>{msg:visit_date}</th>
+                <th>{msg:description}</th>
+              </tr>
+              <tr>
+                <td><a href="/owners/{owner.id}/pets/{pet.id}/edit">{msg:edit_pet}</a></td>
+                <td><a
+                  href="/owners/{owner.id}/pets/{pet.id}/visits/new">{msg:add_visit}</a></td>
+              </tr>
+            </thead>
+            {#for visit in pet.sortedVisits}
+            <tr>
+              <td>{visit.date.format()}</td>
+              <td>{visit.description ?: ''}</td>
+            </tr>
+            {/for}
+          </table>
+        </td>
+      </tr>
+      {/for}
+  
+    </table>
+    {/if}
+    {/body}
+    {/include}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Interceptor Example</title>
+</head>
+
+<body>
+
+    <form th:action="@{/response}" th:object="${helloForm}" method="post">
+        <label for="name">Enter your name:</label>
+        <input type="text" id="name" th:field="*{name}" />
+        <button type="submit">Submit</button>
+    </form>
+
+</body>
+
+</html>

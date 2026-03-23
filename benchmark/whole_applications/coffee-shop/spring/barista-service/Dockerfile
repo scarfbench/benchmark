@@ -22,6 +22,8 @@ WORKDIR /app
 # Copy all the assets
 COPY . .
 
-RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi && if [ -f test.sh ]; then chmod +x test.sh; fi
+# Build application at image build time
+RUN mvn clean install -DskipTests
 
-CMD [ "mvn", "clean", "spring-boot:run" ]
+CMD ["sh", "-c", "java -jar target/*.jar"]

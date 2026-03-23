@@ -36,6 +36,18 @@ COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi && if [ -f test.sh ]; then chmod +x test.sh; fi
 
+# Contents of run.sh
+RUN MY_MVN=$([ -f ./mvnw ] && echo "./mvnw" || echo "mvn") \
+    && DEPS="dependency:purge-local-repository clean dependency:resolve dependency:resolve-plugins dependency:tree dependency:sources dependency:analyze-dep-mgt dependency:analyze-report install" \
+    && SITE="site:site site:jar" \
+    && $MY_MVN $DEPS $SITE \
+    && $MY_MVN -Pliberty $DEPS $SITE liberty:package \
+    && $MY_MVN -Pwildfly $DEPS $SITE cargo:uberwar \
+    && $MY_MVN -glassfish $DEPS $SITE cargo:uberwar \
+    && $MY_MVN -Ppayara $DEPS $SITE cargo:uberwar \
+    && $MY_MVN -Ptomee $DEPS $SITE cargo:uberwar \
+    && $MY_MVN -Parc-wildfly-managed $DEPS $SITE
+
 CMD pg_lsclusters | tail -1 | awk '{print $1, $2}' > /tmp/pgver.txt \
     && PG_VERSION=$(cut -d' ' -f1 /tmp/pgver.txt) \
     && PG_CLUSTER=$(cut -d' ' -f2 /tmp/pgver.txt) \

@@ -23,5 +23,7 @@ WORKDIR /app
 COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi && if [ -f test.sh ]; then chmod +x test.sh; fi
+# Build application at image build time
+RUN mvn -pl web-service -am clean install -DskipTests
 
-CMD [ "bash", "-lc", "mvn -pl web-service -am clean install -DskipTests && mvn -f web-service/pom.xml spring-boot:run" ]
+CMD ["sh", "-c", "java -jar web-service/target/*.jar"]

@@ -4,6 +4,11 @@
   <img alt="Logo">
 </picture>
 
+<div align="center">
+    <a href="https://scarfbench.github.io/site"><img src="https://img.shields.io/badge/site-scarfbench.info-blue?style=for-the-badge" alt="Documentation"></a>
+    <a href="https://scarfbench.github.io/site/leaderboard/"><img src="https://img.shields.io/badge/leaderboard-view%20results-orange?style=for-the-badge" alt="Leaderboard"></a>
+  </div>
+  
 **Scarf** (short for **S**elf-**C**ontained **A**pplication **R**efactoring) benchmark is a suite of Java applications across frameworks: Jakarta EE, Quarkus, and Spring for evaluating agentic transformation between the frameworks. This suite enables systematic assessment of AI agents' ability to migrate enterprise Java applications while preserving functionality, idiomatic patterns, and architectural integrity across different runtime environments.
 
 The benchmark includes comprehensive examples ranging from focused layer-specific demonstrations to complete production-grade applications, each with verified implementations across all supported frameworks.

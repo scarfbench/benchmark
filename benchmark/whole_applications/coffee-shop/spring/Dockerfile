@@ -24,6 +24,6 @@ COPY . .
 
 RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x smoke.py; fi && if [ -f test.sh ]; then chmod +x test.sh; fi
 # Build application at image build time
-RUN mvn -pl web-service -am clean install -DskipTests
+RUN mvn clean package -DskipTests
 
-CMD ["sh", "-c", "java -jar web-service/target/*.jar"]
+CMD ["sh", "-c", "java -jar target/*.jar"]

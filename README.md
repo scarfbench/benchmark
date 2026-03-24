@@ -226,6 +226,7 @@ For any questions, feedback, or suggestions, or to submit your own agent results
 | Name           | Email                                    |
 | -------------- | ---------------------------------------- |
 | Rahul Krishna  | [i.m.ralk@gmail.com](mailto:imralk+oss@gmail.com) |
+| Bridget McGinn | [bridget.mcginn@ibm.com](bridget.mcginn@ibm.com)  |
 | Raju Pavuluri  | [pavuluri@us.ibm.com](mailto:pavuluri@us.ibm.com) |
 
 ---

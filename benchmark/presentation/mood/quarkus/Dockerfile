@@ -28,4 +28,6 @@ RUN mvn clean install -DskipTests
 COPY test.sh .
 RUN chmod +x test.sh
 
+RUN mvn clean install -DskipTests
+
 CMD ["mvn", "quarkus:run"]

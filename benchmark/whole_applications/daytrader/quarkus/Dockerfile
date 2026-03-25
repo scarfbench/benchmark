@@ -27,4 +27,6 @@ RUN if [ -f mvnw ]; then chmod +x mvnw; fi && if [ -f smoke.py ]; then chmod +x 
 # Build the application at image build time
 RUN mvn clean install -DskipTests
 
+RUN mvn clean install -DskipTests
+
 CMD ["mvn", "quarkus:run"]

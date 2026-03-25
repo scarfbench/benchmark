@@ -25,4 +25,7 @@ COPY . .
 COPY test.sh .
 RUN chmod +x test.sh
 
-CMD [ "mvn", "clean", "package", "spring-boot:run" ]
+# Build application at image build time
+RUN mvn clean install -DskipTests
+
+CMD ["mvn", "spring-boot:run"]

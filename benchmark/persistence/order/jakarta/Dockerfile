@@ -24,5 +24,5 @@ COPY . .
 
 COPY test.sh .
 RUN chmod +x test.sh
-
-CMD [ "mvn", "clean", "package", "liberty:run" ]
+RUN mvn clean install -DskipTests
+CMD [ "mvn", "liberty:run" ]

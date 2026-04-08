@@ -21,20 +21,18 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench hf-repo
+          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench /tmp/hf-repo
 
-          # Sync everything except .git and the two README files (handled separately)
+          # Sync only the benchmark/ subfolder into the HF repo
           rsync -av --delete \
             --exclude='.git' \
-            --exclude='README.md' \
-            --exclude='README_HF.md' \
-            . hf-repo/
+            benchmark/ /tmp/hf-repo/
 
           # Place the HF-specific README as README.md
-          cp README_HF.md hf-repo/README.md
+          cp README_HF.md /tmp/hf-repo/README.md
 
-          cd hf-repo
+          cd /tmp/hf-repo
           git add -A
           git diff --cached --quiet && echo "No changes to sync." && exit 0
-          git commit -m "Sync from GitHub $(git -C .. rev-parse --short HEAD) [skip ci]"
+          git commit -m "Sync from GitHub $(git -C $GITHUB_WORKSPACE rev-parse --short HEAD) [skip ci]"
           git push

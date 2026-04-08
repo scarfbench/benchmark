@@ -1,0 +1,80 @@
+name: Update Release Table
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add new row to releases table
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 << 'PYEOF'
+          import subprocess, json, re, os
+
+          tag = os.environ["TAG"]
+
+          result = subprocess.run(
+              ["gh", "release", "view", tag, "--json", "tagName,publishedAt,body"],
+              capture_output=True, text=True, check=True
+          )
+          data = json.loads(result.stdout)
+
+          date = data["publishedAt"][:10]
+          body = data["body"].strip()
+
+          # Extract first meaningful line, skip code fences and release headers
+          lines = [
+              l.strip() for l in body.splitlines()
+              if l.strip()
+              and not l.strip().startswith("```")
+              and not re.match(r'^=+$', l.strip())
+              and not re.match(r'^Release v', l.strip())
+          ]
+          desc = lines[0] if lines else tag
+
+          new_row = f"| [{tag}](https://github.com/scarfbench/benchmark/releases/tag/{tag}) | {date} | {desc} |"
+
+          pattern = r'(\| Version \| Date \| Description \|\n\|[-| ]+\|\n)'
+          for fname in ["README.md", "README_HF.md"]:
+              with open(fname) as f:
+                  content = f.read()
+              new_content = re.sub(pattern, r'\g<1>' + new_row + '\n', content)
+              with open(fname, "w") as f:
+                  f.write(new_content)
+
+          print(f"Inserted row for {tag}: {desc}")
+          PYEOF
+
+      - name: Commit updated READMEs
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add README.md README_HF.md
+          git diff --cached --quiet && echo "No changes." && exit 0
+          git commit -m "Add ${{ github.event.release.tag_name }} to releases table [skip ci]"
+          git push
+
+      - name: Sync to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+        run: |
+          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench /tmp/hf-repo
+          rsync -av --delete \
+            --exclude='.git' \
+            benchmark/ /tmp/hf-repo/
+          cp README_HF.md /tmp/hf-repo/README.md
+          cd /tmp/hf-repo
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git diff --cached --quiet && echo "No changes to sync." && exit 0
+          git commit -m "Sync release ${{ github.event.release.tag_name }} from GitHub [skip ci]"
+          git push

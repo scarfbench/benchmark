@@ -1,6 +1,4 @@
 ---
-language:
-  - java
 task_categories:
   - text-generation
 tags:

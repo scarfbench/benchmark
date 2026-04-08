@@ -77,12 +77,10 @@ jobs:
           from huggingface_hub import HfApi
 
           api = HfApi(token=os.environ["HF_TOKEN"])
-          api.upload_folder(
+          api.upload_large_folder(
               folder_path="benchmark",
               repo_id="ibm-research/ScarfBench",
               repo_type="dataset",
-              commit_message=f"Sync release {os.environ['TAG']} from GitHub",
-              delete_patterns=["*"],
           )
           print("Sync complete.")
           PYEOF

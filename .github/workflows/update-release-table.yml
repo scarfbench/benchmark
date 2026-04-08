@@ -62,19 +62,27 @@ jobs:
           git commit -m "Add ${{ github.event.release.tag_name }} to releases table [skip ci]"
           git push
 
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
       - name: Sync to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench /tmp/hf-repo
-          rsync -av --delete \
-            --exclude='.git' \
-            benchmark/ /tmp/hf-repo/
-          cp README_HF.md /tmp/hf-repo/README.md
-          cd /tmp/hf-repo
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git diff --cached --quiet && echo "No changes to sync." && exit 0
-          git commit -m "Sync release ${{ github.event.release.tag_name }} from GitHub [skip ci]"
-          git push
+          cp README_HF.md benchmark/README.md
+
+          python3 << 'PYEOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path="benchmark",
+              repo_id="ibm-research/ScarfBench",
+              repo_type="dataset",
+              commit_message=f"Sync release {os.environ['TAG']} from GitHub",
+              delete_patterns=["*"],
+          )
+          print("Sync complete.")
+          PYEOF

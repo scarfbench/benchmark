@@ -14,25 +14,27 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
       - name: Sync to HuggingFace dataset repo
         env:
           HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
+          # Copy README_HF.md into benchmark/ as README.md for HF
+          cp README_HF.md benchmark/README.md
 
-          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench /tmp/hf-repo
+          python3 << 'PYEOF'
+          import os
+          from huggingface_hub import HfApi
 
-          # Sync only the benchmark/ subfolder into the HF repo
-          rsync -av --delete \
-            --exclude='.git' \
-            benchmark/ /tmp/hf-repo/
-
-          # Place the HF-specific README as README.md
-          cp README_HF.md /tmp/hf-repo/README.md
-
-          cd /tmp/hf-repo
-          git add -A
-          git diff --cached --quiet && echo "No changes to sync." && exit 0
-          git commit -m "Sync from GitHub $(git -C $GITHUB_WORKSPACE rev-parse --short HEAD) [skip ci]"
-          git push
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path="benchmark",
+              repo_id="ibm-research/ScarfBench",
+              repo_type="dataset",
+              commit_message=f"Sync from GitHub {os.environ.get('GITHUB_SHA', '')[:7]}",
+              delete_patterns=["*"],  # mirror: remove files deleted on GitHub
+          )
+          print("Sync complete.")
+          PYEOF

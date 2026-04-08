@@ -1,8 +1,19 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/scarfbench/site/blob/main/public/assets/images/scarf-dark.png?raw=true">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/scarfbench/site/blob/main/public/assets/images/scarf-light.png?raw=true">
-  <img alt="Scarf Benchmark Logo">
-</picture>
+---
+language:
+  - java
+task_categories:
+  - text-generation
+tags:
+  - code
+  - benchmark
+  - evaluation
+  - java
+  - code-translation
+  - agentic
+pretty_name: Scarf Benchmark
+---
+
+![Scarf Benchmark](https://github.com/scarfbench/site/blob/main/public/assets/images/scarf-light.png?raw=true)
 
 <div align="center">
   <a href="https://scarfbench.info"><img src="https://img.shields.io/badge/site-scarfbench.info-blue?style=for-the-badge" alt="Documentation"></a>

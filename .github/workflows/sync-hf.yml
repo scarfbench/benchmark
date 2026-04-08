@@ -1,0 +1,40 @@
+name: Sync to HuggingFace
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Sync to HuggingFace dataset repo
+        env:
+          HF_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+          git clone https://user:${HF_TOKEN}@huggingface.co/datasets/ibm-research/ScarfBench hf-repo
+
+          # Sync everything except .git and the two README files (handled separately)
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='README.md' \
+            --exclude='README_HF.md' \
+            . hf-repo/
+
+          # Place the HF-specific README as README.md
+          cp README_HF.md hf-repo/README.md
+
+          cd hf-repo
+          git add -A
+          git diff --cached --quiet && echo "No changes to sync." && exit 0
+          git commit -m "Sync from GitHub $(git -C .. rev-parse --short HEAD) [skip ci]"
+          git push

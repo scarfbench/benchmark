@@ -34,8 +34,8 @@ jobs:
               repo_id="ibm-research/ScarfBench",
               repo_type="dataset",
               ignore_patterns=[
-                  ".git",
-                  ".github",
+                  ".git/**",
+                  ".github/**",
                   "README_HF.md",
                   ".gitignore",
                   ".pre-commit-config.yaml",

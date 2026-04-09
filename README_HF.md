@@ -11,7 +11,7 @@ tags:
 pretty_name: Scarf Benchmark
 ---
 
-![Scarf Benchmark](https://github.com/scarfbench/site/blob/main/public/assets/images/scarf-light.png?raw=true)
+![Scarf Benchmark](https://github.com/scarfbench/site/blob/master/public/assets/images/scarfbench-neutral.png?raw=true)
 
 <div align="center">
   <a href="https://scarfbench.info"><img src="https://img.shields.io/badge/site-scarfbench.info-blue?style=for-the-badge" alt="Documentation"></a>
@@ -242,7 +242,12 @@ Medium.com clone (Conduit) implementing the RealWorld specification. Demonstrate
 If you use this benchmark in your research, please cite:
 
 ```bibtex
-[Placeholder: BibTeX citation will be added when paper is published]
+@misc{scarfbench,
+  author       = {Krishna, Rahul and McGinn, Bridget and Pavuluri, Raju},
+  title        = {{ScarfBench}: A Benchmark for AI-Driven Enterprise Java Framework Migration},
+  year         = {2026},
+  howpublished = {\url{https://scarfbench.info}},
+}
 ```
 
 ---

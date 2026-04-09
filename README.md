@@ -233,7 +233,12 @@ Medium.com clone (Conduit) implementing the RealWorld specification. Demonstrate
 If you use this benchmark in your research, please cite:
 
 ```bibtex
-[Placeholder: BibTeX citation will be added when paper is published]
+@misc{scarfbench,
+  author       = {Krishna, Rahul and McGinn, Bridget and Pavuluri, Raju},
+  title        = {{ScarfBench}: A Benchmark for AI-Driven Enterprise Java Framework Migration},
+  year         = {2026},
+  howpublished = {\url{https://scarfbench.info}},
+}
 ```
 
 ---

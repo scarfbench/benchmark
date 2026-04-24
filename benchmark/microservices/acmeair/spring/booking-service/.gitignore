@@ -1,0 +1,8 @@
+/target/
+/.apt_generated/
+/.apt_generated_tests/
+.settings/
+.metadata
+.classpath
+.DS_Store
+.project

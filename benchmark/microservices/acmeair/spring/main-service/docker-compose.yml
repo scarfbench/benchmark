@@ -1,0 +1,82 @@
+acmeair-booking-db-sb:
+  container_name: acmeair-booking-db-sb
+  image: mongo
+  net: ${NETWORK}
+
+acmeair-customer-db-sb:
+  container_name: acmeair-customer-db-sb
+  image: mongo
+  net: ${NETWORK}
+
+acmeair-flight-db-sb:
+  container_name: acmeair-flight-db-sb
+  image: mongo
+  net: ${NETWORK}
+
+acmeair-nginx:
+  container_name: acmeair-nginx
+  net: ${NETWORK}
+  restart: always
+  build: ./nginx/
+  ports:
+    - "80:80"
+  volumes:
+    - /www/public
+  volumes_from:
+    - acmeair-mainservice-springboot
+    - acmeair-authservice-springboot
+    - acmeair-bookingservice-springboot
+    - acmeair-customerservice-springboot
+    - acmeair-flightservice-springboot
+
+acmeair-mainservice-springboot:
+  container_name: acmeair-mainservice-springboot
+  net: ${NETWORK}
+  build: ../acmeair-mainservice-springboot/
+  environment:
+    - LICENSE=accept
+  privileged: true
+
+acmeair-authservice-springboot:
+  container_name: acmeair-authservice-springboot
+  net: ${NETWORK}
+  build: ../acmeair-authservice-springboot/
+  environment:
+    - LICENSE=accept
+    - CUSTOMER_SERVICE=acmeair-nginx/customer
+  privileged: true
+
+acmeair-bookingservice-springboot:
+  container_name: acmeair-bookingservice-springboot
+  net: ${NETWORK}
+  build: ../acmeair-bookingservice-springboot/
+  environment:
+    - LICENSE=accept
+    - MONGO_HOST=acmeair-booking-db-sb
+    - CUSTOMER_SERVICE=acmeair-nginx/customer
+    - FLIGHT_SERVICE=acmeair-nginx/flight
+  volumes_from:
+    - acmeair-booking-db-sb
+  privileged: true
+
+acmeair-customerservice-springboot:
+  container_name: acmeair-customerservice-springboot
+  net: ${NETWORK}
+  build: ../acmeair-customerservice-springboot/
+  environment:
+    - LICENSE=accept
+    - MONGO_HOST=acmeair-customer-db-sb
+  volumes_from:
+    - acmeair-customer-db-sb
+  privileged: true
+
+acmeair-flightservice-springboot:
+  container_name: acmeair-flightservice-springboot
+  net: ${NETWORK}
+  build: ../acmeair-flightservice-springboot/
+  environment:
+    - LICENSE=accept
+    - MONGO_HOST=acmeair-flight-db-sb
+  volumes_from:
+    - acmeair-flight-db-sb
+  privileged: true

@@ -1,0 +1,105 @@
+name: acmeair-microservices-quarkus
+
+services:
+  # MongoDB instances
+  booking-db:
+    image: mongo:6
+    container_name: acmeair-booking-db-q
+    networks:
+      - acmeair-net
+
+  customer-db:
+    image: mongo:6
+    container_name: acmeair-customer-db-q
+    networks:
+      - acmeair-net
+
+  flight-db:
+    image: mongo:6
+    container_name: acmeair-flight-db-q
+    networks:
+      - acmeair-net
+
+  # Application services (context is quarkus/ root so parent POM is available)
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: acmeair-auth-service-q
+    hostname: auth-service
+    environment:
+      CUSTOMER_SERVICE: acmeair-nginx-q:80/customer
+    depends_on:
+      - customer-service
+    networks:
+      - acmeair-net
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: booking-service/Dockerfile
+    container_name: acmeair-booking-service-q
+    hostname: booking-service
+    environment:
+      MONGO_HOST: booking-db
+      CUSTOMER_SERVICE: acmeair-nginx-q:80/customer
+      FLIGHT_SERVICE: acmeair-nginx-q:80/flight
+    depends_on:
+      - booking-db
+    networks:
+      - acmeair-net
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: customer-service/Dockerfile
+    container_name: acmeair-customer-service-q
+    hostname: customer-service
+    environment:
+      MONGO_HOST: customer-db
+    depends_on:
+      - customer-db
+    networks:
+      - acmeair-net
+
+  flight-service:
+    build:
+      context: .
+      dockerfile: flight-service/Dockerfile
+    container_name: acmeair-flight-service-q
+    hostname: flight-service
+    environment:
+      MONGO_HOST: flight-db
+    depends_on:
+      - flight-db
+    networks:
+      - acmeair-net
+
+  main-service:
+    build:
+      context: .
+      dockerfile: main-service/Dockerfile
+    container_name: acmeair-main-service-q
+    hostname: main-service
+    networks:
+      - acmeair-net
+
+  # Nginx reverse proxy
+  nginx:
+    build: ./nginx
+    container_name: acmeair-nginx-q
+    hostname: acmeair-nginx-q
+    ports:
+      - "8080:80"
+    depends_on:
+      - main-service
+      - auth-service
+      - booking-service
+      - customer-service
+      - flight-service
+    networks:
+      - acmeair-net
+
+networks:
+  acmeair-net:
+    driver: bridge

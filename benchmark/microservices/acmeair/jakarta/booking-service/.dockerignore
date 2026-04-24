@@ -1,0 +1,14 @@
+# VCS
+.git/
+# Maven
+target/
+**/target/
+# IDE
+.vscode/
+.idea/
+*.iml
+# OS
+.DS_Store
+**/.DS_Store
+*.log
+*.tmp

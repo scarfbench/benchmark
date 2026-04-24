@@ -1,0 +1,53 @@
+name: cloud-native-starter-quarkus
+
+services:
+  # Application services (context is quarkus/ root so parent POM is available)
+  articles-service:
+    build:
+      context: .
+      dockerfile: articles-service/Dockerfile
+    container_name: cns-articles-service-q
+    hostname: articles-service
+    networks:
+      - cns-net
+
+  authors-service:
+    build:
+      context: .
+      dockerfile: authors-service/Dockerfile
+    container_name: cns-authors-service-q
+    hostname: authors-service
+    networks:
+      - cns-net
+
+  web-api-service:
+    build:
+      context: .
+      dockerfile: web-api-service/Dockerfile
+    container_name: cns-web-api-service-q
+    hostname: web-api-service
+    environment:
+      ARTICLES_SERVICE_URL: http://articles-service:9080/articles/v1/
+      AUTHORS_SERVICE_URL: http://authors-service:9080/api/v1/
+    depends_on:
+      - articles-service
+      - authors-service
+    networks:
+      - cns-net
+
+  nginx:
+    build: ./nginx
+    container_name: cns-nginx-q
+    hostname: cns-nginx-q
+    ports:
+      - "8080:80"
+    depends_on:
+      - articles-service
+      - authors-service
+      - web-api-service
+    networks:
+      - cns-net
+
+networks:
+  cns-net:
+    driver: bridge

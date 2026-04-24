@@ -1,0 +1,45 @@
+version: "3.9"
+
+x-debug: &debug-default
+  pid: host
+
+x-debug-services: &debug-service-default
+  << : *debug-default
+#  pid: host
+
+x-debug-dbs: &debug-db-default
+  << : *debug-default
+#  pid: host
+
+x-debug-proxy: &debug-proxy-default
+  << : *debug-default
+#  pid: host
+
+
+services:
+  acmeair-booking-db-sb:
+    << : *debug-db-default
+
+  acmeair-customer-db-sb:
+    << : *debug-db-default
+
+  acmeair-flight-db-sb:
+    << : *debug-db-default
+
+  acmeair-nginx:
+    << : *debug-proxy-default
+
+  acmeair-mainservice-quarkus:
+    << : *debug-service-default
+
+  acmeair-authservice-quarkus:
+    << : *debug-service-default
+
+  acmeair-bookingservice-quarkus:
+    << : *debug-service-default
+
+  acmeair-customerservice-quarkus:
+    << : *debug-service-default
+
+  acmeair-flightservice-quarkus:
+    << : *debug-service-default

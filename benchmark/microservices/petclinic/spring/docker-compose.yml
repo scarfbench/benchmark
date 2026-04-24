@@ -1,0 +1,54 @@
+name: petclinic-spring
+
+services:
+  customers-service:
+    build: ./customers-service
+    container_name: pc-customers-service
+    hostname: customers-service
+    networks:
+      - pc-net
+
+  vets-service:
+    build: ./vets-service
+    container_name: pc-vets-service
+    hostname: vets-service
+    networks:
+      - pc-net
+
+  visits-service:
+    build: ./visits-service
+    container_name: pc-visits-service
+    hostname: visits-service
+    networks:
+      - pc-net
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: pc-api-gateway
+    hostname: api-gateway
+    environment:
+      CUSTOMERS_SERVICE_URL: http://customers-service:9080
+      VISITS_SERVICE_URL: http://visits-service:9080
+    depends_on:
+      - customers-service
+      - visits-service
+    networks:
+      - pc-net
+
+  nginx:
+    build: ./nginx
+    container_name: pc-nginx
+    hostname: pc-nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - customers-service
+      - vets-service
+      - visits-service
+      - api-gateway
+    networks:
+      - pc-net
+
+networks:
+  pc-net:
+    driver: bridge

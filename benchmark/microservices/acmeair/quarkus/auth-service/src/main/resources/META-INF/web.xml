@@ -1,0 +1,12 @@
+<web-app>
+<!--
+	<filter>
+		<filter-name>cookieFilter</filter-name>
+		<filter-class>com.acmeair.securityutils.CookieInterceptor</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>cookieFilter</filter-name>
+		<url-pattern>/login</url-pattern>
+	</filter-mapping>
+-->
+</web-app>

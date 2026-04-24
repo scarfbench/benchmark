@@ -1,0 +1,100 @@
+name: acmeair-microservices-jakarta
+
+services:
+  # MongoDB instances
+  booking-db:
+    image: mongo:6
+    container_name: acmeair-booking-db-jakarta
+    networks:
+      - acmeair-net
+
+  customer-db:
+    image: mongo:6
+    container_name: acmeair-customer-db-jakarta
+    networks:
+      - acmeair-net
+
+  flight-db:
+    image: mongo:6
+    container_name: acmeair-flight-db-jakarta
+    networks:
+      - acmeair-net
+
+  # Application services
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: acmeair-auth-service-jakarta
+    hostname: auth-service
+    environment:
+      CUSTOMER_SERVICE: acmeair-nginx-jakarta:80/customer
+    depends_on:
+      - customer-service
+    networks:
+      - acmeair-net
+
+  booking-service:
+    build:
+      context: ./booking-service
+    container_name: acmeair-booking-service-jakarta
+    hostname: booking-service
+    environment:
+      MONGO_HOST: booking-db
+      CUSTOMER_SERVICE: acmeair-nginx-jakarta:80/customer
+      FLIGHT_SERVICE: acmeair-nginx-jakarta:80/flight
+    depends_on:
+      - booking-db
+    networks:
+      - acmeair-net
+
+  customer-service:
+    build:
+      context: ./customer-service
+    container_name: acmeair-customer-service-jakarta
+    hostname: customer-service
+    environment:
+      MONGO_HOST: customer-db
+    depends_on:
+      - customer-db
+    networks:
+      - acmeair-net
+
+  flight-service:
+    build:
+      context: ./flight-service
+    container_name: acmeair-flight-service-jakarta
+    hostname: flight-service
+    environment:
+      MONGO_HOST: flight-db
+    depends_on:
+      - flight-db
+    networks:
+      - acmeair-net
+
+  main-service:
+    build:
+      context: ./main-service
+    container_name: acmeair-main-service-jakarta
+    hostname: main-service
+    networks:
+      - acmeair-net
+
+  # Nginx reverse proxy
+  nginx:
+    build: ./nginx
+    container_name: acmeair-nginx-jakarta
+    hostname: acmeair-nginx-jakarta
+    ports:
+      - "8080:80"
+    depends_on:
+      - main-service
+      - auth-service
+      - booking-service
+      - customer-service
+      - flight-service
+    networks:
+      - acmeair-net
+
+networks:
+  acmeair-net:
+    driver: bridge

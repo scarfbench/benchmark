@@ -1,0 +1,82 @@
+name: daytrader-microservices
+
+services:
+  accounts-service:
+    build: ./accounts-service
+    container_name: daytrader-accounts-service
+    hostname: accounts-service
+    environment:
+      DAYTRADER_ACCOUNTS_SERVICE: http://accounts-service:1443
+      DAYTRADER_GATEWAY_SERVICE: http://gateway-service:2443
+      DAYTRADER_PORTFOLIOS_SERVICE: http://portfolios-service:3443
+      DAYTRADER_QUOTES_SERVICE: http://quotes-service:4443
+    ports:
+      - "1443:1443"
+    networks:
+      - daytrader-net
+
+  gateway-service:
+    build: ./gateway-service
+    container_name: daytrader-gateway-service
+    hostname: gateway-service
+    environment:
+      DAYTRADER_ACCOUNTS_SERVICE: http://accounts-service:1443
+      DAYTRADER_GATEWAY_SERVICE: http://gateway-service:2443
+      DAYTRADER_PORTFOLIOS_SERVICE: http://portfolios-service:3443
+      DAYTRADER_QUOTES_SERVICE: http://quotes-service:4443
+    depends_on:
+      - accounts-service
+      - portfolios-service
+      - quotes-service
+    ports:
+      - "2443:2443"
+    networks:
+      - daytrader-net
+
+  portfolios-service:
+    build: ./portfolios-service
+    container_name: daytrader-portfolios-service
+    hostname: portfolios-service
+    environment:
+      DAYTRADER_ACCOUNTS_SERVICE: http://accounts-service:1443
+      DAYTRADER_GATEWAY_SERVICE: http://gateway-service:2443
+      DAYTRADER_PORTFOLIOS_SERVICE: http://portfolios-service:3443
+      DAYTRADER_QUOTES_SERVICE: http://quotes-service:4443
+    ports:
+      - "3443:3443"
+    networks:
+      - daytrader-net
+
+  quotes-service:
+    build: ./quotes-service
+    container_name: daytrader-quotes-service
+    hostname: quotes-service
+    environment:
+      DAYTRADER_ACCOUNTS_SERVICE: http://accounts-service:1443
+      DAYTRADER_GATEWAY_SERVICE: http://gateway-service:2443
+      DAYTRADER_PORTFOLIOS_SERVICE: http://portfolios-service:3443
+      DAYTRADER_QUOTES_SERVICE: http://quotes-service:4443
+    ports:
+      - "4443:4443"
+    networks:
+      - daytrader-net
+
+  web-service:
+    build: ./web-service
+    container_name: daytrader-web-service
+    hostname: web-service
+    environment:
+      DAYTRADER_ACCOUNTS_SERVICE: http://accounts-service:1443
+      DAYTRADER_GATEWAY_SERVICE: http://gateway-service:2443
+      DAYTRADER_PORTFOLIOS_SERVICE: http://portfolios-service:3443
+      DAYTRADER_QUOTES_SERVICE: http://quotes-service:4443
+    depends_on:
+      - gateway-service
+    ports:
+      - "5443:5443"
+    networks:
+      - daytrader-net
+
+networks:
+  daytrader-net:
+    driver: bridge

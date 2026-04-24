@@ -1,0 +1,111 @@
+version: "3.9"
+
+x-service-defaults: &service-defaults
+  networks:
+    - net1
+  privileged: true
+
+x-db-defaults: &db-defaults
+  image: mongo
+  networks:
+    - net1
+
+
+networks:
+  net1:
+    external: true
+    name: "${NETWORK:?}"
+
+services:
+  acmeair-booking-db-sb:
+    << : *db-defaults
+    container_name: acmeair-booking-db-sb
+
+  acmeair-customer-db-sb:
+    << : *db-defaults
+    container_name: acmeair-customer-db-sb
+
+  acmeair-flight-db-sb:
+    << : *db-defaults
+    container_name: acmeair-flight-db-sb
+
+  acmeair-nginx:
+    container_name: acmeair-nginx
+    image: acmeair-nginx
+    networks:
+      - net1
+    restart: always
+    build:
+      context: ./nginx/
+    ports:
+      - "80:8080"
+    volumes:
+      - /www/public
+    volumes_from:
+      - acmeair-mainservice-quarkus
+      - acmeair-authservice-quarkus
+      - acmeair-bookingservice-quarkus
+      - acmeair-customerservice-quarkus
+      - acmeair-flightservice-quarkus
+
+  acmeair-mainservice-quarkus:
+    << : *service-defaults
+    container_name: acmeair-mainservice-quarkus
+    image: acmeair-mainservice-quarkus:${RUNTIME:-jvm}
+    build:
+      context: ../acmeair-mainservice-quarkus/
+      dockerfile: src/main/docker/Dockerfile.${RUNTIME:-jvm}
+#    environment: 
+#      LICENSE: accept
+
+  acmeair-authservice-quarkus:
+    << : *service-defaults
+    container_name: acmeair-authservice-quarkus
+    image: acmeair-authservice-quarkus:${RUNTIME:-jvm}
+    build:
+      context: ../acmeair-authservice-quarkus/
+      dockerfile: src/main/docker/Dockerfile.${RUNTIME:-jvm}
+    environment:
+#     LICENSE: accept
+      CUSTOMER_SERVICE: acmeair-nginx:8080/customer
+
+  acmeair-bookingservice-quarkus:
+    << : *service-defaults
+    container_name: acmeair-bookingservice-quarkus
+    image: acmeair-bookingservice-quarkus:${RUNTIME:-jvm}
+    build:
+      context: ../acmeair-bookingservice-quarkus/
+      dockerfile: src/main/docker/Dockerfile.${RUNTIME:-jvm}
+    environment:
+#      LICENSE: accept
+      MONGO_HOST: acmeair-booking-db-sb
+      CUSTOMER_SERVICE: acmeair-nginx:8080/customer
+      FLIGHT_SERVICE: acmeair-nginx:8080/flight
+    volumes_from:
+      - acmeair-booking-db-sb
+
+  acmeair-customerservice-quarkus:
+    << : *service-defaults
+    container_name: acmeair-customerservice-quarkus
+    image: acmeair-customerservice-quarkus:${RUNTIME:-jvm}
+    build:
+      context: ../acmeair-customerservice-quarkus/
+      dockerfile: src/main/docker/Dockerfile.${RUNTIME:-jvm}
+    environment:
+#      LICENSE: accept
+      MONGO_HOST: acmeair-customer-db-sb
+    volumes_from:
+      - acmeair-customer-db-sb
+
+  acmeair-flightservice-quarkus:
+    << : *service-defaults
+    container_name: acmeair-flightservice-quarkus
+    image: acmeair-flightservice-quarkus:${RUNTIME:-jvm}
+    build:
+      context: ../acmeair-flightservice-quarkus/
+      dockerfile: src/main/docker/Dockerfile.${RUNTIME:-jvm}
+    environment:
+#      LICENSE: accept
+      MONGO_HOST: acmeair-flight-db-sb
+    volumes_from:
+      - acmeair-flight-db-sb

@@ -1,0 +1,95 @@
+name: acmeair-microservices-spring
+
+services:
+  # MongoDB instances
+  booking-db:
+    image: mongo:6
+    container_name: acmeair-booking-db
+    networks:
+      - acmeair-net
+
+  customer-db:
+    image: mongo:6
+    container_name: acmeair-customer-db
+    networks:
+      - acmeair-net
+
+  flight-db:
+    image: mongo:6
+    container_name: acmeair-flight-db
+    networks:
+      - acmeair-net
+
+  # Application services
+  auth-service:
+    build: ./auth-service
+    container_name: acmeair-auth-service
+    hostname: auth-service
+    environment:
+      CUSTOMER_SERVICE: acmeair-nginx:80/customer
+    depends_on:
+      - customer-service
+    networks:
+      - acmeair-net
+
+  booking-service:
+    build: ./booking-service
+    container_name: acmeair-booking-service
+    hostname: booking-service
+    environment:
+      MONGO_HOST: booking-db
+      CUSTOMER_SERVICE: acmeair-nginx:80/customer
+      FLIGHT_SERVICE: acmeair-nginx:80/flight
+    depends_on:
+      - booking-db
+    networks:
+      - acmeair-net
+
+  customer-service:
+    build: ./customer-service
+    container_name: acmeair-customer-service
+    hostname: customer-service
+    environment:
+      MONGO_HOST: customer-db
+    depends_on:
+      - customer-db
+    networks:
+      - acmeair-net
+
+  flight-service:
+    build: ./flight-service
+    container_name: acmeair-flight-service
+    hostname: flight-service
+    environment:
+      MONGO_HOST: flight-db
+    depends_on:
+      - flight-db
+    networks:
+      - acmeair-net
+
+  main-service:
+    build: ./main-service
+    container_name: acmeair-main-service
+    hostname: main-service
+    networks:
+      - acmeair-net
+
+  # Nginx reverse proxy
+  nginx:
+    build: ./nginx
+    container_name: acmeair-nginx
+    hostname: acmeair-nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - main-service
+      - auth-service
+      - booking-service
+      - customer-service
+      - flight-service
+    networks:
+      - acmeair-net
+
+networks:
+  acmeair-net:
+    driver: bridge

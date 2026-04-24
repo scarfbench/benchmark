@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+<!--	<parent>-->
+<!--        <groupId>com.ibm.sample.daytrader.accounts</groupId>-->
+<!--        <artifactId>daytrader-accountsapp</artifactId>-->
+<!--        <version>1.0.1</version>-->
+<!--    </parent>-->
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.6</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+        <groupId>com.ibm.sample.daytrader</groupId>
+        <artifactId>accounts-service</artifactId>
+        <packaging>war</packaging>
+    <version>1.0.1</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+	<dependencies>
+		
+		<!-- Database Dependencies -->
+
+	    <dependency>
+		    <groupId>org.apache.derby</groupId>
+		    <artifactId>derby</artifactId>
+		    <version>10.14.1.0</version>
+	    </dependency>
+
+		<!-- Swagger Dependencies -->
+
+	    <dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+		
+	    <dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+
+		<!-- Must Precede Third Party Dependencies-->	
+
+	    <dependency>
+		    <groupId>org.apache.tomcat</groupId>
+		    <artifactId>tomcat-dbcp</artifactId>
+		    <version>8.0.9</version>
+	    </dependency>
+		
+	    <dependency>
+		    <groupId>org.apache.tomcat.embed</groupId>
+		    <artifactId>tomcat-embed-jasper</artifactId>
+			<scope>provided</scope>
+	    </dependency>
+	    		
+	    <dependency>
+		    <groupId>javax.servlet</groupId>
+		    <artifactId>jstl</artifactId>
+	    </dependency>
+		
+		<dependency>
+		    <groupId>org.eclipse.jdt.core.compiler</groupId>
+		    <artifactId>ecj</artifactId>
+		    <version>4.6.1</version>		     
+		</dependency>
+ 		
+ 		<!--  
+ 		spring-boot-starter-web: includes all the dependencies required to create a 
+ 		web app. This will avoid lining up different spring common project versions.
+ 		-->
+	    <dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-web</artifactId>
+	    </dependency>
+	    <dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-test</artifactId>
+	    </dependency>
+
+		<!-- 
+		spring-boot-starter-tomcat: enable an embedded Apache Tomcat 8 instance, by default. 
+		-->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+	    </dependency>
+		
+		<!-- 
+		spring-boot-starter-actuator: Enables spring boot actuator features in spring boot.
+		-->
+		<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+
+		<!--
+        spring-boot-devtools: Enables spring boot developer tools for hot-/live-reload.
+        -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
+
+		<!-- Third Party Dependencies -->
+	
+		<dependency>
+			<groupId>commons-digester</groupId>
+			<artifactId>commons-digester</artifactId>
+            <version>2.1</version>
+			<scope>compile</scope>
+		</dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.4</version>
+            <scope>compile</scope>
+        </dependency>
+        
+		<dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>2.1</version>
+            <scope>compile</scope>
+        </dependency>       
+
+		<!-- REST Client Dependencies -->
+		
+       <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-web-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+		
+		<dependency>
+   			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+		</dependency>
+
+		<dependency>
+   			<groupId>com.fasterxml.jackson.core</groupId>
+   			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.core</groupId>
+            <artifactId>jersey-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.sbrannen</groupId>
+            <artifactId>spring-test-junit5</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+    
+    	<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>**/*.yml</exclude>
+					<exclude>**/*.sh</exclude>
+					<exclude>**/*.jks</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		
+		<plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>tradesdb</directory>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>${project.basedir}</directory>
+                            <includes>
+                                <include>*.log</include>
+<include>*.iml</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+            <!-- Set JDK compiler version  -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
+            <!-- Workaround: Spring Boot fails to run maven-surefire-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <useSystemClassLoader>false</useSystemClassLoader>
+                    <excludes>
+                        <exclude>**/*IntegrationTests.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+	</build>
+	
+  	<profiles>
+  
+        <!-- Profile to run on SpringBoot -->
+  		<profile>
+  			<id>springboot</id>
+  			<activation>
+  				<activeByDefault>true</activeByDefault>
+			</activation>
+  			 <properties>
+                 <!-- Docker image name -->
+                 <docker.image.name>daytrader-accounts-service</docker.image.name>
+                 <!-- Logging level and service routes -->
+                 <daytraderLogLevel>TRACE</daytraderLogLevel>
+                 <daytraderLogFilename>/tmp/${project.artifactId}-${project.version}.log</daytraderLogFilename>
+                 <daytraderLogAppender>FileAppender</daytraderLogAppender>
+                 <accountsServiceRoute>http://localhost:1443</accountsServiceRoute>
+                 <gatewayServiceRoute>http://localhost:2443</gatewayServiceRoute>
+                 <portfoliosServiceRoute>http://localhost:3443</portfoliosServiceRoute>
+                 <quotesServiceRoute>http://localhost:4443</quotesServiceRoute>
+                 <!-- SSL information -->
+                 <daytraderKeystoreFolder>${project.basedir}/src/main/resources/external/ssl</daytraderKeystoreFolder>
+                 <daytraderTruststoreLocation>${daytraderKeystoreFolder}/truststore.jks</daytraderTruststoreLocation>
+                 <daytraderTruststorePassword>password</daytraderTruststorePassword>
+                 <!-- Port -->
+                 <serverPort>1443</serverPort>
+                 <databaseDriver>org.apache.derby.jdbc.EmbeddedDriver</databaseDriver>
+                 <databaseUrl>jdbc:derby:tradesdb;create=true</databaseUrl>
+
+
+            </properties>
+  			<build>
+  			
+                <plugins> 				
+                    <!-- Copy resources into the output directory prior to packaging  --> 
+      			    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.4.2</version>
+                        <executions>
+                            <execution>
+                                <id>default-copy-resources</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <overwrite>true</overwrite>
+                                    <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/WEB-INF/classes/</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${daytraderKeystoreFolder}</directory>
+                                            <includes>
+                                                <include>keystore.jks</include>
+                                                <include>truststore.jks</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+					<!--  Repackage the WAR so it can be executed from the command line using java -jar -->
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>				
+						<configuration>
+							<fork>true</fork>
+							<mainClass>com.ibm.sample.daytrader.accounts.AccountsApplication</mainClass>
+						</configuration>
+					</plugin>
+					<!-- Run the integration test and verify the results -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>integration-tests</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                                <configuration>
+                                    <includes>
+                                        <include>**/*IntegrationTests.java</include>
+                                    </includes>
+                                    <environmentVariables>                  
+                                        <DAYTRADER_ACCOUNTS_SERVICE>${accountsServiceRoute}</DAYTRADER_ACCOUNTS_SERVICE>
+                                        <DAYTRADER_GATEWAY_SERVICE>${gatewayServiceRoute}</DAYTRADER_GATEWAY_SERVICE>
+                                        <DAYTRADER_PORTFOLIOS_SERVICE>${portfoliosServiceRoute}</DAYTRADER_PORTFOLIOS_SERVICE>
+                                        <DAYTRADER_QUOTES_SERVICE>${quotesServiceRoute}</DAYTRADER_QUOTES_SERVICE>
+                                        <DAYTRADER_LOG_LEVEL>${daytraderLogLevel}</DAYTRADER_LOG_LEVEL>
+                                        <DAYTRADER_LOG_FILENAME>${daytraderLogFilename}</DAYTRADER_LOG_FILENAME>
+                                        <DAYTRADER_LOG_APPENDER>${daytraderLogAppender}</DAYTRADER_LOG_APPENDER>
+                                    </environmentVariables>
+                                    
+                                    <systemPropertyVariables>
+                                        <javax.net.ssl.trustStore>${daytraderTruststoreLocation}</javax.net.ssl.trustStore>
+                                        <javax.net.ssl.trustStorePassword>${daytraderTruststorePassword}</javax.net.ssl.trustStorePassword>
+                                    </systemPropertyVariables>
+                                    
+                                    <!-- Don't use system class loader or else maven-failsafe-plugin fails --> 
+                                    <useSystemClassLoader>false</useSystemClassLoader>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>           
+                    <!-- Additional bindings (executions) to setup and teardown the environment -->             
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <!-- pre-integration-test: start the application -->
+                            <execution>
+                                <id>statup-application</id>
+                                <phase>pre-integration-test</phase>
+                                <configuration>
+                                    <target>
+                                        <condition property="buildScript" value="start_server.bat" else="start_server.sh">
+                                            <os family="windows"/>
+                                        </condition>
+                                        <echo>Starting ${project.basedir}/env/external/springboot/bin/${buildScript}</echo>
+                                        <exec executable="${project.basedir}/env/external/springboot/bin/${buildScript}" spawn="true">
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+
+                            <!-- pre-integration-test: wait for the application to start -->                                    
+                            <execution>
+                                <id>wait-for-application-to-start</id>
+                                <phase>pre-integration-test</phase>
+                                <configuration>
+                                    <target>
+                                        <sleep seconds="20" />
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                             </execution>
+                    
+                            <!-- post-integration-test: Stop the application -->
+                            <execution>
+                                <id>shutdown-application</id>
+                                <phase>post-integration-test</phase>
+                                <configuration>
+                                    <target>
+                                        <condition property="buildScript" value="stop_server.bat" else="stop_server.sh">
+                                            <os family="windows"/>
+                                        </condition>
+                                        <echo>Starting ${project.basedir}/env/external/springboot/bin/${buildScript}</echo>
+                                        <exec executable="${project.basedir}/env/external/springboot/bin/${buildScript}" spawn="true">
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Construct a docker container out of the build artifacts -->
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>0.40.2</version>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <skip>false</skip>
+                            <images>
+                                <image>
+                                    <name>quay.io/daytrader/${docker.image.name}:${project.version}</name>
+                                    <build>
+                                        <dockerFileDir>${project.basedir}</dockerFileDir>
+                                        <assembly>
+                                            <descriptorRef>artifact-with-dependencies</descriptorRef>
+                                        </assembly>
+                                        <tags>
+                                            <tag>latest</tag>
+                                            <tag>${project.version}</tag>
+                                        </tags>
+                                        <args>
+                                            <WAR_ARTIFACTID>${project.artifactId}</WAR_ARTIFACTID>
+                                            <APP_VERSION>${project.version}</APP_VERSION>
+                                            <APP_ARTIFACTID>${project.artifactId}</APP_ARTIFACTID>
+                                            <EXPOSE_PORT>${serverPort}</EXPOSE_PORT>
+                                            <DATABASE_DRIVER>${databaseDriver}</DATABASE_DRIVER>
+                                            <DATABASE_URL>${databaseUrl}</DATABASE_URL>
+                                        </args>
+                                    </build>
+                                    <run>
+                                        <ports>
+                                            <port>1443:1443</port>
+                                        </ports>
+                                        <wait>
+                                            <log>Started AccountsApplication</log>
+                                        </wait>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                    </plugin>
+  				</plugins>
+  			</build>
+		</profile>
+	</profiles>
+</project>

@@ -3,7 +3,6 @@ package io.github.raeperd.realworld.application.article;
 import io.github.raeperd.realworld.domain.article.ArticleService;
 import io.github.raeperd.realworld.domain.user.UserName;
 import io.github.raeperd.realworld.infrastructure.jwt.UserJWTPayload;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -30,32 +29,41 @@ class ArticleRestController {
     }
 
     @GetMapping("/articles")
-    public MultipleArticleModel getArticles(Pageable pageable) {
-        final var articles = articleService.getArticles(pageable);
+    public MultipleArticleModel getArticles(@RequestParam(defaultValue = "0") int offset,
+                                            @RequestParam(defaultValue = "20") int limit) {
+        final var articles = articleService.getArticles(new OffsetPageRequest(offset, limit));
         return MultipleArticleModel.fromArticles(articles);
     }
 
     @GetMapping(value = "/articles", params = {"author"})
-    public MultipleArticleModel getArticlesByAuthor(@RequestParam String author, Pageable pageable) {
-        final var articles = articleService.getArticlesByAuthorName(author, pageable);
+    public MultipleArticleModel getArticlesByAuthor(@RequestParam String author,
+                                                    @RequestParam(defaultValue = "0") int offset,
+                                                    @RequestParam(defaultValue = "20") int limit) {
+        final var articles = articleService.getArticlesByAuthorName(author, new OffsetPageRequest(offset, limit));
         return MultipleArticleModel.fromArticles(articles);
     }
 
     @GetMapping(value = "/articles", params = {"tag"})
-    public MultipleArticleModel getArticlesByTag(@RequestParam String tag, Pageable pageable) {
-        final var articles = articleService.getArticlesByTag(tag, pageable);
+    public MultipleArticleModel getArticlesByTag(@RequestParam String tag,
+                                                 @RequestParam(defaultValue = "0") int offset,
+                                                 @RequestParam(defaultValue = "20") int limit) {
+        final var articles = articleService.getArticlesByTag(tag, new OffsetPageRequest(offset, limit));
         return MultipleArticleModel.fromArticles(articles);
     }
 
     @GetMapping(value = "/articles", params = {"favorited"})
-    public MultipleArticleModel getArticleByFavoritedUsername(@RequestParam UserName favorited, Pageable pageable) {
-        final var articles = articleService.getArticleFavoritedByUsername(favorited, pageable);
+    public MultipleArticleModel getArticleByFavoritedUsername(@RequestParam UserName favorited,
+                                                              @RequestParam(defaultValue = "0") int offset,
+                                                              @RequestParam(defaultValue = "20") int limit) {
+        final var articles = articleService.getArticleFavoritedByUsername(favorited, new OffsetPageRequest(offset, limit));
         return MultipleArticleModel.fromArticles(articles);
     }
 
     @GetMapping("/articles/feed")
-    public MultipleArticleModel getFeed(@AuthenticationPrincipal UserJWTPayload jwtPayload, Pageable pageable) {
-        final var articles = articleService.getFeedByUserId(jwtPayload.getUserId(), pageable);
+    public MultipleArticleModel getFeed(@AuthenticationPrincipal UserJWTPayload jwtPayload,
+                                        @RequestParam(defaultValue = "0") int offset,
+                                        @RequestParam(defaultValue = "20") int limit) {
+        final var articles = articleService.getFeedByUserId(jwtPayload.getUserId(), new OffsetPageRequest(offset, limit));
         return MultipleArticleModel.fromArticles(articles);
     }
 

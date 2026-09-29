@@ -1,6 +1,5 @@
 package org.example.realworldapi.infrastructure.repository.hibernate.panache;
 
-import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -72,7 +71,7 @@ public class ArticleRepositoryPanache extends AbstractPanacheRepository<ArticleE
                 "select articles from ArticleEntity as articles inner join articles.author as author inner join author.followedBy as followedBy where followedBy.user.id = :loggedUserId",
                 Sort.descending("createdAt").and("updatedAt").descending(),
                 Parameters.with("loggedUserId", articleFilter.getLoggedUserId()))
-            .page(Page.of(articleFilter.getOffset(), articleFilter.getLimit()))
+            .range(articleFilter.getOffset(), articleFilter.getOffset() + articleFilter.getLimit() - 1)
             .list();
     final var articlesResult =
         articlesEntity.stream().map(entityUtils::article).collect(Collectors.toList());
@@ -96,7 +95,7 @@ public class ArticleRepositoryPanache extends AbstractPanacheRepository<ArticleE
                 findArticlesQueryBuilder.toQueryString(),
                 Sort.descending("createdAt").and("updatedAt").descending(),
                 params)
-            .page(Page.of(filter.getOffset(), filter.getLimit()))
+            .range(filter.getOffset(), filter.getOffset() + filter.getLimit() - 1)
             .list();
     final var articlesResult =
         articlesEntity.stream().map(entityUtils::article).collect(Collectors.toList());

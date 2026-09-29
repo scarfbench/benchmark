@@ -38,6 +38,7 @@ public class BusinessExceptionMapper implements ExceptionMapper<BusinessExceptio
         handlerMap.put(UsernameAlreadyExistsException.class, this::conflict);
         handlerMap.put(TagNotFoundException.class, this::notFound);
         handlerMap.put(ArticleNotFoundException.class, this::notFound);
+        handlerMap.put(CommentNotFoundException.class, this::notFound);
         handlerMap.put(ModelValidationException.class, this::unprocessableEntity);
 
         return handlerMap;

@@ -7,6 +7,7 @@ import io.github.raeperd.realworld.domain.user.UserName;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
@@ -45,7 +46,7 @@ public class ArticleService implements ArticleFindService {
     @Transactional(readOnly = true)
     public Page<Article> getFeedByUserId(long userId, Pageable pageable) {
         return userFindService.findById(userId)
-                .map(user -> articleRepository.findAllByUserFavoritedContains(user, pageable)
+                .map(user -> articleRepository.findAllByAuthorIn(user.getFollowingUsers(), pageable)
                         .map(article -> article.updateFavoriteByUser(user)))
                 .orElseThrow(NoSuchElementException::new);
     }
@@ -101,8 +102,11 @@ public class ArticleService implements ArticleFindService {
 
     @Transactional
     public void deleteArticleBySlug(long userId, String slug) {
-        userFindService.findById(userId)
-                .ifPresentOrElse(user -> articleRepository.deleteArticleByAuthorAndContentsTitleSlug(user, slug),
-                        () -> {throw new NoSuchElementException();});
+        final var user = userFindService.findById(userId).orElseThrow(NoSuchElementException::new);
+        final var article = getArticleBySlug(slug).orElseThrow(NoSuchElementException::new);
+        if (!article.getAuthor().equals(user)) {
+            throw new AccessDeniedException("Not authorized to delete this article");
+        }
+        articleRepository.deleteArticleByAuthorAndContentsTitleSlug(user, slug);
     }
 }

@@ -1,6 +1,7 @@
 package io.github.raeperd.realworld.application;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,5 +27,10 @@ class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<Void> handleConflict(DataIntegrityViolationException ex) {
         return ResponseEntity.status(CONFLICT).build();
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Void> handleForbidden(AccessDeniedException ex) {
+        return ResponseEntity.status(FORBIDDEN).build();
     }
 }

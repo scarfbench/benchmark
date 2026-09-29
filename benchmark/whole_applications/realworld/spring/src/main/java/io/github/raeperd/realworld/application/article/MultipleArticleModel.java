@@ -18,6 +18,6 @@ class MultipleArticleModel {
     static MultipleArticleModel fromArticles(Page<Article> articles) {
         final var articlesCollected = articles.map(ArticleModelNested::fromArticle)
                 .stream().collect(toList());
-        return new MultipleArticleModel(articlesCollected, articlesCollected.size());
+        return new MultipleArticleModel(articlesCollected, Math.toIntExact(articles.getTotalElements()));
     }
 }

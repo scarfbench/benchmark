@@ -8,12 +8,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.Repository;
 
 import java.util.Optional;
+import java.util.Collection;
 
 interface ArticleRepository extends Repository<Article, Long> {
 
     Article save(Article article);
 
     Page<Article> findAll(Pageable pageable);
+    Page<Article> findAllByAuthorIn(Collection<User> authors, Pageable pageable);
     Page<Article> findAllByUserFavoritedContains(User user, Pageable pageable);
     Page<Article> findAllByAuthorProfileUserName(UserName authorName, Pageable pageable);
     Page<Article> findAllByContentsTagsContains(Tag tag, Pageable pageable);

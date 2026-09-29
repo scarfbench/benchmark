@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.HashSet;
 
 import static org.springframework.data.util.Optionals.mapIfAllPresent;
 
@@ -40,7 +41,7 @@ public class CommentService {
     @Transactional(readOnly = true)
     public Set<Comment> getComments(String slug) {
         return articleFindService.getArticleBySlug(slug)
-                .map(Article::getComments)
+                .map(article -> new HashSet<>(article.getComments()))
                 .orElseThrow(NoSuchElementException::new);
     }
 

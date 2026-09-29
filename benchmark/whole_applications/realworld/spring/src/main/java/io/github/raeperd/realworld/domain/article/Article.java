@@ -2,6 +2,7 @@ package io.github.raeperd.realworld.domain.article;
 
 import io.github.raeperd.realworld.domain.article.comment.Comment;
 import io.github.raeperd.realworld.domain.user.User;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -48,7 +49,7 @@ public class Article {
     @ManyToMany(fetch = EAGER, cascade = PERSIST)
     private Set<User> userFavorited = new HashSet<>();
 
-    @OneToMany(mappedBy = "article", cascade = {PERSIST, REMOVE})
+    @OneToMany(mappedBy = "article", cascade = {PERSIST, REMOVE}, orphanRemoval = true)
     private Set<Comment> comments = new HashSet<>();
 
     @Transient
@@ -83,8 +84,8 @@ public class Article {
                 .filter(comment -> comment.getId().equals(commentId))
                 .findFirst()
                 .orElseThrow(NoSuchElementException::new);
-        if (!user.equals(author) || !user.equals(commentsToDelete.getAuthor())) {
-            throw new IllegalAccessError("Not authorized to delete comment");
+        if (!user.equals(commentsToDelete.getAuthor())) {
+            throw new AccessDeniedException("Not authorized to delete comment");
         }
         comments.remove(commentsToDelete);
     }

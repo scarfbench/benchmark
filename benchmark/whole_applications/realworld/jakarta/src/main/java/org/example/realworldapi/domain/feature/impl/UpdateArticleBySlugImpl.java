@@ -5,6 +5,7 @@ import jakarta.inject.Singleton;
 import org.example.realworldapi.domain.feature.CreateSlugByTitle;
 import org.example.realworldapi.domain.feature.FindArticleBySlug;
 import org.example.realworldapi.domain.feature.UpdateArticleBySlug;
+import org.example.realworldapi.domain.exception.ArticleNotFoundException;
 import org.example.realworldapi.domain.model.article.Article;
 import org.example.realworldapi.domain.model.article.ArticleRepository;
 import org.example.realworldapi.domain.model.article.UpdateArticleInput;
@@ -29,6 +30,9 @@ public class UpdateArticleBySlugImpl implements UpdateArticleBySlug {
     @Override
     public Article handle(UpdateArticleInput updateArticleInput) {
         final var article = findArticleBySlug.handle(updateArticleInput.getSlug());
+        if (!article.getAuthor().getId().equals(updateArticleInput.getAuthorId())) {
+            throw new ArticleNotFoundException();
+        }
         if (atLeastOneFieldIsNotBlank(updateArticleInput)) {
             if (isNotBlank(updateArticleInput.getTitle())) {
                 article.setSlug(createSlugByTitle.handle(updateArticleInput.getTitle()));

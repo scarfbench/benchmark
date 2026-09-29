@@ -56,6 +56,11 @@ public class ExceptionMappers {
   }
 
   @ServerExceptionMapper
+  public Response commentNotFound(CommentNotFoundException e) {
+    return Response.ok(errorResponse(e)).status(Response.Status.NOT_FOUND.getStatusCode()).build();
+  }
+
+  @ServerExceptionMapper
   public Response modelValidation(ModelValidationException e) {
     return Response.ok(errorResponse(e)).status(422).build();
   }

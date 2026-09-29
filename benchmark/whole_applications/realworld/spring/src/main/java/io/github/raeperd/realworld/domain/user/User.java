@@ -5,6 +5,7 @@ import io.github.raeperd.realworld.domain.article.ArticleContents;
 import io.github.raeperd.realworld.domain.article.ArticleUpdateRequest;
 import io.github.raeperd.realworld.domain.article.comment.Comment;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -59,8 +60,8 @@ public class User {
     }
 
     public Article updateArticle(Article article, ArticleUpdateRequest request) {
-        if (article.getAuthor() != this) {
-            throw new IllegalAccessError("Not authorized to update this article");
+        if (!article.getAuthor().equals(this)) {
+            throw new AccessDeniedException("Not authorized to update this article");
         }
         article.updateArticle(request);
         return article;
@@ -92,6 +93,10 @@ public class User {
 
     public void deleteArticleComment(Article article, long commentId) {
         article.removeCommentByUser(this, commentId);
+    }
+
+    public Set<User> getFollowingUsers() {
+        return followingUsers;
     }
 
     public Set<Comment> viewArticleComments(Article article) {

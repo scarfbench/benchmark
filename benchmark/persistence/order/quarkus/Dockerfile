@@ -30,4 +30,4 @@ RUN chmod +x test.sh
 
 RUN mvn clean install -DskipTests
 
-CMD ["mvn", "quarkus:run"]
+CMD ["java", "-jar", "target/quarkus-app/quarkus-run.jar"]

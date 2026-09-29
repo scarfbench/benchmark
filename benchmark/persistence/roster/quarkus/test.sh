@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:8080/roster}"
+BASE_URL="${BASE_URL:-http://localhost:8080/roster/players}"
 
 echo "Health check: ${BASE_URL}"
 HTTP_STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "${BASE_URL}")

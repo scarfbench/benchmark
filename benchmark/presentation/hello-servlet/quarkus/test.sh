@@ -3,8 +3,8 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
 
-echo "Health check: ${BASE_URL}/"
-HTTP_STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "${BASE_URL}/")
+echo "Health check: ${BASE_URL}/greeting?name=ScarfBench"
+HTTP_STATUS=$(curl -sL -o /dev/null -w "%{http_code}" "${BASE_URL}/greeting?name=ScarfBench")
 
 if [ "$HTTP_STATUS" -eq 200 ]; then
   echo "PASS - got HTTP ${HTTP_STATUS}"

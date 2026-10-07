@@ -14,10 +14,10 @@
             <h:panelGrid columns="3" cellpadding="15">
               <p>Enter your tracking ID:</p>
               <p:inputText id="trackingIdInput"
-                value="#{public.track.trackingId}" required="true"
+                value="#{cargoTrack.trackingId}" required="true"
                 placeholder="XYZ789" title="Valid tracking ID" />
               <h:commandButton value="Track!"
-                action="#{public.track.onTrackById()}">
+                action="#{cargoTrack.onTrackById()}">
                 <f:ajax execute="trackingIdInput" render="cargo-status" />
               </h:commandButton>
             </h:panelGrid>
@@ -29,23 +29,23 @@
       </div>
       <h:panelGroup id="cargo-status">
         <div class="ui-g-12">
-          <h:panelGroup rendered="#{not empty public.track.cargo}">
+          <h:panelGroup rendered="#{not empty cargoTrack.cargo}">
             <div id="result">
               <p>
-                Cargo <strong>#{public.track.cargo.trackingId}</strong> is
-                currently <strong>#{public.track.cargo.statusText}</strong>
+                Cargo <strong>#{cargoTrack.cargo.trackingId}</strong> is
+                currently <strong>#{cargoTrack.cargo.statusText}</strong>
               </p>
 
               <p>
-                Estimated time of arrival in <strong>#{public.track.cargo.destinationName}</strong>:
-                #{public.track.cargo.eta}
+                Estimated time of arrival in <strong>#{cargoTrack.cargo.destinationName}</strong>:
+                #{cargoTrack.cargo.eta}
               </p>
               <ui:fragment
-                rendered="#{not empty public.track.cargo.nextExpectedActivity}">
-                <p>#{public.track.cargo.nextExpectedActivity}</p>
+                rendered="#{not empty cargoTrack.cargo.nextExpectedActivity}">
+                <p>#{cargoTrack.cargo.nextExpectedActivity}</p>
               </ui:fragment>
 
-              <p:panel rendered="#{public.track.cargo.misdirected}">
+              <p:panel rendered="#{cargoTrack.cargo.misdirected}">
                 <p>
                   <i class="fa fa-exclamation-triangle" style="color: #9b2332"></i>
                   Cargo is misdirected.
@@ -55,11 +55,11 @@
           </h:panelGroup>
 
           <p:outputLabel
-            value="Cargo with tracking ID #{public.track.trackingId} not found."
-            rendered="#{empty public.track.cargo and not empty public.track.trackingId}" />
+            value="Cargo with tracking ID #{cargoTrack.trackingId} not found."
+            rendered="#{empty cargoTrack.cargo and not empty cargoTrack.trackingId}" />
         </div>
 
-        <h:panelGroup rendered="#{not empty public.track.cargo}">
+        <h:panelGroup rendered="#{not empty cargoTrack.cargo}">
           <div class="ui-g ui-g-12">
             <div class="ui-g-3">
               <p:outputLabel value="Handling History"
@@ -72,7 +72,7 @@
             </div>
 
             <div class="ui-g-12">
-              <ui:repeat value="#{public.track.cargo.events}" var="leg">
+              <ui:repeat value="#{cargoTrack.cargo.events}" var="leg">
                 <div>
                   <ui:fragment rendered="#{leg.expected}">
                                 &#160;&#160;<i class="fa fa-check"
@@ -86,14 +86,14 @@
               </ui:repeat>
 
               <p:outputLabel
-                value="There are no events recorded for the tracking ID #{public.track.cargo.trackingId}."
-                rendered="#{empty public.track.cargo.events}" />
+                value="There are no events recorded for the tracking ID #{cargoTrack.cargo.trackingId}."
+                rendered="#{empty cargoTrack.cargo.events}" />
             </div>
           </div>
 
           <div id="map" class="ui-g-12">
             <iframe class="mapFrame" width="100%" height="960"
-              src="#{request.contextPath}/public/mapFrame.xhtml?cargo=#{public.track.cargoAsJson}" />
+              src="#{request.contextPath}/public/mapFrame.xhtml?cargo=#{cargoTrack.cargoAsJson}" />
           </div>
         </h:panelGroup>
       </h:panelGroup>

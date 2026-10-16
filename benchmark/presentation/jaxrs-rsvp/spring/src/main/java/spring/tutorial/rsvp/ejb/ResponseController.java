@@ -22,8 +22,8 @@ public class ResponseController {
     private static final Logger logger = Logger.getLogger(ResponseController.class.getName());
 
     @GetMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    public Response getResponse(@PathVariable Long eventId,
-                                @PathVariable Long inviteId) {
+    public Response getResponse(@PathVariable("eventId") Long eventId,
+                                @PathVariable("inviteId") Long inviteId) {
         return (Response) em.createNamedQuery("rsvp.entity.Response.findResponseByEventAndPerson")
                 .setParameter("eventId", eventId)
                 .setParameter("personId", inviteId)
@@ -33,8 +33,8 @@ public class ResponseController {
     @PostMapping(consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @Transactional
     public void putResponse(@RequestBody String userResponse,
-                            @PathVariable Long eventId,
-                            @PathVariable Long inviteId) {
+                            @PathVariable("eventId") Long eventId,
+                            @PathVariable("inviteId") Long inviteId) {
 
         logger.log(Level.INFO,
                 "Updating status to {0} for person ID {1} for event ID {2}",

@@ -25,7 +25,7 @@ public class StatusController {
     private List<Event> allCurrentEvents;
 
     @GetMapping(value = "/{eventId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-    public Event getEvent(@PathVariable Long eventId) {
+    public Event getEvent(@PathVariable("eventId") Long eventId) {
         return em.find(Event.class, eventId);
     }
 

@@ -89,7 +89,7 @@ public class CustomerService {
             if (oldCustomer == null) {
                 return ResponseEntity.notFound().build();
             } else {
-                persist(customer);
+                merge(customer);
                 return ResponseEntity.status(303).build();
             }
         } catch (Exception e) {
@@ -121,6 +121,18 @@ public class CustomerService {
             logger.warning("Something went wrong when persisting the customer");
         }
         return customer.getId();
+    }
+
+    private void merge(Customer customer) {
+        try {
+            Address address = customer.getAddress();
+            if (address != null) {
+                em.merge(address);
+            }
+            em.merge(customer);
+        } catch (Exception ex) {
+            logger.warning("Something went wrong when merging the customer");
+        }
     }
 
     private Customer findById(String customerId) {

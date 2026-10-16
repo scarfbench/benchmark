@@ -29,7 +29,7 @@ import org.eclipse.cargotracker.domain.model.handling.HandlingEventRepository;
  *
  * <p>In some very simplistic cases, it is fine to not use even an adapter.
  */
-@Named("public.track")
+@Named("cargoTrack")
 @ViewScoped
 public class Track implements Serializable {
 

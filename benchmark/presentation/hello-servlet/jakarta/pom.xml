@@ -42,6 +42,7 @@
 </dependencies>
 
 <build>
+  <finalName>hello-servlet</finalName>
   <plugins>
     <plugin>
       <groupId>org.apache.maven.plugins</groupId>

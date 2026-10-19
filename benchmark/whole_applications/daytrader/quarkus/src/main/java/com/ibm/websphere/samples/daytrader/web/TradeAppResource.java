@@ -29,6 +29,9 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.math.BigDecimal;
+
+import com.ibm.websphere.samples.daytrader.beans.MarketSummaryDataBean;
 import com.ibm.websphere.samples.daytrader.entities.AccountDataBean;
 import com.ibm.websphere.samples.daytrader.entities.AccountProfileDataBean;
 import com.ibm.websphere.samples.daytrader.entities.HoldingDataBean;
@@ -36,6 +39,7 @@ import com.ibm.websphere.samples.daytrader.entities.OrderDataBean;
 import com.ibm.websphere.samples.daytrader.entities.QuoteDataBean;
 import com.ibm.websphere.samples.daytrader.interfaces.TradeServices;
 import com.ibm.websphere.samples.daytrader.util.Log;
+import com.ibm.websphere.samples.daytrader.util.TradeConfig;
 
 /**
  * TradeAppResource provides the web interface to Trade at /app
@@ -85,6 +89,10 @@ public class TradeAppResource {
                     return handleAccount(currentUser.get());
                 }
                 return Response.ok(buildWelcomePage("Please log in first.")).build();
+            case "mksummary":
+                return handleMarketSummary();
+            case "register":
+                return Response.ok(buildRegisterPage("")).build();
             default:
                 return Response.ok(buildWelcomePage("Unknown action: " + action)).build();
         }
@@ -98,8 +106,13 @@ public class TradeAppResource {
                                @FormParam("symbol") String symbol,
                                @FormParam("quantity") String quantity,
                                @FormParam("holdingID") String holdingID,
-                               @FormParam("symbols") String symbols) {
-        
+                               @FormParam("symbols") String symbols,
+                               @FormParam("Full Name") String fullName,
+                               @FormParam("snail mail") String address,
+                               @FormParam("email") String email,
+                               @FormParam("confirm passwd") String confirmPasswd,
+                               @FormParam("money") String money) {
+
         if (action == null) {
             return Response.ok(buildWelcomePage("")).build();
         }
@@ -113,6 +126,9 @@ public class TradeAppResource {
                 return handleSell(currentUser.get(), holdingID);
             case "quotes":
                 return handleQuotes(symbols);
+            case "register":
+                return handleRegister(uid, passwd, fullName, address, email,
+                    money != null ? money : "10000.0");
             default:
                 return welcome(action, uid, symbols);
         }
@@ -382,7 +398,9 @@ public class TradeAppResource {
         html.append("Symbols: <input type='text' name='symbols' value='s:0,s:1,s:2'/>");
         html.append("<input type='submit' value='Get Quotes'/>");
         html.append("</form>");
-        
+
+        html.append("<p><a href='/rest/app?action=register'>Register a new account</a></p>");
+
         html.append("</body></html>");
         return html.toString();
     }
@@ -410,4 +428,111 @@ public class TradeAppResource {
     private String getFooter() {
         return "<hr/><p><small>DayTrader - Quarkus Edition</small></p></body></html>";
     }
+
+    // -----------------------------------------------------------------------
+    // Market Summary
+    // -----------------------------------------------------------------------
+
+    private Response handleMarketSummary() {
+        try {
+            MarketSummaryDataBean summary = tradeService.getMarketSummary();
+            StringBuilder html = new StringBuilder();
+            html.append(getHeader(currentUser.get()));
+            html.append("<h2>Market Summary</h2>");
+            html.append("<table border='1' cellpadding='5'>");
+            if (summary != null) {
+                html.append("<tr><td>TSIA (Trade Stock Index Average):</td><td>")
+                    .append(summary.getTSIA()).append("</td></tr>");
+                html.append("<tr><td>Open TSIA:</td><td>")
+                    .append(summary.getOpenTSIA()).append("</td></tr>");
+                html.append("<tr><td>Volume:</td><td>")
+                    .append(summary.getVolume()).append("</td></tr>");
+                if (summary.getTopGainers() != null && !summary.getTopGainers().isEmpty()) {
+                    html.append("<tr><td>Top Gainers:</td><td>");
+                    for (QuoteDataBean q : summary.getTopGainers()) {
+                        html.append(q.getSymbol()).append(" ");
+                    }
+                    html.append("</td></tr>");
+                }
+                if (summary.getTopLosers() != null && !summary.getTopLosers().isEmpty()) {
+                    html.append("<tr><td>Top Losers:</td><td>");
+                    for (QuoteDataBean q : summary.getTopLosers()) {
+                        html.append(q.getSymbol()).append(" ");
+                    }
+                    html.append("</td></tr>");
+                }
+            } else {
+                html.append("<tr><td colspan='2'>Market index data not yet available.</td></tr>");
+            }
+            html.append("</table>");
+            html.append(getFooter());
+            return Response.ok(html.toString()).build();
+        } catch (Exception e) {
+            Log.error(e, "Error getting market summary");
+            return Response.ok(buildWelcomePage("Error: " + e.getMessage())).build();
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Registration
+    // -----------------------------------------------------------------------
+
+    private String buildRegisterPage(String message) {
+        StringBuilder html = new StringBuilder();
+        html.append("<!DOCTYPE html>");
+        html.append("<html><head><title>DayTrader - Register</title>");
+        html.append("<link rel='stylesheet' href='/style.css' type='text/css'/>");
+        html.append("</head><body>");
+        html.append("<h1>DayTrader - Register New User</h1>");
+        if (message != null && !message.isEmpty()) {
+            html.append("<p style='color:red;'><b>").append(message).append("</b></p>");
+        }
+        html.append("<form method='post' action='/rest/app'>");
+        html.append("<input type='hidden' name='action' value='register'/>");
+        html.append("<table>");
+        html.append("<tr><td>Full Name:</td><td><input type='text' name='Full Name'/></td></tr>");
+        html.append("<tr><td>Address:</td><td><input type='text' name='snail mail'/></td></tr>");
+        html.append("<tr><td>Email:</td><td><input type='text' name='email'/></td></tr>");
+        html.append("<tr><td>User ID:</td><td><input type='text' name='uid'/></td></tr>");
+        html.append("<tr><td>Password:</td><td><input type='password' name='passwd'/></td></tr>");
+        html.append("<tr><td>Confirm Password:</td><td><input type='password' name='confirm passwd'/></td></tr>");
+        html.append("<tr><td>Opening Balance ($):</td><td><input type='text' name='money' value='10000'/></td></tr>");
+        html.append("<tr><td colspan='2'><input type='submit' value='Submit Registration'/></td></tr>");
+        html.append("</table>");
+        html.append("</form>");
+        html.append("<p><a href='/rest/app'>Back to Login</a></p>");
+        html.append("</body></html>");
+        return html.toString();
+    }
+
+    private Response handleRegister(String uid, String passwd, String fullName,
+                                    String address, String email, String money) {
+        try {
+            BigDecimal openBalance = new BigDecimal(money != null ? money : "10000.0");
+            String fn = fullName != null && !fullName.isEmpty() ? fullName : uid;
+            String addr = address != null && !address.isEmpty() ? address : "123 Main St";
+            String em = email != null && !email.isEmpty() ? email : uid + "@example.com";
+            AccountDataBean account = tradeService.register(uid, passwd, fn, addr, em, "none", openBalance);
+            if (account != null) {
+                currentUser.set(uid);
+                StringBuilder html = new StringBuilder();
+                html.append(getHeader(uid));
+                html.append("<h2>Registration Successful</h2>");
+                html.append("<p>Welcome, ").append(uid).append("!</p>");
+                html.append("<table border='1' cellpadding='5'>");
+                html.append("<tr><td>Account ID:</td><td>").append(account.getAccountID()).append("</td></tr>");
+                html.append("<tr><td>Cash Balance:</td><td>$").append(account.getBalance()).append("</td></tr>");
+                html.append("</table>");
+                html.append("<p><a href='/rest/app?action=home'>Go to Home</a></p>");
+                html.append(getFooter());
+                return Response.ok(html.toString()).build();
+            } else {
+                return Response.ok(buildRegisterPage("Registration failed. Please try again.")).build();
+            }
+        } catch (Exception e) {
+            Log.error(e, "Error registering user: " + uid);
+            return Response.ok(buildRegisterPage("Registration error: " + e.getMessage())).build();
+        }
+    }
+
 }

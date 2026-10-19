@@ -12,7 +12,7 @@ public class Greeting {
     public Response greet(@QueryParam("name") String name) {
         if (name == null || name.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Error: 'name' parameter is required").build();
+                    .entity("Missing required parameter: name").build();
         }
 
         String greeting = "Hello, " + name + "!";

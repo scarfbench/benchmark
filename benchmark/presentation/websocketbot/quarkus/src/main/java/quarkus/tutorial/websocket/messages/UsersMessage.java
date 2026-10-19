@@ -21,6 +21,7 @@ public class UsersMessage extends Message {
         this.userlist = userlist;
     }
 
+    @JsonProperty("userlist")
     public List<String> getUserList() {
         return userlist;
     }

@@ -141,7 +141,7 @@ public class CustomerService {
             if (oldCustomer == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             } else {
-                persist(customer);
+                merge(customer);
                 return Response.ok().status(303).build(); 
             }
         } catch (WebApplicationException e) {
@@ -186,6 +186,18 @@ public class CustomerService {
         }
 
         return customer.getId();
+    }
+
+    private void merge(Customer customer) {
+        try {
+            Address address = customer.getAddress();
+            if (address != null) {
+                em.merge(address);
+            }
+            em.merge(customer);
+        } catch (Exception ex) {
+            logger.warning("Something went wrong when merging the customer");
+        }
     }
 
     /**
